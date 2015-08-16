@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Blueprints>
+    <Blueprint>
+      <Id>
+        <TypeId>BlueprintDefinition</TypeId>
+        <SubtypeId>Blueprint_PaintGun</SubtypeId>
+      </Id>
+      <DisplayName>Paint Gun</DisplayName>
+      <Icon>Textures\Icons\PaintGun.dds</Icon>
+      <Prerequisites>
+        <Item Amount="4" TypeId="Ingot" SubtypeId="Iron" />
+        <Item Amount="1" TypeId="Ingot" SubtypeId="Nickel" />
+        <Item Amount="2" TypeId="Ingot" SubtypeId="Silver" />
+      </Prerequisites>
+      <Result Amount="1" TypeId="PhysicalGunObject" SubtypeId="PhysicalPaintGun" />
+      <BaseProductionTimeInSeconds>10</BaseProductionTimeInSeconds>
+    </Blueprint>
+    <Blueprint>
+      <Id>
+        <TypeId>BlueprintDefinition</TypeId>
+        <SubtypeId>Blueprint_PaintGunMag</SubtypeId>
+      </Id>
+      <DisplayName>Paint Chemicals</DisplayName>
+      <Icon>Textures\Icons\PaintGunMag.dds</Icon>
+      <Prerequisites>
+        <Item Amount="3" TypeId="Ingot" SubtypeId="Stone" />
+<!--
+        <Item Amount="0.05" TypeId="Ingot" SubtypeId="Silicon" />
+        <Item Amount="0.005" TypeId="Ingot" SubtypeId="Uranium" />
+        <Item Amount="0.01" TypeId="Ingot" SubtypeId="Silver" />
+-->
+      </Prerequisites>
+      <Result Amount="100" TypeId="AmmoMagazine" SubtypeId="PaintGunMag" />
+      <BaseProductionTimeInSeconds>3</BaseProductionTimeInSeconds>
+    </Blueprint>
+  </Blueprints>
+  <BlueprintClassEntries>
+    <Entry Class="Tools" BlueprintSubtypeId="Blueprint_PaintGun" />
+    <Entry Class="Components" BlueprintSubtypeId="Blueprint_PaintGunMag" />
+    <Entry Class="Ammo" BlueprintSubtypeId="Blueprint_PaintGunMag" />
+  </BlueprintClassEntries>
+</Definitions>

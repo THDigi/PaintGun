@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <AmmoMagazines>
+    <AmmoMagazine>
+      <Id>
+        <TypeId>AmmoMagazine</TypeId>
+        <SubtypeId>PaintGunMag</SubtypeId>
+      </Id>
+      <DisplayName>Paint Chemicals</DisplayName>
+      <Icon>Textures\Icons\PaintGunMag.dds</Icon>
+      <Size>
+        <X>0.001</X>
+        <Y>0.001</Y>
+        <Z>0.001</Z>
+      </Size>
+      <Mass>0.001</Mass>
+      <Volume>0.002</Volume>
+      <Model>Models\PaintGunMag.mwm</Model>
+      <Capacity>1</Capacity>
+      <AmmoDefinitionId Subtype="PaintGunBullet" />
+    </AmmoMagazine>
+  </AmmoMagazines>
+  <Ammos>
+    <Ammo xsi:type="MyObjectBuilder_ProjectileAmmoDefinition">
+      <Id>
+        <TypeId>AmmoDefinition</TypeId>
+        <SubtypeId>PaintGunBullet</SubtypeId>
+      </Id>
+      <BasicProperties>
+        <DesiredSpeed>20</DesiredSpeed>
+        <SpeedVariance>0</SpeedVariance>
+        <MaxTrajectory>0.37</MaxTrajectory>
+        <BackkickForce>0</BackkickForce>
+      </BasicProperties>
+      <ProjectileProperties>
+        <ProjectileType>Bullet</ProjectileType>
+        <ProjectileHitImpulse>0</ProjectileHitImpulse>
+        <ProjectileMassDamage>0</ProjectileMassDamage>
+        <ProjectileHealthDamage>0</ProjectileHealthDamage>
+        <ProjectileTrailScale>0</ProjectileTrailScale>
+        <ProjectileTrailColor x="0" y="0" z="0" />
+        <ProjectileTrailProbability>1</ProjectileTrailProbability>
+        <ProjectileOnHitMaterialParticlesType>Small</ProjectileOnHitMaterialParticlesType>
+        <ProjectileOnHitParticlesType>BasicSmall</ProjectileOnHitParticlesType>
+      </ProjectileProperties>
+    </Ammo>
+  </Ammos>
+</Definitions>

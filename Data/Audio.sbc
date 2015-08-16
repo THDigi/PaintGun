@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<Definitions xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Sounds>
+    <Sound>
+      <Id>
+        <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
+        <SubtypeId>WepPlayPaintGunSpray</SubtypeId>
+      </Id>
+      <Category>WEP_PLAY</Category>
+      <MaxDistance>45.0</MaxDistance>
+      <Volume>1.0</Volume>
+      <Loopable>true</Loopable>
+      <Waves>
+        <Wave Type="D3">
+          <Loop>Audio\ArcBlockAirVentExhaleLoop3d.xwm</Loop>
+          <End>Audio\ArcBlockAirVentExhaleEnd3d.xwm</End>
+<!--
+          <Start>Audio\ArcBlockAirVentExhaleStart3d.xwm</Start>
+          <Loop>Audio\ArcBlockAirVentExhaleLoop3d.xwm</Loop>
+          <End>Audio\ArcBlockAirVentExhaleEnd3d.xwm</End>
+-->
+        </Wave>
+      </Waves>
+    </Sound>
+  </Sounds>
+</Definitions>

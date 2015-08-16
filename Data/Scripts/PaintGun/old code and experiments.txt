@@ -1,0 +1,573 @@
+
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        /*
+        public class PaintStatus
+        {
+            public float progress = 0;
+            public long started = 0;
+            
+            public PaintStatus()
+            {
+                started = DateTime.UtcNow.Ticks;
+            }
+        }
+        
+        Dictionary<string, PaintStatus> paintProgress = new Dictionary<string, PaintStatus>();
+        
+        public string BlockToKey(IMySlimBlock block)
+        {
+            return block.CubeGrid.EntityId+":"+block.Position.ToString();
+        }
+        
+        /*
+        // TODO REMOVE THIS CLUTTER ! xD
+        public bool __HoldingTool(bool trigger)
+        {
+            try
+            {
+                /*
+                var colorList = MyAPIGateway.Session.GetCheckpoint("null").CharacterToolbar.ColorMaskHSVList;
+                var color = colorList[0];
+         */
+        
+        /*
+                var test = Sandbox.Game.Entities.MyCubeBuilder.AllPlayersColors;
+                //var id =  new MyObjectBuilder_Checkpoint.PlayerId(MyAPIGateway.Session.Player.SteamUserId);
+                
+                var id = new Sandbox.Game.World.MyPlayer.PlayerId(MyAPIGateway.Session.Player.SteamUserId);
+                
+                MyAPIGateway.Utilities.ShowNotification("test="+test[id][0], 16, MyFontEnum.Green);
+         */
+        
+        //MyAPIGateway.Utilities.ShowNotification("color="+color, 16, MyFontEnum.Green);
+        
+        /*
+                var colors = MyAPIGateway.Session.GetCheckpoint("null").AllPlayersColors.Dictionary;
+                if(colors != null)
+                {
+                    Log.Info("colors ok");
+                    
+                    var id =  new MyObjectBuilder_Checkpoint.PlayerId(MyAPIGateway.Session.Player.SteamUserId);
+                    var colorList = colors[id];
+                    
+                    if(colorList != null)
+                    {
+                        //Log.Info("color list ok");
+                        
+                        color = colorList[0];
+                        
+                        MyAPIGateway.Utilities.ShowNotification("color="+color, 16, MyFontEnum.Blue);
+                    }
+                }
+         */
+        
+        /*
+                if(toolStatus == null)
+                {
+                    toolStatus = MyAPIGateway.Utilities.CreateNotification("", 300, MyFontEnum.White);
+                    toolStatus.Hide();
+                }
+                
+                var player = MyAPIGateway.Session.Player.Controller.ControlledEntity.Entity;
+                var grid = MyAPIGateway.CubeBuilder.FindClosestGrid();
+                
+                if(grid == null)
+                {
+                    if(trigger)
+                    {
+                        SetToolStatus("No ship target for painting.\nPress your LIGHTS key to stop painting.", MyFontEnum.Red);
+                    }
+                    else if(pickColor)
+                    {
+                        SetToolStatus("Aim at a block to pick its color...\nor type /pg cancel to cancel the process.", MyFontEnum.Red);
+                    }
+                }
+                else
+                {
+                    var view = MyAPIGateway.Session.ControlledObject.GetHeadMatrix(true, true);
+                    var target = player.WorldAABB.Center + (view.Forward * grid.GridSize) + (view.Up * 0.6);
+                    var pos = grid.WorldToGridInteger(target);
+                    var block = grid.GetCubeBlock(pos);
+                    string blockName = null;
+                    
+                    if(block != null)
+                    {
+                        if(block.FatBlock == null)
+                        {
+                            blockName = block.ToString();
+                        }
+                        else
+                        {
+                            blockName = block.FatBlock.DefinitionDisplayNameText;
+                        }
+                        
+                        if(pickColor)
+                        {
+                            pickColor = false;
+                            SetColor(block.GetColorMask());
+                            MyAPIGateway.Utilities.ShowMessage(MOD_NAME, "Picked " + blockName + "'s color with " + String.Format("Hue: {0}; Saturation: {1}; Value: {2}", color.X, color.Y, color.Z));
+                            return false;
+                        }
+                        
+                        if(block.HasDeformation || block.CurrentDamage > 0 || (block.FatBlock != null && !block.FatBlock.IsFunctional))
+                        {
+                            SetToolStatus("Paint target: " + blockName + "\n" + (block.HasDeformation || block.CurrentDamage > 0 ? "Block is damaged or deformed and can't be painted!" : "Block is not fully built and can't be painted!"), MyFontEnum.Red);
+                            return false;
+                        }
+                        
+                        if(!trigger)
+                        {
+                            SetToolStatus("Paint target: " + blockName + "\nPress your LIGHTS key to start painting.", MyFontEnum.DarkBlue);
+                        }
+                    }
+                    else
+                    {
+                        if(pickColor)
+                        {
+                            SetToolStatus("Aim at a block to pick its color...\nor type /pg cancel to cancel the process.", MyFontEnum.Red);
+                        }
+                        else if(trigger)
+                        {
+                            SetToolStatus("No block target for painting.\nPress your LIGHTS key to stop painting.", MyFontEnum.Red);
+                        }
+                    }
+                    
+                    if(trigger && block != null)
+                    {
+                        var blockColor = block.GetColorMask();
+                        //RoundVector(ref blockColor, 2);
+                        //RoundVector(ref color, 2);
+                        
+                        Vector3 blockSize;
+                        block.ComputeScaledHalfExtents(out blockSize);
+                        blockSize = ((blockSize * 2) / block.CubeGrid.GridSize);
+                        
+                        if(blockColor == color)
+                        {
+                            SetToolStatus(blockName + " is painted.\nPress your LIGHTS key to stop painting.", MyFontEnum.Green);
+                            return false;
+                        }
+                        
+                        /*
+                        byte paintSpeed = 10; // (byte)((1 / Math.Max(blockSize.Volume * 0.33, 1)) * 10);
+                        
+                        var blockRGB = blockColor.HSVtoColor();
+                        var colorRGB = color.HSVtoColor();
+                        
+                        if(blockRGB == colorRGB)
+                        {
+                            toolStatus.Show();
+                            toolStatus.Text = blockName + " is painted.\nPress your LIGHTS key to stop painting.";
+                            toolStatus.Font = MyFontEnum.Green;
+                            return;
+                        }
+                        
+                        var grayRGB = GRAY.HSVtoColor();
+                        string key = BlockToKey(block);
+                        PaintStatus paintStatus;
+                        
+                        if(paintProgress.TryGetValue(key, out paintStatus))
+                        {
+                            // continue painting
+                            toolStatus.Text = "???% painting " + blockName + "...\nPress your LIGHTS key to stop painting.";
+                            
+                            paintStatus.started += (TimeSpan.TicksPerSecond * 2);
+                            
+                            if(blockRGB.R > colorRGB.R)
+                                blockRGB.R = (byte)Math.Max(blockRGB.R - paintSpeed, colorRGB.R);
+                            else
+                                blockRGB.R = (byte)Math.Min(blockRGB.R + paintSpeed, colorRGB.R);
+                            
+                            if(blockRGB.G > colorRGB.G)
+                                blockRGB.G = (byte)Math.Max(blockRGB.G - paintSpeed, colorRGB.G);
+                            else
+                                blockRGB.G = (byte)Math.Min(blockRGB.G + paintSpeed, colorRGB.G);
+                            
+                            if(blockRGB.B > colorRGB.B)
+                                blockRGB.B = (byte)Math.Max(blockRGB.B - paintSpeed, colorRGB.B);
+                            else
+                                blockRGB.B = (byte)Math.Min(blockRGB.B + paintSpeed, colorRGB.B);
+                            
+                            if(blockRGB.A > colorRGB.A)
+                                blockRGB.A = (byte)Math.Max(blockRGB.B - paintSpeed, colorRGB.A);
+                            else
+                                blockRGB.A = (byte)Math.Min(blockRGB.B + paintSpeed, colorRGB.A);
+                            
+                            if(blockRGB == colorRGB)
+                            {
+                                MyAPIGateway.Utilities.ShowMessage("DEBUG", "finished painting = " + blockRGB.ToString()); // TODO REMOVE
+                                paintProgress.Remove(key);
+                            }
+                        }
+                        else
+                        {
+                            // remove paint
+                            toolStatus.Text = "???% removing paint from " + blockName + "...\nPress your LIGHTS key to stop painting.";
+                            
+                            if(blockRGB == grayRGB)
+                            {
+                                MyAPIGateway.Utilities.ShowMessage("DEBUG", "finished removing paint = " + blockRGB.ToString()); // TODO REMOVE
+                                paintProgress.Add(key, new PaintStatus());
+                                return;
+                            }
+                            
+                            if(blockRGB.R > grayRGB.R)
+                                blockRGB.R = (byte)Math.Max(blockRGB.R - paintSpeed, grayRGB.R);
+                            else
+                                blockRGB.R = (byte)Math.Min(blockRGB.R + paintSpeed, grayRGB.R);
+                            
+                            if(blockRGB.G > grayRGB.G)
+                                blockRGB.G = (byte)Math.Max(blockRGB.G - paintSpeed, grayRGB.G);
+                            else
+                                blockRGB.G = (byte)Math.Min(blockRGB.G + paintSpeed, grayRGB.G);
+                            
+                            if(blockRGB.B > grayRGB.B)
+                                blockRGB.B = (byte)Math.Max(blockRGB.B - paintSpeed, grayRGB.B);
+                            else
+                                blockRGB.B = (byte)Math.Min(blockRGB.B + paintSpeed, grayRGB.B);
+                            
+                            if(blockRGB.A > grayRGB.A)
+                                blockRGB.A = (byte)Math.Max(blockRGB.B - paintSpeed, grayRGB.A);
+                            else
+                                blockRGB.A = (byte)Math.Min(blockRGB.B + paintSpeed, grayRGB.A);
+                        }
+                        
+                        blockColor = blockRGB.ColorToHSV();
+         */
+        /*
+                        float paintSpeed = (float)(1 / Math.Max(blockSize.Volume * 0.33, 1));
+                        
+                        if(blockColor.X == color.X)
+                        {
+                            paintSpeed *= PAINT_SPEED;
+                            paintSpeed *= MyAPIGateway.Session.WelderSpeedMultiplier;
+                            
+                            float diff = (Math.Abs(blockColor.Y - color.Y) + Math.Abs(blockColor.Z - color.Z)) / 4;
+                            float percent = 100 - (float)Math.Round(diff * 100, 0);
+                            
+                            SetToolStatus(percent + "% painting " + blockName + "...\nPress your LIGHTS key to stop painting.", MyFontEnum.Blue);
+                            
+                            if(blockColor.Y > color.Y)
+                                blockColor.Y = Math.Max(blockColor.Y - paintSpeed, color.Y);
+                            else
+                                blockColor.Y = Math.Min(blockColor.Y + paintSpeed, color.Y);
+                            
+                            if(blockColor.Z > color.Z)
+                                blockColor.Z = Math.Max(blockColor.Z - paintSpeed, color.Z);
+                            else
+                                blockColor.Z = Math.Min(blockColor.Z + paintSpeed, color.Z);
+                        }
+                        else
+                        {
+                            paintSpeed *= DEPAINT_SPEED;
+                            paintSpeed *= MyAPIGateway.Session.GrinderSpeedMultiplier;
+                            
+                            float diff = (Math.Abs(blockColor.Y - DEFAULT_COLOR.Y) + Math.Abs(blockColor.Z - DEFAULT_COLOR.Z)) / 4;
+                            float percent = 100 - (float)Math.Round(diff * 100, 0);
+                            SetToolStatus(percent + "% removing paint from " + blockName + "...\nPress your LIGHTS key to stop painting.", MyFontEnum.Blue);
+                            
+                            blockColor.Y = Math.Max(blockColor.Y - paintSpeed, DEFAULT_COLOR.Y);
+                            
+                            if(blockColor.Z > 0)
+                                blockColor.Z = Math.Max(blockColor.Z - paintSpeed, DEFAULT_COLOR.Z);
+                            else
+                                blockColor.Z = Math.Min(blockColor.Z + paintSpeed, DEFAULT_COLOR.Z);
+                            
+                            if(blockColor.Y == DEFAULT_COLOR.Y && blockColor.Z == DEFAULT_COLOR.Z)
+                            {
+                                blockColor.X = color.X;
+                            }
+                        }
+                        
+                        /*
+                        ushort percent;
+                        float paintSpeed = (float)(1 / Math.Round(blockSize.Volume * 0.8, 0));
+                        
+                        //MyAPIGateway.Utilities.ShowNotification("blockColor="+blockColor+"; color="+color, 160, MyFontEnum.White); // TODO REMOVE
+                        
+                        // TODO close enough HUE without depainting ?
+                        
+                        if(blockColor.X == color.X) // && blockColor.Z == color.Z) // hue is the same, proceed to painting by adding to saturation and value
+                        {
+                            paintSpeed *= PAINT_SPEED;
+                            percent = (ushort)Math.Round(((1 + blockColor.Y) / (1 + color.Y)) * 100, 0);
+                            toolStatus.Text = percent + "% painting " + blockName + "...\nPress your LIGHTS key to stop painting.";
+                            
+                            blockColor.Y = Math.Min(blockColor.Y + paintSpeed, color.Y);
+                            
+                            if(blockColor.Z > color.Z)
+                                blockColor.Z = Math.Max(blockColor.Z - paintSpeed, color.Z);
+                            else
+                                blockColor.Z = Math.Min(blockColor.Z + paintSpeed, color.Z);
+                            
+                            MyAPIGateway.Utilities.ShowMessage("DEBUG", "colorizing... y="+blockColor.Y+"; z="+blockColor.Z); // TODO REMOVE
+                        }
+                        else // hue is not the same, decolorize by removing from saturation and value
+                        {
+                            paintSpeed *= DEPAINT_SPEED;
+                            percent = (ushort)Math.Round((1 - ((1 + blockColor.Y) / 2)) * 100, 0);
+                            toolStatus.Text = percent + "% removing paint on " + blockName + "...\nPress your LIGHTS key to stop.";
+                            
+                            MyAPIGateway.Utilities.ShowMessage("DEBUG", "decolorizing... y="+blockColor.Y+"; z="+blockColor.Z); // TODO REMOVE
+                            
+                            blockColor.Y = Math.Max(blockColor.Y - paintSpeed, -1);
+                            
+                            if(blockColor.Z > 0)
+                                blockColor.Z = Math.Max(blockColor.Z - paintSpeed, 0);
+                            else
+                                blockColor.Z = Math.Min(blockColor.Z + paintSpeed, 0);
+                            
+                            if(blockColor.Y == -1 && blockColor.Z == 0)
+                            {
+                                MyAPIGateway.Utilities.ShowMessage("DEBUG", "reached full decoloration; y="+blockColor.Y+"; z="+blockColor.Z); // TODO REMOVE
+                                
+                                blockColor.X = color.X;
+                            }
+                        }
+         */
+        
+        /*
+                        if(blockColor.X == color.X && blockColor.Z == color.Z)
+                        {
+                            percent = (ushort)Math.Round(((1 + blockColor.Y) / (1 + color.Y)) * 100, 0);
+                            toolStatus.Text = percent + "% painting " + blockName + "...\nPress your LIGHTS key to stop painting.";
+                            
+                            blockColor.Y = Math.Min(blockColor.Y + PAINT_SPEED, color.Y);
+                            
+                            MyAPIGateway.Utilities.ShowMessage("DEBUG", "colorizing..."); // TODO REMOVE
+                        }
+                        else
+                        {
+                            percent = (ushort)Math.Round((1 - ((1 + blockColor.Y) / 2)) * 100, 0);
+                            toolStatus.Text = percent + "% removing paint on " + blockName + "...\nPress your LIGHTS key to stop.";
+                            
+                            MyAPIGateway.Utilities.ShowMessage("DEBUG", "decolorizing..."); // TODO REMOVE
+                            
+                            blockColor.Y = Math.Max(blockColor.Y - DEPAINT_SPEED, -1);
+                            
+                            if(blockColor.Y == -1)
+                            {
+                                blockColor.X = color.X;
+                                blockColor.Z = color.Z;
+                                
+                                MyAPIGateway.Utilities.ShowMessage("DEBUG", "reached full decoloration"); // TODO REMOVE
+                            }
+                        }
+         */
+        /*
+                        grid.ColorBlocks(pos, pos, blockColor);
+                        return true;
+                        
+                        /*
+                        bool coloring = true;
+                        
+                        if(blockColor != GRAY)
+                        {
+                            coloring = false;
+                            blockColor.X = GRAY.X;
+                            blockColor.Z = GRAY.Z;
+                        }
+                        else if(blockColor.X == GRAY.X && blockColor.Z == GRAY.Z && blockColor.Y > -1)
+                        {
+                            coloring = false;
+                            blockColor.Y = Math.Max(blockColor.Y - DEPAINT_SPEED, -1);
+                        }
+                        else
+                        {
+                            if(blockColor.X != color.X || blockColor.Z != color.Z)
+                            {
+                                blockColor = color;
+                                blockColor.Y = -1;
+                            }
+                            else
+                            {
+                                blockColor.Y = Math.Min(blockColor.Y + PAINT_SPEED, color.Y);
+                            }
+                        }
+                        
+                        grid.ColorBlocks(pos, pos, blockColor);
+                        
+                        ushort percent = (ushort)Math.Round(((1 + blockColor.Y) / (1 + color.Y)) * 100, 0);
+                        
+                        toolStatus.Show();
+                        if(coloring)
+                            toolStatus.Text = percent + "% painting " + blockName + "...\nPress your LIGHTS key to stop painting.";
+                        else
+                            toolStatus.Text = percent + "% removing paint on " + blockName + "...\nPress your LIGHTS key to stop.";
+                        toolStatus.Font = MyFontEnum.Blue;
+         */
+        /*
+                    }
+                }
+                
+                /*
+                var view = MyAPIGateway.Session.ControlledObject.GetHeadMatrix(true, true);
+                var target = player.WorldAABB.Center + (view.Forward * 2) + (view.Up * 0.75);
+                
+                var box = new BoundingBoxD(target - 0.1, target + 0.1);
+                var ents = MyAPIGateway.Entities.GetEntitiesInAABB(ref box);
+                //List<Vector3I> hit = new List<Vector3I>();
+                
+                foreach(var ent in ents)
+                {
+                    if(ent is IMyCubeGrid && ent.Physics != null && !ent.Physics.IsPhantom)
+                    {
+                        var grid = ent as IMyCubeGrid;
+                        
+                        var pos = grid.WorldToGridInteger(target);
+                        var block = grid.GetCubeBlock(pos);
+                        MyAPIGateway.Utilities.ShowNotification("pos="+pos+"; block="+(block == null ? "null" : block.ToString()), 16, MyFontEnum.Red);
+                        
+                        if(trigger && block != null)
+                        {
+                            MyAPIGateway.Utilities.ShowNotification("Color at " + pos, 1000, MyFontEnum.Green);
+                            grid.ColorBlocks(pos, pos, color);
+                        }
+                        
+                        break;
+                        
+                        /*
+                        hit.Clear();
+                        grid.RayCastCells(view.Translation, target + (view.Forward * 2), hit, null, true);
+                        
+                        if(hit.Count > 0)
+                        {
+                            MyAPIGateway.Utilities.ShowNotification("Hit count="+hit.Count+"; list="+String.Join(",", hit), 16, MyFontEnum.Red);
+                            block = grid.GetCubeBlock(hit[0]);
+                            
+                            if(trigger)
+                            {
+                                MyAPIGateway.Utilities.ShowNotification("Color at " + hit[0], 1000, MyFontEnum.Green);
+                                grid.ColorBlocks(hit[0], hit[0], new Vector3(0,0,0));
+                                
+                                if(block == null)
+                                {
+                                    //MyAPIGateway.Utilities.ShowNotification("No block found!", 1000, MyFontEnum.Red);
+                                }
+                                else
+                                {
+                                    MyAPIGateway.Utilities.ShowNotification(block.ToString() + " colored!", 1000, MyFontEnum.Green);
+                                }
+                            }
+                            
+                            break;
+                        }
+                    }
+                }
+         */
+        
+        
+        
+        
+        /*
+            if(!MyAPIGateway.Entities.IsRaycastBlocked(view.Translation, target))
+                return;
+            
+            /*
+            MyAPIGateway.Entities.GetEntities(null,
+                delegate( IMyEntity entity )
+                {
+                    var ObjectPos = GetPosition(entity);
+                    LineD LineToTarget = new LineD(position, ObjectPos);
+                    RayD Intersector = new RayD(LineToTarget.To, -LineToTarget.Direction); //ray from target to radar ship
+                    if (LineToTarget.Length < range)
+                    {
+                        bool IsBlocked = false;
+                        double TargetRange = 0.0;
+                        double? RangeFromTarget = null;
+                        if ((entity is IMyCubeGrid) || (entity is IMyVoxelMap)) TargetRange = entity.WorldVolume.Radius * WorldVolumeMultiplier;
+                        else { }
+                        if ((ObjectPos - ShipPos).Length() > (ShipRange + TargetRange))
+                        {
+                            RangeFromTarget = Intersector.Intersects(GetShipSphere()); //get point on overall sphere of radar ship (=outside all blocks)
+                            if (RangeFromTarget.HasValue)
+                            {
+                                LineToTarget.From = Intersector.Position + Intersector.Direction * RangeFromTarget.Value;
+                            }
+                            LineToTarget.To -= LineToTarget.Direction * TargetRange;
+                            IsBlocked = MyAPIGateway.Entities.IsRaycastBlocked(LineToTarget.From, LineToTarget.To);
+                        }
+                        else
+                        {
+                        }
+                        if (IsBlocked) { } else foreach (var selector in selectors) selector.Examine(entity);
+                    }
+                    return false;
+                }
+               );
+         */
+        
+        /*
+            var ray = new RayD(view.Translation, view.Forward);
+            IMySlimBlock block = null;
+            List<Vector3I> hit = new List<Vector3I>();
+            
+            ents.Clear();
+            MyAPIGateway.Entities.GetEntities(ents,
+                                              delegate(IMyEntity ent)
+                                              {
+                                                  if(block != null)
+                                                      return false;
+                                                  
+                                                  if(ent is IMyCubeGrid)
+                                                  {
+                                                      var cast = ray.Intersects(ent.WorldVolume);
+                                                      
+                                                      if(cast.HasValue)
+                                                      {
+                                                          var grid = ent as IMyCubeGrid;
+                                                          var hitBlock = grid.RayCastBlocks(view.Translation, target);
+                                                          
+                                                          if(hitBlock.HasValue)
+                                                          {
+                                                              block = grid.GetCubeBlock(hitBlock.Value);
+                                                              return true;
+                                                          }
+                                                          
+                                                          hit.Clear();
+                                                          grid.RayCastCells(view.Translation, target, hit, null, false);
+                                                          
+                                                          if(hit.Count > 0)
+                                                          {
+                                                              MyAPIGateway.Utilities.ShowNotification("Hit count="+hit.Count+"; list="+String.Join(",", hit), 16, MyFontEnum.Green);
+                                                              block = grid.GetCubeBlock(hit[0]);
+                                                              return true;
+                                                          }
+                                                      }
+                                                  }
+                                                  
+                                                  return false;
+                                              });
+            
+            
+            MyAPIGateway.Utilities.ShowNotification("block="+block, 16, MyFontEnum.Red);
+            
+            if(trigger)
+            {
+                if(block != null)
+                {
+                    block.CubeGrid.ColorBlocks(block.Position, block.Position, color);
+                    MyAPIGateway.Utilities.ShowNotification("Painted!", 1000, MyFontEnum.Green);
+                }
+            }
+         */
+        /*
+            }
+            catch(Exception e)
+            {
+                Log.Error(e);
+            }
+            
+            return false;
+        }
+         */
