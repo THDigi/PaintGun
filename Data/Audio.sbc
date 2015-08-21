@@ -7,18 +7,14 @@
         <SubtypeId>WepPlayPaintGunSpray</SubtypeId>
       </Id>
       <Category>WEP_PLAY</Category>
-      <MaxDistance>45.0</MaxDistance>
-      <Volume>1.0</Volume>
-      <Loopable>true</Loopable>
+      <MaxDistance>35.0</MaxDistance>
+      <Volume>0.25</Volume>
+      <Loopable>false</Loopable>
+      <VolumeVariation>0</VolumeVariation>
+      <PitchVariation>100</PitchVariation>
       <Waves>
         <Wave Type="D3">
-          <Loop>Audio\ArcBlockAirVentExhaleLoop3d.xwm</Loop>
-          <End>Audio\ArcBlockAirVentExhaleEnd3d.xwm</End>
-<!--
-          <Start>Audio\ArcBlockAirVentExhaleStart3d.xwm</Start>
-          <Loop>Audio\ArcBlockAirVentExhaleLoop3d.xwm</Loop>
-          <End>Audio\ArcBlockAirVentExhaleEnd3d.xwm</End>
--->
+          <Start>Audio\PaintGunSpray.xwm</Start>
         </Wave>
       </Waves>
     </Sound>

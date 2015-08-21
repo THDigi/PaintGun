@@ -156,12 +156,19 @@ namespace Digi.PaintGun
         
         private const int TOOLSTATUS_TIMEOUT = 200;
         
-        private void SetToolStatus(string msg, MyFontEnum font, int aliveTime = TOOLSTATUS_TIMEOUT)
+        private void SetToolStatus(string text, MyFontEnum font, int aliveTime = TOOLSTATUS_TIMEOUT)
         {
-            toolStatus.Font = font;
-            toolStatus.Text = msg;
-            toolStatus.AliveTime = aliveTime;
-            toolStatus.Show();
+            if(toolStatus == null)
+            {
+                toolStatus = MyAPIGateway.Utilities.CreateNotification(text, aliveTime, font);
+            }
+            else
+            {
+                toolStatus.Font = font;
+                toolStatus.Text = text;
+                toolStatus.AliveTime = aliveTime;
+                toolStatus.Show();
+            }
         }
         
         private string ColorToString(Vector3 hsv)
@@ -182,12 +189,6 @@ namespace Digi.PaintGun
         public void DrawTool()
         {
             holdingTool = true;
-            
-            if(toolStatus == null)
-            {
-                toolStatus = MyAPIGateway.Utilities.CreateNotification("", 0, MyFontEnum.White);
-                toolStatus.Hide();
-            }
             
             prevCrosshairColor = Sandbox.Game.Gui.MyHud.Crosshair.Color;
             
@@ -297,6 +298,13 @@ namespace Digi.PaintGun
         
         private void PaintProcess(ref Vector3 blockColor, Vector3 color, float paintSpeed, string blockName)
         {
+            if(MyAPIGateway.Session.CreativeMode)
+            {
+                blockColor = color;
+                SetToolStatus("Painting " + blockName + "... done!", MyFontEnum.Blue);
+                return;
+            }
+            
             if(NearEqual(blockColor.X, color.X, 0.1f))
             {
                 paintSpeed *= PAINT_SPEED;
@@ -430,6 +438,10 @@ namespace Digi.PaintGun
                 pickColor = false;
                 SetToolStatus("Color picking cancelled.", MyFontEnum.DarkBlue, 1000);
             }
+            else if(toolStatus != null)
+            {
+                toolStatus.Hide();
+            }
             
             if(prevCrosshairColor != null)
             {
@@ -517,17 +529,9 @@ namespace Digi.PaintGun
                     
                     return;
                 }
-                else if(msg.Equals("cancel"))
-                {
-                    pickColor = false;
-                    
-                    MyAPIGateway.Utilities.ShowMessage(MOD_NAME, "Cancelled the picking color action.");
-                    return;
-                }
                 
                 MyAPIGateway.Utilities.ShowMessage(MOD_NAME, "Available commands:");
                 MyAPIGateway.Utilities.ShowMessage("/pg pick ", "pick a color from an existing block");
-                MyAPIGateway.Utilities.ShowMessage("/pg cancel ", "cancel the pick color action");
                 MyAPIGateway.Utilities.ShowMessage("/pg default <1~14> ", "picks one of the default colors");
                 MyAPIGateway.Utilities.ShowMessage("/pg rgb <0~255> <0~255> <0~255> ", "set the color using RGB format");
                 MyAPIGateway.Utilities.ShowMessage("/pg hsv <0-360> <-100~100> <-100~100>", "set the color using HSV format");

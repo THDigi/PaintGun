@@ -10,7 +10,7 @@
       <NoAmmoSoundName>HudUnable</NoAmmoSoundName>
       <DeviateShotAngle>15</DeviateShotAngle>
       <ReleaseTimeAfterFire>500</ReleaseTimeAfterFire>
-      <MuzzleFlashLifeSpan>0</MuzzleFlashLifeSpan>
+      <MuzzleFlashLifeSpan>-1</MuzzleFlashLifeSpan>
       <AmmoMagazines>
         <AmmoMagazine Subtype="PaintGunMag" />
       </AmmoMagazines>
@@ -159,136 +159,6 @@
       <LightGlareSize>0</LightGlareSize>
       <LightIntensityLower>0</LightIntensityLower>
       <LightIntensityUpper>0</LightIntensityUpper>
-
-<!--
-      <LeftHandOrientation>
-        <X>0.702163756</X>
-        <Y>-0.0834661648</Y>
-        <Z>-0.698015332</Z>
-        <W>-0.113022566</W>
-      </LeftHandOrientation>
-      <LeftHandPosition>
-        <X>-0.0563747548</X>
-        <Y>0.09395765</Y>
-        <Z>0.0130094308</Z>
-      </LeftHandPosition>
-      <RightHandOrientation>
-        <X>-0.4685293</X>
-        <Y>0.852034748</Y>
-        <Z>0.01644877</Z>
-        <W>0.232908949</W>
-      </RightHandOrientation>
-      <RightHandPosition>
-        <X>0.1517778</X>
-        <Y>0.09395765</Y>
-        <Z>0.198034748</Z>
-      </RightHandPosition>
-      <ItemOrientation>
-        <X>0.276587516</X>
-        <Y>0.05424375</Y>
-        <Z>0.116605371</Z>
-        <W>0.952344537</W>
-      </ItemOrientation>
-      <ItemPosition>
-        <X>0.1</X>
-        <Y>-0.233399391</Y>
-        <Z>-0.272847</Z>
-      </ItemPosition>
-      <ItemWalkingOrientation>
-        <X>0.276587516</X>
-        <Y>0.05424375</Y>
-        <Z>0.116605371</Z>
-        <W>0.952344537</W>
-      </ItemWalkingOrientation>
-      <ItemWalkingPosition>
-        <X>0.1</X>
-        <Y>-0.233399391</Y>
-        <Z>-0.272847</Z>
-      </ItemWalkingPosition>
-      <BlendTime>0.942201138</BlendTime>
-      <XAmplitudeOffset>0</XAmplitudeOffset>
-      <YAmplitudeOffset>0</YAmplitudeOffset>
-      <ZAmplitudeOffset>0</ZAmplitudeOffset>
-      <XAmplitudeScale>0.12491703</XAmplitudeScale>
-      <YAmplitudeScale>0.289282471</YAmplitudeScale>
-      <ZAmplitudeScale>0</ZAmplitudeScale>
-      <RunMultiplier>1.27547634</RunMultiplier>
-      <ItemWalkingOrientation3rd>
-        <X>0.122474618</X>
-        <Y>0.231690854</Y>
-        <Z>0.4901255</Z>
-        <W>0.831322</W>
-      </ItemWalkingOrientation3rd>
-      <ItemWalkingPosition3rd>
-        <X>0.0477015227</X>
-        <Y>-0.3188699</Y>
-        <Z>-0.305720657</Z>
-      </ItemWalkingPosition3rd>
-      <AmplitudeMultiplier3rd>1.0</AmplitudeMultiplier3rd>
-      <ItemOrientation3rd>
-        <X>0.122474618</X>
-        <Y>0.231690854</Y>
-        <Z>0.4901255</Z>
-        <W>0.831322</W>
-      </ItemOrientation3rd>
-      <ItemPosition3rd>
-        <X>0.0477015227</X>
-        <Y>-0.3188699</Y>
-        <Z>-0.305720657</Z>
-      </ItemPosition3rd>
-      <FingersAnimation>HoldingTool</FingersAnimation>
-      <ItemShootOrientation>
-        <X>0.276587516</X>
-        <Y>0.05424375</Y>
-        <Z>0.116605371</Z>
-        <W>0.952344537</W>
-      </ItemShootOrientation>
-      <ItemShootPosition>
-        <X>0.1</X>
-        <Y>-0.233399391</Y>
-        <Z>-0.272847</Z>
-      </ItemShootPosition>
-      <ItemShootOrientation3rd>
-        <X>0.122474618</X>
-        <Y>0.231690854</Y>
-        <Z>0.4901255</Z>
-        <W>0.831322</W>
-      </ItemShootOrientation3rd>
-      <ItemShootPosition3rd>
-        <X>0.0477015227</X>
-        <Y>-0.3188699</Y>
-        <Z>-0.305720657</Z>
-      </ItemShootPosition3rd>
-      <ShootBlend>1.0</ShootBlend>
-      <MuzzlePosition>
-        <X>0.0</X>
-        <Y>0.0</Y>
-        <Z>0.0</Z>
-      </MuzzlePosition>
-      <ShootScatter>
-        <X>0</X>
-        <Y>0</Y>
-        <Z>0</Z>
-      </ShootScatter>
-      <ScatterSpeed>0</ScatterSpeed>
-      <PhysicalItemId>
-        <TypeId>MyObjectBuilder_PhysicalGunObject</TypeId>
-        <SubtypeId>PhysicalPaintGun</SubtypeId>
-      </PhysicalItemId>
-      <LightColor>
-        <X>0</X>
-        <Y>0</Y>
-        <Z>0</Z>
-        <W>0</W>
-      </LightColor>
-      <LightFalloff>0</LightFalloff>
-      <LightRadius>0</LightRadius>
-      <LightGlareSize>0</LightGlareSize>
-      <LightIntensityLower>0</LightIntensityLower>
-      <LightIntensityUpper>0</LightIntensityUpper>
-      <ShakeAmountTarget>0</ShakeAmountTarget>
-      <ShakeAmountNoTarget>0</ShakeAmountNoTarget>
--->
     </HandItem>
   </HandItems>
 </Definitions>
