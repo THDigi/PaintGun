@@ -310,7 +310,7 @@ namespace Digi.PaintGun
                 return;
             }
             
-            if(NearEqual(blockColor.X, color.X, 0.1f))
+            if(NearEqual(blockColor.X, color.X, 0.05f))
             {
                 paintSpeed *= PAINT_SPEED;
                 paintSpeed *= MyAPIGateway.Session.WelderSpeedMultiplier;
