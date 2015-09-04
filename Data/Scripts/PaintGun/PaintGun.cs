@@ -48,6 +48,14 @@ namespace Digi.PaintGun
         public static Vector3 DEFAULT_COLOR = new Vector3(0, -1, 0);
         private static MyObjectBuilder_AmmoMagazine PAINT_MAG = new MyObjectBuilder_AmmoMagazine() { SubtypeName = PAINT_MAG_ID, ProjectilesCount = 1 };
         
+        private Color prevCrosshairColor;
+        private static Color CROSSHAIR_NO_TARGET = new Color(255, 0, 0);
+        private static Color CROSSHAIR_BAD_TARGET = new Color(255, 200, 0);
+        private static Color CROSSHAIR_TARGET = new Color(0, 255, 0);
+        private static Color CROSSHAIR_PAINTING = new Color(0, 255, 155);
+        
+        private const int TOOLSTATUS_TIMEOUT = 200;
+        
         private Vector3[] defaultColors = new Vector3[14];
         
         public void Init()
@@ -154,8 +162,6 @@ namespace Digi.PaintGun
             }
         }
         
-        private const int TOOLSTATUS_TIMEOUT = 200;
-        
         private void SetToolStatus(string text, MyFontEnum font, int aliveTime = TOOLSTATUS_TIMEOUT)
         {
             if(toolStatus == null)
@@ -194,12 +200,6 @@ namespace Digi.PaintGun
             
             SetToolStatus("Type /pg for Paint Gun options.", MyFontEnum.DarkBlue, 3000);
         }
-        
-        private Color prevCrosshairColor;
-        private static Color CROSSHAIR_NO_TARGET = new Color(255, 0, 0);
-        private static Color CROSSHAIR_BAD_TARGET = new Color(255, 200, 0);
-        private static Color CROSSHAIR_TARGET = new Color(0, 255, 0);
-        private static Color CROSSHAIR_PAINTING = new Color(0, 255, 155);
         
         private void SetCrosshairColor(Color color)
         {
@@ -250,6 +250,11 @@ namespace Digi.PaintGun
                 
                 if(block.HasDeformation || block.CurrentDamage > 0 || (block.FatBlock != null && !block.FatBlock.IsFunctional))
                 {
+                    if(block.CurrentDamage == 0 && block.FatBlock != null)
+                    {
+                        block.FatBlock.SetDamageEffect(false);
+                    }
+                    
                     SetCrosshairColor(CROSSHAIR_BAD_TARGET);
                     SetToolStatus("Paint target: " + blockName + "\n" + (block.HasDeformation || block.CurrentDamage > 0 ? "Block is damaged or deformed and can't be painted!" : "Block is not fully built and can't be painted!"), MyFontEnum.Red);
                     return false;
@@ -520,7 +525,7 @@ namespace Digi.PaintGun
                         }
                         else
                         {
-                            color = new Color((int)MathHelper.Clamp(values[0], 0, 255), (int)MathHelper.Clamp(values[1], 0, 255), (int)MathHelper.Clamp(values[2], 0, 255)).ColorToHSV();
+                            color = new Color((int)MathHelper.Clamp(values[0], 0, 255), (int)MathHelper.Clamp(values[1], 0, 255), (int)MathHelper.Clamp(values[2], 0, 255)).ColorToHSVDX11();
                         }
                         
                         SetBuildColor(color);
