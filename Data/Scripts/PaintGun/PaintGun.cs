@@ -391,7 +391,7 @@ namespace Digi.PaintGun
 		private IMySlimBlock GetTargetBlock(IMyCubeGrid grid, IMyEntity player)
 		{
 			var view = MyAPIGateway.Session.ControlledObject.GetHeadMatrix(false, true);
-			var rayFrom = view.Translation + view.Forward * 1;
+			var rayFrom = view.Translation + view.Forward * 1.5;
 			var rayTo = view.Translation + view.Forward * 5;
 			var blockPos = grid.RayCastBlocks(rayFrom, rayTo);
 			return (blockPos.HasValue ? grid.GetCubeBlock(blockPos.Value) : null);
