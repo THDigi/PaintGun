@@ -32,13 +32,13 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Sandbox.Common">
-      <HintPath>D:\Steam\SteamApps\common\SpaceEngineers\Bin\Sandbox.Common.dll</HintPath>
+      <HintPath>C:\Steam\SteamApps\common\SpaceEngineers\Bin\Sandbox.Common.dll</HintPath>
     </Reference>
     <Reference Include="Sandbox.Game">
-      <HintPath>D:\Steam\SteamApps\common\SpaceEngineers\Bin\Sandbox.Game.dll</HintPath>
+      <HintPath>C:\Steam\SteamApps\common\SpaceEngineers\Bin\Sandbox.Game.dll</HintPath>
     </Reference>
     <Reference Include="Sandbox.Graphics">
-      <HintPath>D:\Steam\SteamApps\common\SpaceEngineers\Bin\Sandbox.Graphics.dll</HintPath>
+      <HintPath>C:\Steam\SteamApps\common\SpaceEngineers\Bin\Sandbox.Graphics.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
@@ -49,16 +49,16 @@
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
     <Reference Include="VRage">
-      <HintPath>D:\Steam\SteamApps\common\SpaceEngineers\Bin\VRage.dll</HintPath>
+      <HintPath>C:\Steam\SteamApps\common\SpaceEngineers\Bin\VRage.dll</HintPath>
     </Reference>
     <Reference Include="VRage.Game">
-      <HintPath>D:\Steam\SteamApps\common\SpaceEngineers\Bin\VRage.Game.dll</HintPath>
+      <HintPath>C:\Steam\SteamApps\common\SpaceEngineers\Bin\VRage.Game.dll</HintPath>
     </Reference>
     <Reference Include="VRage.Library">
-      <HintPath>D:\Steam\SteamApps\common\SpaceEngineers\Bin\VRage.Library.dll</HintPath>
+      <HintPath>C:\Steam\SteamApps\common\SpaceEngineers\Bin\VRage.Library.dll</HintPath>
     </Reference>
     <Reference Include="VRage.Math">
-      <HintPath>D:\Steam\SteamApps\common\SpaceEngineers\Bin\VRage.Math.dll</HintPath>
+      <HintPath>C:\Steam\SteamApps\common\SpaceEngineers\Bin\VRage.Math.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
