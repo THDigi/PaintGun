@@ -1,4 +1,76 @@
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+			/*
+			var view = MyAPIGateway.Session.ControlledObject.GetHeadMatrix(true, true);
+			var maxRange = (MyAPIGateway.Session.CreativeMode ? 2 : 2);
+			var start = player.WorldAABB.Center + (view.Up * 0.6);
+			var target = player.WorldAABB.Center + (view.Forward * maxRange) + (view.Up * 0.6);
+			
+			List<Vector3I> hits = new List<Vector3I>();
+			grid.RayCastCells(start, target, hits, null, false);
+			IMySlimBlock block;
+			
+			foreach(var hit in hits)
+			{
+				block = grid.GetCubeBlock(hit);
+				
+				if(block != null)
+					return block;
+			}
+			
+			return null;
+			
+			/*
+            Vector3D targetPos = Vector3D.Transform(target, grid.WorldMatrixNormalizedInv) / grid.GridSize;
+            Vector3I pos;
+            grid.FixTargetCube(out pos, targetPos);
+            return grid.GetCubeBlock(pos);
+            
+            /*
+            List<Vector3I> hits = new List<Vector3I>();
+            grid.RayCastCells(start, target, hits, null, true);
+            IMySlimBlock block;
+            
+            foreach(var hit in hits)
+            {
+                block = grid.GetCubeBlock(hit);
+                
+                if(block != null)
+                    return block;
+            }
+            
+            return null;
+            
+            /*
+            var pos = grid.RayCastBlocks(player.WorldAABB.Center, target);
+            MyAPIGateway.Utilities.ShowNotification("aimat="+(pos.HasValue ? pos.Value.ToString() : "null"), 160, MyFontEnum.Green);
+            
+            List<Vector3I> hit = new List<Vector3I>();
+            grid.RayCastCells(player.WorldAABB.Center, target, hit, null, true);
+            MyAPIGateway.Utilities.ShowNotification("hit count="+hit.Count+String.Join("\n", hit), 160, MyFontEnum.Green);
+            
+            return pos.HasValue ? grid.GetCubeBlock(pos.Value) : null;
+            
+            /*
+            var pos = grid.RayCastBlocks(player.WorldAABB.Center, target);
+            return pos.HasValue ? grid.GetCubeBlock(pos.Value) : null;
+			 */
         
         
         
