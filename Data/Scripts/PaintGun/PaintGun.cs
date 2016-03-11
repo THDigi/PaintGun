@@ -18,10 +18,13 @@ using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Gui;
 using VRage.Common.Utils;
+using VRage.Game;
+using VRage.Game.Entity;
+using VRage.Game.Gui;
 using VRageMath;
 using VRage;
 using VRage.ObjectBuilders;
-using VRage.Components;
+using VRage.Game.Components;
 using VRage.ModAPI;
 using VRage.Utils;
 using Digi.Utils;
@@ -41,6 +44,7 @@ namespace Digi.PaintGun
         private int skipUpdates;
         private long lastShotTime = 0;
         private IMyHudNotification toolStatus;
+        private IMyEntity toolEnt = null;
         
         public const string MOD_NAME = "PaintGun";
         public const string PAINT_GUN_ID = "PaintGun";
@@ -51,13 +55,14 @@ namespace Digi.PaintGun
         public static Vector3 DEFAULT_COLOR = new Vector3(0, -1, 0);
         private static MyObjectBuilder_AmmoMagazine PAINT_MAG = new MyObjectBuilder_AmmoMagazine() { SubtypeName = PAINT_MAG_ID, ProjectilesCount = 1 };
         
-        private Color prevCrosshairColor;
         private static Color CROSSHAIR_NO_TARGET = new Color(255, 0, 0);
         private static Color CROSSHAIR_BAD_TARGET = new Color(255, 200, 0);
         private static Color CROSSHAIR_TARGET = new Color(0, 255, 0);
         private static Color CROSSHAIR_PAINTING = new Color(0, 255, 155);
         
         private const int TOOLSTATUS_TIMEOUT = 200;
+        
+        public static readonly MyStringId CROSSHAIR_SPRITEID = MyStringId.GetOrCompute("Default");
         
         private Vector3[] defaultColors = new Vector3[14];
         
@@ -124,8 +129,13 @@ namespace Digi.PaintGun
                         {
                             if(!holdingTool)
                             {
-                                DrawTool();
+                                DrawTool(tool.EntityId);
                                 lastShotTime = tool.GunBase.LastShootTime;
+                            }
+                            
+                            if(!pickColor && MyAPIGateway.Input.IsAnyShiftKeyPressed() && MyAPIGateway.Input.GetGameControl(MyControlsSpace.LANDING_GEAR).IsPressed())
+                            {
+                                pickColor = true;
                             }
                             
                             if(++skipUpdates >= SKIP_UPDATES)
@@ -208,19 +218,24 @@ namespace Digi.PaintGun
             return (NearEqual(val1.X, val2.X, epsilon) && NearEqual(val1.Y, val2.Y, epsilon) && NearEqual(val1.Z, val2.Z, epsilon));
         }
         
-        public void DrawTool()
+        public void DrawTool(long entityId)
         {
             holdingTool = true;
             
-            prevCrosshairColor = Sandbox.Game.Gui.MyHud.Crosshair.Color;
+            if(MyAPIGateway.Entities.TryGetEntityById(entityId, out toolEnt))
+            {
+                RenderWorkaround.SetEmissiveParts(toolEnt.Render.RenderObjectIDs[0], 0, HSVtoRGB(GetBuildColor()), Color.White);
+            }
             
             SetToolStatus("Type /pg for Paint Gun options.", MyFontEnum.DarkBlue, 3000);
         }
         
-        private void SetCrosshairColor(Color color)
+        private void SetCrosshairColor(Color? color)
         {
-            if(Sandbox.Game.Gui.MyHud.Crosshair.Color != color)
-                Sandbox.Game.Gui.MyHud.Crosshair.Color = color;
+            if(color.HasValue)
+                MyHud.Crosshair.AddTemporarySprite(MyHudTexturesEnum.crosshair, CROSSHAIR_SPRITEID, 1000, 500, color.Value, 0.02f);
+            else
+                MyHud.Crosshair.ResetToDefault(true);
         }
         
         private Vector3 GetBuildColor()
@@ -231,6 +246,11 @@ namespace Digi.PaintGun
         private void SetBuildColor(Vector3 color)
         {
             customColor = color;
+            
+            if(toolEnt != null)
+            {
+                RenderWorkaround.SetEmissiveParts(toolEnt.Render.RenderObjectIDs[0], 0, HSVtoRGB(color), Color.White);
+            }
         }
         
         private bool IsBlockValid(IMySlimBlock block, Vector3 color, bool trigger, out string blockName, out Vector3 blockColor)
@@ -253,11 +273,17 @@ namespace Digi.PaintGun
                     if(trigger)
                     {
                         pickColor = false;
-                        SetBuildColor(block.GetColorMask());
+                        SetBuildColor(blockColor);
                         SetToolStatus("COLOR PICK MODE:\nColor picked from " + blockName + ".", MyFontEnum.Green);
                     }
                     else
                     {
+                        var c = HSVtoRGB(blockColor);
+                        
+                        if(toolEnt != null)
+                            RenderWorkaround.SetEmissiveParts(toolEnt.Render.RenderObjectIDs[0], 0, c, Color.White);
+                        
+                        SetCrosshairColor(c);
                         SetToolStatus("COLOR PICK MODE:\n" + blockName + "'s color is "+ColorToString(block.GetColorMask())+"\nClick to pick this color.", MyFontEnum.Blue);
                     }
                     
@@ -465,10 +491,7 @@ namespace Digi.PaintGun
                 toolStatus.Hide();
             }
             
-            if(prevCrosshairColor != null)
-            {
-                SetCrosshairColor(prevCrosshairColor);
-            }
+            SetCrosshairColor(null);
         }
         
         public void MessageEntered(string msg, ref bool send)
@@ -553,11 +576,25 @@ namespace Digi.PaintGun
                 }
                 
                 MyAPIGateway.Utilities.ShowMessage(MOD_NAME, "Available commands:");
-                MyAPIGateway.Utilities.ShowMessage("/pg pick ", "pick a color from an existing block");
+                MyAPIGateway.Utilities.ShowMessage("/pg pick ", "pick a color from an existing block (alias: Shift+ColorMenu)");
                 MyAPIGateway.Utilities.ShowMessage("/pg default <1~14> ", "picks one of the default colors");
                 MyAPIGateway.Utilities.ShowMessage("/pg rgb <0~255> <0~255> <0~255> ", "set the color using RGB format");
                 MyAPIGateway.Utilities.ShowMessage("/pg hsv <0-360> <-100~100> <-100~100>", "set the color using HSV format");
             }
+        }
+        
+        private Color HSVtoRGB(Vector3 hsv)
+        {
+            // from the game code... weird values.
+            return new Vector3(hsv.X, MathHelper.Clamp(hsv.Y + 0.8f, 0f, 1f), MathHelper.Clamp(hsv.Z + 0.55f, 0f, 1f)).HSVtoColor();
+        }
+    }
+    
+    public class RenderWorkaround : MyCubeBlock
+    {
+        public static void SetEmissiveParts(uint renderObjectId, float emissivity, Color emissivePartColor, Color displayPartColor)
+        {
+            UpdateEmissiveParts(renderObjectId, emissivity, emissivePartColor, displayPartColor);
         }
     }
 }

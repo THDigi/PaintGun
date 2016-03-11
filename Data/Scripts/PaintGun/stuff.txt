@@ -16,6 +16,144 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+            /*
+            double V = ((hsv.Z + 1) / 2.0) * 255;
+            
+            if(V <= 0)
+                return Color.Black;
+            
+            int v = Convert.ToInt32(V);
+            double S = hsv.Y + 1; // 0 to 2 because 1 looks the same as 2 in-game... no idea wtf
+            
+            if(S <= 0)
+                return new Color(v, v, v);
+            
+            double H = (hsv.X * 360);
+            double fH = Math.Floor(H / 60);
+            double f = H / 60 - fH;
+            int hi = Convert.ToInt32(fH) % 6;
+            
+            int p = Convert.ToInt32(V * (1 - S));
+            int q = Convert.ToInt32(V * (1 - f * S));
+            int t = Convert.ToInt32(V * (1 - (1 - f) * S));
+            
+            switch(hi)
+            {
+                    case 0: return new Color(v, t, p);
+                    case 1: return new Color(q, v, p);
+                    case 2: return new Color(p, v, t);
+                    case 3: return new Color(p, q, v);
+                    case 4: return new Color(t, p, v);
+                    default: return new Color(v, p, q);
+            }
+            
+            //float H = hsv.X;
+            //float S = (hsv.Y + 1) / 2.0f;
+            //float V = (hsv.Z + 1) / 2.0f;
+            //float V = Math.Abs(H * 6f - 3f) - 1f;
+            //float value2 = 2f - Math.Abs(H * 6f - 2f);
+            //float value3 = 2f - Math.Abs(H * 6f - 4f);
+            //return new Color(MathHelper.Clamp(V * 255 * S * V, 0, 255), MathHelper.Clamp(value2 * 255 * S * V, 0, 255), MathHelper.Clamp(value3 * 255 * S * V, 0, 255));
+            
+            /*
+            double H = hsv.X * 360.0f;
+            double S = hsv.Y + 1;
+            double V = (hsv.Z + 1f) / 2.0f;
+            //while (H < 0) { H += 360; };
+            //while (H >= 360) { H -= 360; };
+            double R, G, B;
+            if (V <= 0)
+            {
+                R = G = B = 0;
+            }
+            else if (S <= 0)
+            {
+                R = G = B = V;
+            }
+            else
+            {
+                double hf = H / 60.0;
+                int i = (int)Math.Floor(hf);
+                double f = hf - i;
+                double pv = V * (1 - S);
+                double qv = V * (1 - S * f);
+                double tv = V * (1 - S * (1 - f));
+                switch (i)
+                {
+                    case 0:
+                        R = V;
+                        G = tv;
+                        B = pv;
+                        break;
+                    case 1:
+                        R = qv;
+                        G = V;
+                        B = pv;
+                        break;
+                    case 2:
+                        R = pv;
+                        G = V;
+                        B = tv;
+                        break;
+                    case 3:
+                        R = pv;
+                        G = qv;
+                        B = V;
+                        break;
+                    case 4:
+                        R = tv;
+                        G = pv;
+                        B = V;
+                        break;
+                    case 5:
+                        R = V;
+                        G = pv;
+                        B = qv;
+                        break;
+                    case 6:
+                        R = V;
+                        G = tv;
+                        B = pv;
+                        break;
+                    case -1:
+                        R = V;
+                        G = pv;
+                        B = qv;
+                        break;
+                    default:
+                        R = G = B = V;
+                        break;
+                }
+            }
+            
+            return new Color(MathHelper.Clamp((int)(R * 255.0), 0, 255), MathHelper.Clamp((int)(G * 255.0), 0, 255), MathHelper.Clamp((int)(B * 255.0), 0, 255));
+             */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 			/*
 			var view = MyAPIGateway.Session.ControlledObject.GetHeadMatrix(true, true);
 			var maxRange = (MyAPIGateway.Session.CreativeMode ? 2 : 2);
