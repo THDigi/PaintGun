@@ -55,6 +55,10 @@ namespace Digi.PaintGun
         public static Vector3 DEFAULT_COLOR = new Vector3(0, -1, 0);
         private static MyObjectBuilder_AmmoMagazine PAINT_MAG = new MyObjectBuilder_AmmoMagazine() { SubtypeName = PAINT_MAG_ID, ProjectilesCount = 1 };
         
+        public const ushort PACKET_AMMO = 9318;
+        public static readonly Encoding encode = Encoding.Unicode;
+        public const char SEPARATOR = ' ';
+        
         private static Color CROSSHAIR_NO_TARGET = new Color(255, 0, 0);
         private static Color CROSSHAIR_BAD_TARGET = new Color(255, 200, 0);
         private static Color CROSSHAIR_TARGET = new Color(0, 255, 0);
@@ -72,25 +76,31 @@ namespace Digi.PaintGun
             isThisHost = MyAPIGateway.Session.OnlineMode == MyOnlineModeEnum.OFFLINE || MyAPIGateway.Multiplayer.IsServer;
             isThisHostDedicated = (MyAPIGateway.Utilities.IsDedicated && isThisHost);
             
-            if(isThisHostDedicated)
-                return;
-            
+            Log.Init();
             Log.Info("Initialized");
             
-            MyAPIGateway.Utilities.MessageEntered += MessageEntered;
-            
-            // snatched from MyPlayer.InitDefaultColors()
-            defaultColors[0] = MyRenderComponentBase.OldGrayToHSV;
-            defaultColors[1] = MyRenderComponentBase.OldRedToHSV;
-            defaultColors[2] = MyRenderComponentBase.OldGreenToHSV;
-            defaultColors[3] = MyRenderComponentBase.OldBlueToHSV;
-            defaultColors[4] = MyRenderComponentBase.OldYellowToHSV;
-            defaultColors[5] = MyRenderComponentBase.OldWhiteToHSV;
-            defaultColors[6] = MyRenderComponentBase.OldBlackToHSV;
-            
-            for (int i = 7; i < defaultColors.Length; ++i)
+            if(MyAPIGateway.Multiplayer.IsServer)
             {
-                defaultColors[i] = (defaultColors[i - 7] + new Vector3(0, 0.15f, 0.2f));
+                MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_AMMO, ReceivedAmmoMessage);
+            }
+            
+            if(!isThisHostDedicated)
+            {
+                MyAPIGateway.Utilities.MessageEntered += MessageEntered;
+                
+                // snatched from MyPlayer.InitDefaultColors()
+                defaultColors[0] = MyRenderComponentBase.OldGrayToHSV;
+                defaultColors[1] = MyRenderComponentBase.OldRedToHSV;
+                defaultColors[2] = MyRenderComponentBase.OldGreenToHSV;
+                defaultColors[3] = MyRenderComponentBase.OldBlueToHSV;
+                defaultColors[4] = MyRenderComponentBase.OldYellowToHSV;
+                defaultColors[5] = MyRenderComponentBase.OldWhiteToHSV;
+                defaultColors[6] = MyRenderComponentBase.OldBlackToHSV;
+                
+                for (int i = 7; i < defaultColors.Length; ++i)
+                {
+                    defaultColors[i] = (defaultColors[i - 7] + new Vector3(0, 0.15f, 0.2f));
+                }
             }
         }
         
@@ -98,10 +108,59 @@ namespace Digi.PaintGun
         {
             init = false;
             
-            MyAPIGateway.Utilities.MessageEntered -= MessageEntered;
+            if(!isThisHostDedicated)
+            {
+                MyAPIGateway.Utilities.MessageEntered -= MessageEntered;
+            }
+            
+            if(MyAPIGateway.Multiplayer.IsServer)
+            {
+                MyAPIGateway.Multiplayer.UnregisterMessageHandler(PACKET_AMMO, ReceivedAmmoMessage);
+            }
             
             Log.Info("Mod unloaded");
             Log.Close();
+        }
+        
+        public void SendAmmoMessage(long entId, int type)
+        {
+            try
+            {
+                var bytes = encode.GetBytes(entId.ToString()+SEPARATOR+type);
+                MyAPIGateway.Multiplayer.SendMessageToServer(PACKET_AMMO, bytes, true);
+            }
+            catch(Exception e)
+            {
+                Log.Error(e);
+            }
+        }
+        
+        public void ReceivedAmmoMessage(byte[] bytes)
+        {
+            try
+            {
+                string[] data = encode.GetString(bytes).Split(SEPARATOR);
+                long entId = long.Parse(data[0]);
+                int type = int.Parse(data[1]);
+                
+                if(MyAPIGateway.Entities.EntityExists(entId))
+                {
+                    var ent = MyAPIGateway.Entities.GetEntityById(entId) as MyEntity;
+                    var inv = ent.GetInventory(0) as IMyInventory;
+                    
+                    if(inv != null)
+                    {
+                        if(type == 1)
+                            inv.AddItems((MyFixedPoint)1, PAINT_MAG);
+                        else
+                            inv.RemoveItemsOfType((MyFixedPoint)1, PAINT_MAG, false);
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+                Log.Error(e);
+            }
         }
         
         public override void UpdateAfterSimulation()
@@ -147,11 +206,18 @@ namespace Digi.PaintGun
                                 // expend the ammo manually when painting
                                 if(painted && !MyAPIGateway.Session.CreativeMode)
                                 {
-                                    MyInventory inv;
-                                    
-                                    if((player as MyEntity).TryGetInventory(out inv))
+                                    if(MyAPIGateway.Multiplayer.IsServer)
                                     {
-                                        inv.RemoveItemsOfType((MyFixedPoint)1, PAINT_MAG, false);
+                                        var inv = (player as MyEntity).GetInventory(0) as IMyInventory;
+                                        
+                                        if(inv != null)
+                                        {
+                                            inv.AddItems((MyFixedPoint)1, PAINT_MAG);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        SendAmmoMessage(player.EntityId, 0);
                                     }
                                 }
                             }
@@ -163,11 +229,18 @@ namespace Digi.PaintGun
                                 
                                 if(!MyAPIGateway.Session.CreativeMode)
                                 {
-                                    MyInventory inv;
-                                    
-                                    if((player as MyEntity).TryGetInventory(out inv))
+                                    if(MyAPIGateway.Multiplayer.IsServer)
                                     {
-                                        inv.AddItems((MyFixedPoint)1, PAINT_MAG);
+                                        var inv = (player as MyEntity).GetInventory(0) as IMyInventory;
+                                        
+                                        if(inv != null)
+                                        {
+                                            inv.RemoveItemsOfType((MyFixedPoint)1, PAINT_MAG, false);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        SendAmmoMessage(player.EntityId, 1);
                                     }
                                 }
                             }
@@ -340,7 +413,7 @@ namespace Digi.PaintGun
             if(MyAPIGateway.Session.CreativeMode)
             {
                 blockColor = color;
-                SetToolStatus("Painting " + blockName + "... done!", MyFontEnum.Blue);
+                SetToolStatus("Painted " + blockName, MyFontEnum.Blue);
                 return;
             }
             
@@ -442,6 +515,8 @@ namespace Digi.PaintGun
                     {
                         SetToolStatus("No ship target for painting.", MyFontEnum.Red);
                     }
+                    
+                    return false;
                 }
                 else
                 {
