@@ -6,21 +6,20 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using Sandbox.Common;
-using Sandbox.Common.Components;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Definitions;
 using Sandbox.Engine;
 using Sandbox.Engine.Physics;
 using Sandbox.Engine.Multiplayer;
-using Sandbox.ModAPI;
-using Sandbox.ModAPI.Interfaces;
 using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Gui;
+using Sandbox.ModAPI;
 using VRage.Common.Utils;
 using VRage.Game;
 using VRage.Game.Entity;
-using VRage.Game.Gui;
+using VRage.Game.ModAPI;
+using VRage.Input;
 using VRageMath;
 using VRage;
 using VRage.ObjectBuilders;
@@ -31,645 +30,336 @@ using Digi.Utils;
 
 namespace Digi.PaintGun
 {
-    [MySessionComponentDescriptor(MyUpdateOrder.AfterSimulation)]
-    public class PaintGun : MySessionComponentBase
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_AutomaticRifle), Mod.PAINT_GUN_ID)]
+    public class PaintGun : MyGameLogicComponent
     {
-        public static bool init { get; private set; }
-        public static bool isThisHost { get; private set; }
-        public static bool isThisHostDedicated { get; private set; }
+        public class Particle
+        {
+            public Color color;
+            public Vector3 relativePosition;
+            public Vector3 velocity;
+            public Vector3 playerVelocity;
+            public short life;
+            public float radius;
+            public float angle;
+            
+            public Particle() { }
+        }
         
-        public Vector3 customColor = DEFAULT_COLOR;
-        public bool holdingTool = false;
-        public bool pickColor = false;
-        private int skipUpdates;
+        public ulong heldById = 0;
+        public bool heldByLocalPlayer = false;
+        public long lastPickTime = 0;
+        private Vector3 color = Mod.DEFAULT_COLOR;
+        
+        private bool first = true;
+        private byte skip = 0;
         private long lastShotTime = 0;
-        private IMyHudNotification toolStatus;
-        private IMyEntity toolEnt = null;
+        private MyEntity3DSoundEmitter soundEmitter;
+        public List<Particle> particles = new List<Particle>(20);
         
-        public const string MOD_NAME = "PaintGun";
-        public const string PAINT_GUN_ID = "PaintGun";
-        public const string PAINT_MAG_ID = "PaintGunMag";
-        public const float PAINT_SPEED = 1.0f;
-        public const float DEPAINT_SPEED = 1.5f;
-        public const int SKIP_UPDATES = 10;
-        public static Vector3 DEFAULT_COLOR = new Vector3(0, -1, 0);
-        private static MyObjectBuilder_AmmoMagazine PAINT_MAG = new MyObjectBuilder_AmmoMagazine() { SubtypeName = PAINT_MAG_ID, ProjectilesCount = 1 };
+        public static Random rand = new Random();
         
-        public const ushort PACKET_AMMO = 9318;
-        public static readonly Encoding encode = Encoding.Unicode;
-        public const char SEPARATOR = ' ';
+        private const int SKIP_UPDATES = 10;
+        private const long DELAY_SHOOT = (TimeSpan.TicksPerMillisecond * 200);
+        private const long DELAY_POST_PICKCOLOR = (TimeSpan.TicksPerMillisecond * 600);
+        private readonly MySoundPair soundPair = new MySoundPair("BlockAirVentExhale");
+        private static List<IMyPlayer> players = new List<IMyPlayer>(0);
+        private const int PARTICLE_MAX_DISTANCE_SQ = 1000*1000;
         
-        private static Color CROSSHAIR_NO_TARGET = new Color(255, 0, 0);
-        private static Color CROSSHAIR_BAD_TARGET = new Color(255, 200, 0);
-        private static Color CROSSHAIR_TARGET = new Color(0, 255, 0);
-        private static Color CROSSHAIR_PAINTING = new Color(0, 255, 155);
+        private Mod mod = null;
         
-        private const int TOOLSTATUS_TIMEOUT = 200;
-        
-        public static readonly MyStringId CROSSHAIR_SPRITEID = MyStringId.GetOrCompute("Default");
-        
-        private Vector3[] defaultColors = new Vector3[14];
-        
-        public void Init()
+        public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
-            init = true;
-            isThisHost = MyAPIGateway.Session.OnlineMode == MyOnlineModeEnum.OFFLINE || MyAPIGateway.Multiplayer.IsServer;
-            isThisHostDedicated = (MyAPIGateway.Utilities.IsDedicated && isThisHost);
+            Entity.NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+        }
+        
+        public void FirstUpdate()
+        {
+            var tool = Entity.GetObjectBuilder(false) as MyObjectBuilder_AutomaticRifle;
+            lastShotTime = tool.GunBase.LastShootTime;
             
-            Log.Init();
-            Log.Info("Initialized");
-            
-            if(MyAPIGateway.Multiplayer.IsServer)
+            if(MyAPIGateway.Session.ControlledObject is IMyCharacter)
             {
-                MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_AMMO, ReceivedAmmoMessage);
-            }
-            
-            if(!isThisHostDedicated)
-            {
-                MyAPIGateway.Utilities.MessageEntered += MessageEntered;
+                var playerEnt = MyAPIGateway.Session.ControlledObject.Entity;
+                var charObj = playerEnt.GetObjectBuilder(false) as MyObjectBuilder_Character;
                 
-                // snatched from MyPlayer.InitDefaultColors()
-                defaultColors[0] = MyRenderComponentBase.OldGrayToHSV;
-                defaultColors[1] = MyRenderComponentBase.OldRedToHSV;
-                defaultColors[2] = MyRenderComponentBase.OldGreenToHSV;
-                defaultColors[3] = MyRenderComponentBase.OldBlueToHSV;
-                defaultColors[4] = MyRenderComponentBase.OldYellowToHSV;
-                defaultColors[5] = MyRenderComponentBase.OldWhiteToHSV;
-                defaultColors[6] = MyRenderComponentBase.OldBlackToHSV;
-                
-                for (int i = 7; i < defaultColors.Length; ++i)
+                if(charObj.HandWeapon != null && charObj.HandWeapon.EntityId == Entity.EntityId)
                 {
-                    defaultColors[i] = (defaultColors[i - 7] + new Vector3(0, 0.15f, 0.2f));
-                }
-            }
-        }
-        
-        protected override void UnloadData()
-        {
-            init = false;
-            
-            if(!isThisHostDedicated)
-            {
-                MyAPIGateway.Utilities.MessageEntered -= MessageEntered;
-            }
-            
-            if(MyAPIGateway.Multiplayer.IsServer)
-            {
-                MyAPIGateway.Multiplayer.UnregisterMessageHandler(PACKET_AMMO, ReceivedAmmoMessage);
-            }
-            
-            Log.Info("Mod unloaded");
-            Log.Close();
-        }
-        
-        public void SendAmmoMessage(long entId, int type)
-        {
-            try
-            {
-                var bytes = encode.GetBytes(entId.ToString()+SEPARATOR+type);
-                MyAPIGateway.Multiplayer.SendMessageToServer(PACKET_AMMO, bytes, true);
-            }
-            catch(Exception e)
-            {
-                Log.Error(e);
-            }
-        }
-        
-        public void ReceivedAmmoMessage(byte[] bytes)
-        {
-            try
-            {
-                string[] data = encode.GetString(bytes).Split(SEPARATOR);
-                long entId = long.Parse(data[0]);
-                int type = int.Parse(data[1]);
-                
-                if(MyAPIGateway.Entities.EntityExists(entId))
-                {
-                    var ent = MyAPIGateway.Entities.GetEntityById(entId) as MyEntity;
-                    var inv = ent.GetInventory(0) as IMyInventory;
+                    heldById = MyAPIGateway.Multiplayer.MyId;
+                    heldByLocalPlayer = true;
                     
-                    if(inv != null)
-                    {
-                        if(type == 1)
-                            inv.AddItems((MyFixedPoint)1, PAINT_MAG);
-                        else
-                            inv.RemoveItemsOfType((MyFixedPoint)1, PAINT_MAG, false);
-                    }
+                    //PaintGunMod.SetToolStatus("Type /pg for Paint Gun options.", MyFontEnum.DarkBlue, 3000);
                 }
             }
-            catch(Exception e)
+            
+            if(heldById == 0)
             {
-                Log.Error(e);
+                long skipEntId = (MyAPIGateway.Session.ControlledObject is IMyCharacter ? MyAPIGateway.Session.ControlledObject.Entity.EntityId : -1);
+                MyAPIGateway.Players.GetPlayers(players, delegate(IMyPlayer p)
+                                                {
+                                                    if(heldById == 0 && p.Controller != null && p.Controller.ControlledEntity is IMyCharacter)
+                                                    {
+                                                        var charEnt = p.Controller.ControlledEntity.Entity;
+                                                        
+                                                        if(skipEntId != charEnt.EntityId) // skip local character entity
+                                                        {
+                                                            var charObj = charEnt.GetObjectBuilder(false) as MyObjectBuilder_Character;
+                                                            
+                                                            if(charObj != null && charObj.HandWeapon != null && charObj.HandWeapon.EntityId == Entity.EntityId)
+                                                            {
+                                                                heldById = p.SteamUserId;
+                                                            }
+                                                        }
+                                                    }
+                                                    
+                                                    return false; // no need to add anything to the list.
+                                                });
             }
+            
+            if(heldById == 0)
+            {
+                Log.Info("ERROR: Can't find holder of a paint gun entity."); // silent error
+                MyAPIGateway.Utilities.ShowNotification("Can't find holder of paint gun entity, please report the circumstances!", 10000, MyFontEnum.Red);
+                return;
+            }
+            
+            if(mod.holdingTools.ContainsKey(heldById))
+                mod.holdingTools[heldById] = Entity;
+            else
+                mod.holdingTools.Add(heldById, Entity);
+            
+            SetToolColor(mod.playerColors.GetValueOrDefault(heldById, Mod.DEFAULT_COLOR));
+            
+            if(soundEmitter == null)
+            {
+                soundEmitter = new MyEntity3DSoundEmitter(Entity as MyEntity);
+                soundEmitter.CustomMaxDistance = 30f;
+                soundEmitter.CustomVolume = mod.settings.spraySoundVolume;
+            }
+        }
+        
+        public void SetToolColor(Vector3 color)
+        {
+            this.color = color;
+            RenderWorkaround.SetEmissiveParts(Entity.Render.RenderObjectIDs[0], 0, Mod.HSVtoRGB(color), Color.White);
         }
         
         public override void UpdateAfterSimulation()
         {
             try
             {
-                if(!init)
+                if(first)
                 {
-                    if(MyAPIGateway.Session == null)
+                    if(mod == null)
+                    {
+                        mod = Mod.instance;
+                        return;
+                    }
+                    
+                    if(!mod.init || mod.settings == null)
                         return;
                     
-                    Init();
+                    first = false;
+                    FirstUpdate();
                 }
                 
-                if(!isThisHostDedicated && MyAPIGateway.Session.Player != null && MyAPIGateway.Session.Player.Controller != null && MyAPIGateway.Session.Player.Controller.ControlledEntity != null && MyAPIGateway.Session.Player.Controller.ControlledEntity.Entity != null)
-                {
-                    var player = MyAPIGateway.Session.Player.Controller.ControlledEntity.Entity;
-                    
-                    if(player is IMyCharacter)
-                    {
-                        var character = player.GetObjectBuilder(false) as MyObjectBuilder_Character;
-                        var tool = character.HandWeapon as MyObjectBuilder_AutomaticRifle;
-                        
-                        if(tool != null && tool.SubtypeName == PAINT_GUN_ID)
-                        {
-                            if(!holdingTool)
-                            {
-                                DrawTool(tool.EntityId);
-                                lastShotTime = tool.GunBase.LastShootTime;
-                            }
-                            
-                            if(!pickColor && MyAPIGateway.Input.IsAnyShiftKeyPressed() && MyAPIGateway.Input.GetGameControl(MyControlsSpace.LANDING_GEAR).IsPressed())
-                            {
-                                pickColor = true;
-                            }
-                            
-                            if(++skipUpdates >= SKIP_UPDATES)
-                            {
-                                skipUpdates = 0;
-                                bool trigger = tool.GunBase.LastShootTime + (TimeSpan.TicksPerMillisecond * 200) > DateTime.UtcNow.Ticks;
-                                bool painted = HoldingTool(trigger);
-                                
-                                // expend the ammo manually when painting
-                                if(painted && !MyAPIGateway.Session.CreativeMode)
-                                {
-                                    if(MyAPIGateway.Multiplayer.IsServer)
-                                    {
-                                        var inv = (player as MyEntity).GetInventory(0) as IMyInventory;
-                                        
-                                        if(inv != null)
-                                        {
-                                            inv.AddItems((MyFixedPoint)1, PAINT_MAG);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        SendAmmoMessage(player.EntityId, 0);
-                                    }
-                                }
-                            }
-                            
-                            // always add the shot ammo back
-                            if(tool.GunBase.LastShootTime > lastShotTime)
-                            {
-                                lastShotTime = tool.GunBase.LastShootTime;
-                                
-                                if(!MyAPIGateway.Session.CreativeMode)
-                                {
-                                    if(MyAPIGateway.Multiplayer.IsServer)
-                                    {
-                                        var inv = (player as MyEntity).GetInventory(0) as IMyInventory;
-                                        
-                                        if(inv != null)
-                                        {
-                                            inv.RemoveItemsOfType((MyFixedPoint)1, PAINT_MAG, false);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        SendAmmoMessage(player.EntityId, 1);
-                                    }
-                                }
-                            }
-                            
-                            return;
-                        }
-                    }
-                }
+                if(mod.isThisHostDedicated || heldById == 0)
+                    return;
                 
-                if(holdingTool)
-                {
-                    HolsterTool();
-                }
-            }
-            catch(Exception e)
-            {
-                Log.Error(e);
-            }
-        }
-        
-        private void SetToolStatus(string text, MyFontEnum font, int aliveTime = TOOLSTATUS_TIMEOUT)
-        {
-            if(toolStatus == null)
-            {
-                toolStatus = MyAPIGateway.Utilities.CreateNotification(text, aliveTime, font);
-            }
-            else
-            {
-                toolStatus.Font = font;
-                toolStatus.Text = text;
-                toolStatus.AliveTime = aliveTime;
-                toolStatus.Show();
-            }
-        }
-        
-        private string ColorToString(Vector3 hsv)
-        {
-            return "Hue: " + (hsv.X * 360) + "*, saturation: " + (hsv.Y * 100) + ", value: " + (hsv.Z * 100);
-        }
-        
-        private bool NearEqual(float val1, float val2, float epsilon = 0.01f)
-        {
-            return Math.Abs(val1 - val2) < epsilon;
-        }
-        
-        private bool NearEqual(Vector3 val1, Vector3 val2, float epsilon = 0.01f)
-        {
-            return (NearEqual(val1.X, val2.X, epsilon) && NearEqual(val1.Y, val2.Y, epsilon) && NearEqual(val1.Z, val2.Z, epsilon));
-        }
-        
-        public void DrawTool(long entityId)
-        {
-            holdingTool = true;
-            
-            if(MyAPIGateway.Entities.TryGetEntityById(entityId, out toolEnt))
-            {
-                RenderWorkaround.SetEmissiveParts(toolEnt.Render.RenderObjectIDs[0], 0, HSVtoRGB(GetBuildColor()), Color.White);
-            }
-            
-            SetToolStatus("Type /pg for Paint Gun options.", MyFontEnum.DarkBlue, 3000);
-        }
-        
-        private void SetCrosshairColor(Color? color)
-        {
-            if(color.HasValue)
-                MyHud.Crosshair.AddTemporarySprite(MyHudTexturesEnum.crosshair, CROSSHAIR_SPRITEID, 1000, 500, color.Value, 0.02f);
-            else
-                MyHud.Crosshair.ResetToDefault(true);
-        }
-        
-        private Vector3 GetBuildColor()
-        {
-            return customColor;
-        }
-        
-        private void SetBuildColor(Vector3 color)
-        {
-            customColor = color;
-            
-            if(toolEnt != null)
-            {
-                RenderWorkaround.SetEmissiveParts(toolEnt.Render.RenderObjectIDs[0], 0, HSVtoRGB(color), Color.White);
-            }
-        }
-        
-        private bool IsBlockValid(IMySlimBlock block, Vector3 color, bool trigger, out string blockName, out Vector3 blockColor)
-        {
-            if(block != null)
-            {
-                blockColor = block.GetColorMask();
+                var tool = Entity.GetObjectBuilder(false) as MyObjectBuilder_AutomaticRifle;
+                var player = (heldByLocalPlayer && MyAPIGateway.Session.ControlledObject != null ? MyAPIGateway.Session.ControlledObject.Entity : null);
+                long ticks = DateTime.UtcNow.Ticks;
+                bool trigger = tool.GunBase.LastShootTime + DELAY_SHOOT > ticks;
                 
-                if(block.FatBlock == null)
+                if(heldByLocalPlayer && !mod.pickColor && Sandbox.Game.Gui.MyGuiScreenTerminal.GetCurrentScreen() == MyTerminalPageEnum.None && ((mod.settings.pickColor1 != null && mod.settings.pickColor1.IsPressed()) || (mod.settings.pickColor2 != null && mod.settings.pickColor2.IsPressed())))
                 {
-                    blockName = block.ToString();
-                }
-                else
-                {
-                    blockName = block.FatBlock.DefinitionDisplayNameText;
-                }
-                
-                if(pickColor)
-                {
-                    if(trigger)
-                    {
-                        pickColor = false;
-                        SetBuildColor(blockColor);
-                        SetToolStatus("COLOR PICK MODE:\nColor picked from " + blockName + ".", MyFontEnum.Green);
-                    }
-                    else
-                    {
-                        var c = HSVtoRGB(blockColor);
-                        
-                        if(toolEnt != null)
-                            RenderWorkaround.SetEmissiveParts(toolEnt.Render.RenderObjectIDs[0], 0, c, Color.White);
-                        
-                        SetCrosshairColor(c);
-                        SetToolStatus("COLOR PICK MODE:\n" + blockName + "'s color is "+ColorToString(block.GetColorMask())+"\nClick to pick this color.", MyFontEnum.Blue);
-                    }
-                    
-                    return false;
-                }
-                
-                if(block.HasDeformation || block.CurrentDamage > 0 || (block.FatBlock != null && !block.FatBlock.IsFunctional))
-                {
-                    if(block.CurrentDamage == 0 && block.FatBlock != null)
-                    {
-                        block.FatBlock.SetDamageEffect(false);
-                    }
-                    
-                    SetCrosshairColor(CROSSHAIR_BAD_TARGET);
-                    SetToolStatus("Paint target: " + blockName + "\n" + (block.HasDeformation || block.CurrentDamage > 0 ? "Block is damaged or deformed and can't be painted!" : "Block is not fully built and can't be painted!"), MyFontEnum.Red);
-                    return false;
-                }
-                
-                if(NearEqual(blockColor, color, 0.001f))
-                {
-                    SetCrosshairColor(CROSSHAIR_BAD_TARGET);
-                    SetToolStatus(blockName + " is painted your selected color.", MyFontEnum.Green);
-                    return false;
-                }
-                
-                SetCrosshairColor(CROSSHAIR_TARGET);
-                
-                if(!trigger)
-                {
-                    SetToolStatus("Paint target: " + blockName, MyFontEnum.DarkBlue);
-                }
-                
-                return true;
-            }
-            else
-            {
-                if(pickColor)
-                {
-                    SetToolStatus("COLOR PICK MODE:\nNo block target!", MyFontEnum.Red);
-                }
-                else if(trigger)
-                {
-                    SetToolStatus("No block target for painting.", MyFontEnum.Red);
-                }
-                
-                blockName = null;
-                blockColor = DEFAULT_COLOR;
-                return false;
-            }
-        }
-        
-        private void PaintProcess(ref Vector3 blockColor, Vector3 color, float paintSpeed, string blockName)
-        {
-            if(MyAPIGateway.Session.CreativeMode)
-            {
-                blockColor = color;
-                SetToolStatus("Painted " + blockName, MyFontEnum.Blue);
-                return;
-            }
-            
-            if(NearEqual(blockColor.X, color.X, 0.05f))
-            {
-                paintSpeed *= PAINT_SPEED;
-                paintSpeed *= MyAPIGateway.Session.WelderSpeedMultiplier;
-                
-                for(int i = 0; i < 3; i++)
-                {
-                    if(blockColor.GetDim(i) > color.GetDim(i))
-                        blockColor.SetDim(i, Math.Max(blockColor.GetDim(i) - paintSpeed, color.GetDim(i)));
-                    else
-                        blockColor.SetDim(i, Math.Min(blockColor.GetDim(i) + paintSpeed, color.GetDim(i)));
-                }
-                
-                if(NearEqual(blockColor, color, 0.001f))
-                {
-                    blockColor = color;
-                    
-                    SetToolStatus("Painting " + blockName + "... 100% done!", MyFontEnum.Blue);
-                }
-                else
-                {
-                    byte percent = (byte)Math.Round(99 - ((MathHelper.Clamp(Vector3.Distance(blockColor, color), 0, 2.236f) / 2.236f) * 99), 0);
-                    
-                    SetToolStatus("Painting " + blockName + "... " + percent + "%", MyFontEnum.Blue);
-                }
-            }
-            else
-            {
-                paintSpeed *= DEPAINT_SPEED;
-                paintSpeed *= MyAPIGateway.Session.GrinderSpeedMultiplier;
-                
-                blockColor.Y = Math.Max(blockColor.Y - paintSpeed, DEFAULT_COLOR.Y);
-                
-                if(blockColor.Z > 0)
-                    blockColor.Z = Math.Max(blockColor.Z - paintSpeed, DEFAULT_COLOR.Z);
-                else
-                    blockColor.Z = Math.Min(blockColor.Z + paintSpeed, DEFAULT_COLOR.Z);
-                
-                if(NearEqual(blockColor.Y, DEFAULT_COLOR.Y) && NearEqual(blockColor.Z, DEFAULT_COLOR.Z))
-                {
-                    blockColor.X = color.X;
-                }
-                
-                if(NearEqual(blockColor, DEFAULT_COLOR))
-                {
-                    blockColor = DEFAULT_COLOR;
-                    blockColor.X = color.X;
-                    
-                    if(color != DEFAULT_COLOR)
-                        SetToolStatus("Removing paint from " + blockName + "... 100%", MyFontEnum.Blue);
-                    else
-                        SetToolStatus("Removing paint from " + blockName + "... 100% done!", MyFontEnum.Blue);
-                }
-                else
-                {
-                    byte percent = (byte)Math.Round(99 - ((MathHelper.Clamp(Vector3.Distance(blockColor, DEFAULT_COLOR), 0, 2.236f) / 2.236f) * 99), 0);
-                    
-                    SetToolStatus("Removing paint from " + blockName + "... " + percent + "%", MyFontEnum.Blue);
-                }
-            }
-        }
-        
-        private float GetBlockSurface(IMySlimBlock block)
-        {
-            Vector3 blockSize;
-            block.ComputeScaledHalfExtents(out blockSize);
-            blockSize = (blockSize * 2);
-            return (blockSize.X * blockSize.Y) + (blockSize.Y * blockSize.Z) + (blockSize.Z * blockSize.X) / 6;
-        }
-        
-        private IMySlimBlock GetTargetBlock(IMyCubeGrid grid, IMyEntity player)
-        {
-            var view = MyAPIGateway.Session.ControlledObject.GetHeadMatrix(false, true);
-            var rayFrom = view.Translation + view.Forward * 1.5;
-            var rayTo = view.Translation + view.Forward * 5;
-            var blockPos = grid.RayCastBlocks(rayFrom, rayTo);
-            return (blockPos.HasValue ? grid.GetCubeBlock(blockPos.Value) : null);
-        }
-        
-        public bool HoldingTool(bool trigger)
-        {
-            try
-            {
-                var player = MyAPIGateway.Session.Player.Controller.ControlledEntity.Entity;
-                var grid = MyAPIGateway.CubeBuilder.FindClosestGrid();
-                
-                SetCrosshairColor(CROSSHAIR_NO_TARGET);
-                
-                if(grid == null)
-                {
-                    if(pickColor)
-                    {
-                        SetToolStatus("COLOR PICK MODE:\nNo ship target!", MyFontEnum.Red);
-                    }
-                    else if(trigger)
-                    {
-                        SetToolStatus("No ship target for painting.", MyFontEnum.Red);
-                    }
-                    
-                    return false;
-                }
-                else
-                {
-                    var block = GetTargetBlock(grid, player);
-                    var color = GetBuildColor();
-                    Vector3 blockColor;
-                    string blockName;
-                    
-                    if(!IsBlockValid(block, color, trigger, out blockName, out blockColor))
-                    {
-                        return false;
-                    }
-                    
-                    if(trigger && block != null)
-                    {
-                        float paintSpeed = (1.0f / GetBlockSurface(block));
-                        
-                        PaintProcess(ref blockColor, color, paintSpeed, blockName);
-                        
-                        SetCrosshairColor(CROSSHAIR_PAINTING);
-                        
-                        grid.ColorBlocks(block.Position, block.Position, blockColor);
-                        
-                        return true;
-                    }
-                }
-            }
-            catch(Exception e)
-            {
-                Log.Error(e);
-            }
-            
-            return false;
-        }
-        
-        public void HolsterTool()
-        {
-            holdingTool = false;
-            
-            if(pickColor)
-            {
-                pickColor = false;
-                SetToolStatus("Color picking cancelled.", MyFontEnum.DarkBlue, 1000);
-            }
-            else if(toolStatus != null)
-            {
-                toolStatus.Hide();
-            }
-            
-            SetCrosshairColor(null);
-        }
-        
-        public void MessageEntered(string msg, ref bool send)
-        {
-            if(msg.StartsWith("/pg", StringComparison.InvariantCultureIgnoreCase))
-            {
-                send = false;
-                msg = msg.Substring("/pg".Length).Trim().ToLower();
-                
-                if(msg.Equals("pick"))
-                {
-                    if(!holdingTool)
-                    {
-                        MyAPIGateway.Utilities.ShowMessage(MOD_NAME, "You need to hold the tool for this to work.");
-                    }
-                    else
-                    {
-                        pickColor = true;
-                    }
-                    
+                    mod.SendColorPickMode(MyAPIGateway.Multiplayer.MyId, true);
                     return;
                 }
-                else if(msg.StartsWith("default"))
+                
+                bool toolPickColorMode = mod.playersColorPickMode.Contains(heldById);
+                
+                if(!toolPickColorMode && lastPickTime > 0)
                 {
-                    msg = msg.Substring("default".Length).Trim();
-                    
-                    int num;
-                    
-                    if(!int.TryParse(msg, out num))
-                    {
-                        MyAPIGateway.Utilities.ShowMessage(MOD_NAME, "Argument is not a number.");
-                    }
+                    if(lastPickTime + DELAY_POST_PICKCOLOR > ticks)
+                        toolPickColorMode = true;
                     else
-                    {
-                        num = MathHelper.Clamp(num, 1, 14) - 1;
-                        SetBuildColor(defaultColors[num]);
-                        MyAPIGateway.Utilities.ShowMessage(MOD_NAME, "Got color from default " + (num + 1) + " with color " + ColorToString(GetBuildColor()));
-                    }
-                    
-                    return;
+                        lastPickTime = 0;
                 }
-                else if(msg.StartsWith("rgb") || msg.StartsWith("hsv"))
+                
+                if(!toolPickColorMode)
                 {
-                    bool hsv = msg.StartsWith("hsv");
-                    msg = msg.Substring("rgb".Length).Trim();
-                    
-                    string[] split = msg.Split(' ');
-                    
-                    if(split.Length != 3)
+                    if(mod.settings.sprayParticles)
                     {
-                        MyAPIGateway.Utilities.ShowMessage(MOD_NAME, "Need to specify 3 numbers from 0 to 255 to create a RGB color.");
-                    }
-                    else
-                    {
-                        int[] values = new int[3];
+                        var matrix = Entity.WorldMatrix;
+                        var pos = matrix.Translation + matrix.Up * 0.06525 + matrix.Forward * 0.17;
+                        var camera = MyAPIGateway.Session.Camera;
                         
-                        for(int i = 0; i < 3; i++)
+                        if(camera != null && Vector3D.DistanceSquared(camera.WorldMatrix.Translation, pos) <= PARTICLE_MAX_DISTANCE_SQ)
                         {
-                            if(!int.TryParse(split[i], out values[i]))
+                            if(trigger)
                             {
-                                MyAPIGateway.Utilities.ShowMessage(MOD_NAME, "Color argument "+(i+1)+" is not a valid number!");
-                                return;
+                                var p = new Particle();
+                                p.velocity = matrix.Forward * 0.5f;
+                                p.life = 20;
+                                p.color = Mod.HSVtoRGB(color);
+                                p.radius = 0.012f;
+                                p.angle = (float)(rand.Next(2) == 0 ? -rand.NextDouble() : rand.NextDouble()) * 45;
+                                particles.Add(p);
                             }
-                        }
-                        
-                        Vector3 color;
-                        
-                        if(hsv)
-                        {
-                            color = new Vector3(MathHelper.Clamp(values[0], 0, 360) / 360.0f, MathHelper.Clamp(values[1], -100, 100) / 100.0f, MathHelper.Clamp(values[2], -100, 100) / 100.0f);
+                            
+                            if(particles.Count > 0)
+                            {
+                                for(int i = particles.Count - 1; i >= 0; i--)
+                                {
+                                    var p = particles[i];
+                                    var position = pos + p.relativePosition;
+                                    
+                                    MyTransparentGeometry.AddPointBillboard("Smoke", p.color, position, p.radius, p.angle, 0, true, true, false, -1);
+                                    
+                                    if(--p.life <= 0)
+                                    {
+                                        particles.RemoveAt(i);
+                                        continue;
+                                    }
+                                    
+                                    if(p.angle > 0)
+                                        p.angle += (p.life * 0.001f);
+                                    else
+                                        p.angle -= (p.life * 0.001f);
+                                    
+                                    p.relativePosition += p.velocity / 60.0f;
+                                    p.radius *= 1.35f;
+                                    p.color *= 0.85f;
+                                    p.velocity *= 1.3f;
+                                }
+                            }
                         }
                         else
                         {
-                            color = new Color((int)MathHelper.Clamp(values[0], 0, 255), (int)MathHelper.Clamp(values[1], 0, 255), (int)MathHelper.Clamp(values[2], 0, 255)).ColorToHSVDX11();
+                            if(particles.Count > 0)
+                                particles.Clear();
                         }
-                        
-                        SetBuildColor(color);
-                        MyAPIGateway.Utilities.ShowMessage(MOD_NAME, "Color set to " + ColorToString(color));
                     }
-                    
-                    return;
+                    else
+                    {
+                        if(particles.Count > 0)
+                            particles.Clear();
+                    }
                 }
                 
-                MyAPIGateway.Utilities.ShowMessage(MOD_NAME, "Available commands:");
-                MyAPIGateway.Utilities.ShowMessage("/pg pick ", "pick a color from an existing block (alias: Shift+ColorMenu)");
-                MyAPIGateway.Utilities.ShowMessage("/pg default <1~14> ", "picks one of the default colors");
-                MyAPIGateway.Utilities.ShowMessage("/pg rgb <0~255> <0~255> <0~255> ", "set the color using RGB format");
-                MyAPIGateway.Utilities.ShowMessage("/pg hsv <0-360> <-100~100> <-100~100>", "set the color using HSV format");
+                if(++skip > SKIP_UPDATES)
+                {
+                    skip = 0;
+                    
+                    if(trigger && !toolPickColorMode && soundEmitter != null && !soundEmitter.IsPlaying)
+                    {
+                        soundEmitter.CustomVolume = mod.settings.spraySoundVolume;
+                        soundEmitter.PlaySound(soundPair, true);
+                    }
+                    
+                    if((!trigger || toolPickColorMode) && soundEmitter != null && soundEmitter.IsPlaying)
+                    {
+                        soundEmitter.StopSound(false);
+                    }
+                    
+                    if(heldByLocalPlayer)
+                    {
+                        bool painted = mod.HoldingTool(trigger);
+                        
+                        if(!mod.pickColor && painted && !MyAPIGateway.Session.CreativeMode) // expend the ammo manually when painting
+                        {
+                            if(MyAPIGateway.Multiplayer.IsServer)
+                            {
+                                var inv = (player as MyEntity).GetInventory(0) as IMyInventory;
+                                
+                                if(inv != null)
+                                    inv.RemoveItemsOfType((MyFixedPoint)1, Mod.PAINT_MAG, false);
+                            }
+                            else
+                            {
+                                mod.SendAmmoPacket(player.EntityId, 0);
+                            }
+                        }
+                    }
+                }
+                
+                if(tool.GunBase.LastShootTime > lastShotTime)
+                {
+                    lastShotTime = tool.GunBase.LastShootTime;
+                    
+                    if(heldByLocalPlayer && !MyAPIGateway.Session.CreativeMode) // always add the shot ammo back
+                    {
+                        if(MyAPIGateway.Multiplayer.IsServer)
+                        {
+                            var inv = (player as MyEntity).GetInventory(0) as IMyInventory;
+                            
+                            if(inv != null)
+                                inv.AddItems((MyFixedPoint)1, Mod.PAINT_MAG);
+                        }
+                        else
+                        {
+                            mod.SendAmmoPacket(player.EntityId, 1);
+                        }
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+                Log.Error(e);
             }
         }
         
-        private Color HSVtoRGB(Vector3 hsv)
+        public override void Close()
         {
-            // from the game code... weird values.
-            return new Vector3(hsv.X, MathHelper.Clamp(hsv.Y + 0.8f, 0f, 1f), MathHelper.Clamp(hsv.Z + 0.55f, 0f, 1f)).HSVtoColor();
+            try
+            {
+                mod.holdingTools.Remove(heldById);
+                
+                if(heldByLocalPlayer)
+                {
+                    if(mod.pickColor)
+                    {
+                        mod.SendToolColor(MyAPIGateway.Multiplayer.MyId, mod.GetBuildColor());
+                        mod.SendColorPickMode(MyAPIGateway.Multiplayer.MyId, false);
+                        
+                        mod.SetToolStatus(0, "Color picking cancelled.", MyFontEnum.Red, 1000);
+                        mod.SetToolStatus(1, null);
+                        mod.SetToolStatus(2, null);
+                        mod.SetToolStatus(3, null);
+                        
+                        mod.PlaySound("HudUnable", 0.5f);
+                    }
+                    else if(mod.toolStatus != null)
+                    {
+                        mod.SetToolStatus(0, null);
+                        mod.SetToolStatus(1, null);
+                        mod.SetToolStatus(2, null);
+                        mod.SetToolStatus(3, null);
+                    }
+                    
+                    mod.SetCrosshairColor(null);
+                }
+                
+                if(soundEmitter != null)
+                {
+                    if(soundEmitter.IsPlaying)
+                        soundEmitter.StopSound(false, true);
+                    else
+                        soundEmitter.Cleanup();
+                    
+                    soundEmitter = null;
+                }
+            }
+            catch(Exception e)
+            {
+                Log.Error(e);
+            }
         }
-    }
-    
-    public class RenderWorkaround : MyCubeBlock
-    {
-        public static void SetEmissiveParts(uint renderObjectId, float emissivity, Color emissivePartColor, Color displayPartColor)
+        
+        public override MyObjectBuilder_EntityBase GetObjectBuilder(bool copy = false)
         {
-            UpdateEmissiveParts(renderObjectId, emissivity, emissivePartColor, displayPartColor);
+            return Entity.GetObjectBuilder(copy);
         }
     }
 }

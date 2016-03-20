@@ -27,9 +27,9 @@
         <SubtypeId>PaintGunBullet</SubtypeId>
       </Id>
       <BasicProperties>
-        <DesiredSpeed>20</DesiredSpeed>
+        <DesiredSpeed>0</DesiredSpeed>
         <SpeedVariance>0</SpeedVariance>
-        <MaxTrajectory>0.37</MaxTrajectory>
+        <MaxTrajectory>0</MaxTrajectory>
         <BackkickForce>0</BackkickForce>
       </BasicProperties>
       <ProjectileProperties>
@@ -39,7 +39,7 @@
         <ProjectileHealthDamage>0</ProjectileHealthDamage>
         <ProjectileTrailScale>0</ProjectileTrailScale>
         <ProjectileTrailColor x="0" y="0" z="0" />
-        <ProjectileTrailProbability>1</ProjectileTrailProbability>
+        <ProjectileTrailProbability>0</ProjectileTrailProbability>
         <ProjectileOnHitMaterialParticlesType>Small</ProjectileOnHitMaterialParticlesType>
         <ProjectileOnHitParticlesType>BasicSmall</ProjectileOnHitParticlesType>
       </ProjectileProperties>

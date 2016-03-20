@@ -6,7 +6,7 @@
         <TypeId>WeaponDefinition</TypeId>
         <SubtypeId>WeaponPaintGun</SubtypeId>
       </Id>
-      <ProjectileAmmoData RateOfFire="300" ShootSoundName="WepPlayPaintGunSpray" />
+      <ProjectileAmmoData RateOfFire="300" ShootSoundName="" />
       <NoAmmoSoundName>HudUnable</NoAmmoSoundName>
       <DeviateShotAngle>15</DeviateShotAngle>
       <ReleaseTimeAfterFire>500</ReleaseTimeAfterFire>

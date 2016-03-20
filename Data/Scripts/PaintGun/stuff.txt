@@ -26,6 +26,135 @@
 
 
 
+
+
+//////// ACCIDENTAL FIRE EXTINGUISHER ////////
+
+                    if(trigger)
+                    {
+                        var matrix = Entity.WorldMatrix;
+                        matrix.Translation += Entity.WorldMatrix.Forward * 0.17 + Entity.WorldMatrix.Up * 0.06525;
+                        
+                        var p = new Particle();
+                        p.material = particleMaterials[rand.Next(particleMaterials.Count)];
+                        p.position = matrix.Translation;
+                        p.velocity = player.Physics.LinearVelocity + matrix.Forward * 10f;// + matrix.Left * (-0.5+rand.NextDouble()) + matrix.Up * (-0.5+rand.NextDouble());
+                        p.velocity += new Vector3(rand.NextDouble() - 0.5, rand.NextDouble() - 0.5, rand.NextDouble() - 0.5);
+                        p.life = 1f;
+                        p.color = PaintGunMod.HSVtoRGB(color);
+                        p.radius = 0.01f;
+                        p.angle = rand.Next(2) == 0 ? -1 : 1;
+                        particles.Add(p);
+                    }
+                    
+                    for(int i = particles.Count - 1; i >= 0; i--)
+                    {
+                        var p = particles[i];
+                        p.life -= 1.0f/60.0f;
+                        
+                        if(p.life <= 0)
+                        {
+                            particles.RemoveAt(i);
+                            continue;
+                        }
+                        
+                        p.position += p.velocity / 60.0f;
+                        
+                        //if(p.angle > 0)
+                        //    p.angle += (float)rand.NextDouble();
+                        //else
+                        //    p.angle -= (float)rand.NextDouble();
+                        
+                        //p.radius += (float)(rand.NextDouble() * 0.06);
+                        p.radius += 0.05f;
+                        //p.velocity *= (rand.Next(80, 100) / 100.0f);
+                        p.velocity *= 0.95f;
+                        
+                        MyTransparentGeometry.AddPointBillboard("Smoke_lit", p.color, p.position, p.radius, p.angle, 0, true, false, false, -1);
+                    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ /////// ACCIDENTAL WATERFALL //////////
+
+                    if(trigger)
+                    {
+                        var matrix = Entity.WorldMatrix;
+                        matrix.Translation += Entity.WorldMatrix.Forward * 0.17 + Entity.WorldMatrix.Up * 0.06525;
+                        
+                        var p = new Particle();
+                        p.material = particleMaterials[rand.Next(particleMaterials.Count)];
+                        p.position = matrix.Translation;
+                        p.velocity = player.Physics.LinearVelocity + matrix.Forward * 10f;// + matrix.Left * (-0.5+rand.NextDouble()) + matrix.Up * (-0.5+rand.NextDouble());
+                        p.life = 1f;
+                        p.color = PaintGunMod.HSVtoRGB(color);
+                        p.radius = 0.01f;
+                        p.angle = rand.Next(2) == 0 ? -1 : 1;
+                        particles.Add(p);
+                    }
+                    
+                    for(int i = particles.Count - 1; i >= 0; i--)
+                    {
+                        var p = particles[i];
+                        p.life -= 1.0f/60.0f;
+                        
+                        if(p.life <= 0)
+                        {
+                            particles.RemoveAt(i);
+                            continue;
+                        }
+                        
+                        p.position += p.velocity / 60.0f;
+                        
+                        //if(p.angle > 0)
+                        //    p.angle += (float)rand.NextDouble();
+                        //else
+                        //    p.angle -= (float)rand.NextDouble();
+                        
+                        //p.radius += (float)(rand.NextDouble() * 0.06);
+                        p.radius += 0.05f;
+                        //p.velocity *= (rand.Next(80, 100) / 100.0f);
+                        p.velocity *= 0.95f;
+                        p.velocity += new Vector3(rand.NextDouble(), rand.NextDouble(), rand.NextDouble());
+                        
+                        MyTransparentGeometry.AddPointBillboard("Smoke_lit", p.color, p.position, p.radius, p.angle, 0, true, false, false, -1);
+                    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             /*
             double V = ((hsv.Z + 1) / 2.0) * 255;
             

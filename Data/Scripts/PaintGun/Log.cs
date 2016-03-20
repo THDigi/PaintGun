@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using Sandbox.ModAPI;
 using VRage.Game;
+using VRage.Game.ModAPI;
 using VRage.Utils;
 
 namespace Digi.Utils
