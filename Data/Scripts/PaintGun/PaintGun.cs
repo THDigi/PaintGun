@@ -30,7 +30,7 @@ using Digi.Utils;
 
 namespace Digi.PaintGun
 {
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_AutomaticRifle), Mod.PAINT_GUN_ID)]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_AutomaticRifle), PaintGunMod.PAINT_GUN_ID)]
     public class PaintGun : MyGameLogicComponent
     {
         public class Particle
@@ -49,7 +49,7 @@ namespace Digi.PaintGun
         public ulong heldById = 0;
         public bool heldByLocalPlayer = false;
         public long lastPickTime = 0;
-        private Vector3 color = Mod.DEFAULT_COLOR;
+        private Vector3 color = PaintGunMod.DEFAULT_COLOR;
         
         private bool first = true;
         private byte skip = 0;
@@ -62,11 +62,11 @@ namespace Digi.PaintGun
         private const int SKIP_UPDATES = 10;
         private const long DELAY_SHOOT = (TimeSpan.TicksPerMillisecond * 200);
         private const long DELAY_POST_PICKCOLOR = (TimeSpan.TicksPerMillisecond * 600);
-        private readonly MySoundPair soundPair = new MySoundPair("BlockAirVentExhale");
+        private readonly MySoundPair soundPair = new MySoundPair("PaintGunSpray");
         private static List<IMyPlayer> players = new List<IMyPlayer>(0);
         private const int PARTICLE_MAX_DISTANCE_SQ = 1000*1000;
         
-        private Mod mod = null;
+        private PaintGunMod mod = null;
         
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
@@ -128,7 +128,7 @@ namespace Digi.PaintGun
             else
                 mod.holdingTools.Add(heldById, Entity);
             
-            SetToolColor(mod.playerColors.GetValueOrDefault(heldById, Mod.DEFAULT_COLOR));
+            SetToolColor(mod.playerColors.GetValueOrDefault(heldById, PaintGunMod.DEFAULT_COLOR));
             
             if(soundEmitter == null)
             {
@@ -141,7 +141,7 @@ namespace Digi.PaintGun
         public void SetToolColor(Vector3 color)
         {
             this.color = color;
-            RenderWorkaround.SetEmissiveParts(Entity.Render.RenderObjectIDs[0], 0, Mod.HSVtoRGB(color), Color.White);
+            RenderWorkaround.SetEmissiveParts(Entity.Render.RenderObjectIDs[0], 0, PaintGunMod.HSVtoRGB(color), Color.White);
         }
         
         public override void UpdateAfterSimulation()
@@ -152,7 +152,7 @@ namespace Digi.PaintGun
                 {
                     if(mod == null)
                     {
-                        mod = Mod.instance;
+                        mod = PaintGunMod.instance;
                         return;
                     }
                     
@@ -171,7 +171,7 @@ namespace Digi.PaintGun
                 long ticks = DateTime.UtcNow.Ticks;
                 bool trigger = tool.GunBase.LastShootTime + DELAY_SHOOT > ticks;
                 
-                if(heldByLocalPlayer && !mod.pickColor && Sandbox.Game.Gui.MyGuiScreenTerminal.GetCurrentScreen() == MyTerminalPageEnum.None && ((mod.settings.pickColor1 != null && mod.settings.pickColor1.IsPressed()) || (mod.settings.pickColor2 != null && mod.settings.pickColor2.IsPressed())))
+                if(heldByLocalPlayer && !mod.pickColor && MyGuiScreenGamePlay.ActiveGameplayScreen == null && Sandbox.Game.Gui.MyGuiScreenTerminal.GetCurrentScreen() == MyTerminalPageEnum.None && ((mod.settings.pickColor1 != null && mod.settings.pickColor1.IsPressed()) || (mod.settings.pickColor2 != null && mod.settings.pickColor2.IsPressed())))
                 {
                     mod.SendColorPickMode(MyAPIGateway.Multiplayer.MyId, true);
                     return;
@@ -202,7 +202,7 @@ namespace Digi.PaintGun
                                 var p = new Particle();
                                 p.velocity = matrix.Forward * 0.5f;
                                 p.life = 20;
-                                p.color = Mod.HSVtoRGB(color);
+                                p.color = PaintGunMod.HSVtoRGB(color);
                                 p.radius = 0.012f;
                                 p.angle = (float)(rand.Next(2) == 0 ? -rand.NextDouble() : rand.NextDouble()) * 45;
                                 particles.Add(p);
@@ -265,6 +265,8 @@ namespace Digi.PaintGun
                     
                     if(heldByLocalPlayer)
                     {
+                        PaintGunMod.instance.symmetryInput = false;
+                        PaintGunMod.instance.selectedSlimBlock = null;
                         bool painted = mod.HoldingTool(trigger);
                         
                         if(!mod.pickColor && painted && !MyAPIGateway.Session.CreativeMode) // expend the ammo manually when painting
@@ -274,7 +276,7 @@ namespace Digi.PaintGun
                                 var inv = (player as MyEntity).GetInventory(0) as IMyInventory;
                                 
                                 if(inv != null)
-                                    inv.RemoveItemsOfType((MyFixedPoint)1, Mod.PAINT_MAG, false);
+                                    inv.RemoveItemsOfType((MyFixedPoint)1, PaintGunMod.PAINT_MAG, false);
                             }
                             else
                             {
@@ -295,7 +297,7 @@ namespace Digi.PaintGun
                             var inv = (player as MyEntity).GetInventory(0) as IMyInventory;
                             
                             if(inv != null)
-                                inv.AddItems((MyFixedPoint)1, Mod.PAINT_MAG);
+                                inv.AddItems((MyFixedPoint)1, PaintGunMod.PAINT_MAG);
                         }
                         else
                         {
@@ -318,6 +320,9 @@ namespace Digi.PaintGun
                 
                 if(heldByLocalPlayer)
                 {
+                    PaintGunMod.instance.symmetryInput = false;
+                    PaintGunMod.instance.selectedSlimBlock = null;
+                    
                     if(mod.pickColor)
                     {
                         mod.SendToolColor(MyAPIGateway.Multiplayer.MyId, mod.GetBuildColor());

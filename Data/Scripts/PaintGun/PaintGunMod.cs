@@ -21,6 +21,7 @@ using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.Gui;
 using VRage.Game.ModAPI;
+using VRage.Input;
 using VRageMath;
 using VRage;
 using VRage.ObjectBuilders;
@@ -32,9 +33,9 @@ using Digi.Utils;
 namespace Digi.PaintGun
 {
     [MySessionComponentDescriptor(MyUpdateOrder.AfterSimulation)]
-    public class Mod : MySessionComponentBase
+    public class PaintGunMod : MySessionComponentBase
     {
-        public static Mod instance = null;
+        public static PaintGunMod instance = null;
         
         public bool init = false;
         public bool isThisHost = false;
@@ -42,6 +43,10 @@ namespace Digi.PaintGun
         public Settings settings = null;
         
         public bool pickColor = false;
+        public bool symmetryInput = false;
+        public string symmetryStatus = null;
+        public MyCubeGrid grid = null; // currently selected grid by the local paint gun
+        public IMySlimBlock selectedSlimBlock = null;
         public Vector3 prevColorPreview;
         public Vector3 customColor = DEFAULT_COLOR;
         public Vector3 prevCustomColor = DEFAULT_COLOR;
@@ -190,6 +195,27 @@ namespace Digi.PaintGun
                             
                             var color = new Vector3(float.Parse(data[i++]), float.Parse(data[i++]), float.Parse(data[i++]));
                             grid.ChangeColor(slim, color);
+                            
+                            if(MyAPIGateway.Session.CreativeMode && data.Length > i) // symmetry paint
+                            {
+                                var mirrorX = MirrorPaint(grid, 0, pos, color);
+                                var mirrorY = MirrorPaint(grid, 1, pos, color);
+                                var mirrorZ = MirrorPaint(grid, 2, pos, color);
+                                Vector3I? mirrorYZ = null;
+                                
+                                if(mirrorX.HasValue && grid.YSymmetryPlane.HasValue) // XY
+                                    MirrorPaint(grid, 1, mirrorX.Value, color);
+                                
+                                if(mirrorX.HasValue && grid.ZSymmetryPlane.HasValue) // XZ
+                                    MirrorPaint(grid, 2, mirrorX.Value, color);
+                                
+                                if(mirrorY.HasValue && grid.ZSymmetryPlane.HasValue) // YZ
+                                    mirrorYZ = MirrorPaint(grid, 2, mirrorY.Value, color);
+                                
+                                if(grid.XSymmetryPlane.HasValue && mirrorYZ.HasValue) // XYZ
+                                    MirrorPaint(grid, 0, mirrorYZ.Value, color);
+                            }
+                            
                             break;
                         }
                     case 3: // set tool color
@@ -273,6 +299,59 @@ namespace Digi.PaintGun
             }
         }
         
+        private Vector3I? MirrorPaint(MyCubeGrid grid, int axis, Vector3I originalPosition, Vector3 color)
+        {
+            switch(axis)
+            {
+                case 0:
+                    if(grid.XSymmetryPlane.HasValue)
+                    {
+                        var mirrorX = originalPosition + new Vector3I(((grid.XSymmetryPlane.Value.X - originalPosition.X) * 2) - (grid.XSymmetryOdd ? 1 : 0), 0, 0);
+                        var slimX = grid.GetCubeBlock(mirrorX);
+                        
+                        if(slimX != null)
+                        {
+                            grid.ChangeColor(slimX, color);
+                        }
+                        
+                        return mirrorX;
+                    }
+                    break;
+                    
+                case 1:
+                    if(grid.YSymmetryPlane.HasValue)
+                    {
+                        var mirrorY = originalPosition + new Vector3I(0, ((grid.YSymmetryPlane.Value.Y - originalPosition.Y) * 2) - (grid.YSymmetryOdd ? 1 : 0), 0);
+                        var slimY = grid.GetCubeBlock(mirrorY);
+                        
+                        if(slimY != null)
+                        {
+                            grid.ChangeColor(slimY, color);
+                        }
+                        
+                        return mirrorY;
+                    }
+                    break;
+                    
+                case 2:
+                    if(grid.ZSymmetryPlane.HasValue)
+                    {
+                        var mirrorZ = originalPosition + new Vector3I(0, 0, ((grid.ZSymmetryPlane.Value.Z - originalPosition.Z) * 2) + (grid.ZSymmetryOdd ? 1 : 0)); // reversed on odd
+                        var slimZ = grid.GetCubeBlock(mirrorZ);
+                        
+                        if(slimZ != null)
+                        {
+                            grid.ChangeColor(slimZ, color);
+                        }
+                        
+                        return mirrorZ;
+                    }
+                    break;
+            }
+            
+            return null;
+        }
+        
         public void SendAmmoPacket(long entId, int type)
         {
             try
@@ -290,7 +369,7 @@ namespace Digi.PaintGun
             }
         }
         
-        public void SendPaintPacket(long entId, Vector3I pos, Vector3 color)
+        public void SendPaintPacket(long entId, Vector3I pos, Vector3 color, bool useSymmetry = false)
         {
             try
             {
@@ -310,6 +389,13 @@ namespace Digi.PaintGun
                 data.Append(color.Y);
                 data.Append(SEPARATOR);
                 data.Append(color.Z);
+                
+                if(useSymmetry)
+                {
+                    data.Append(SEPARATOR);
+                    data.Append(0);
+                }
+                
                 var bytes = encode.GetBytes(data.ToString());
                 MyAPIGateway.Multiplayer.SendMessageToServer(PACKET, bytes, true);
             }
@@ -372,6 +458,97 @@ namespace Digi.PaintGun
                         return;
                     
                     Init();
+                }
+                
+                if(holdingTools.ContainsKey(MyAPIGateway.Multiplayer.MyId))
+                {
+                    if(selectedSlimBlock != null)
+                    {
+                        if(selectedSlimBlock.IsDestroyed || selectedSlimBlock.IsFullyDismounted)
+                        {
+                            selectedSlimBlock = null;
+                            return;
+                        }
+                        
+                        MyCubeBuilder.DrawSemiTransparentBox(selectedSlimBlock.CubeGrid as MyCubeGrid, selectedSlimBlock as Sandbox.Game.Entities.Cube.MySlimBlock, Color.White, true, "GizmoDrawLine", null);
+                    }
+                    
+                    if(symmetryInput)
+                    {
+                        if(MyAPIGateway.CubeBuilder.UseSymmetry && grid != null && (grid.XSymmetryPlane.HasValue || grid.YSymmetryPlane.HasValue || grid.ZSymmetryPlane.HasValue))
+                        {
+                            var matrix = grid.WorldMatrix;
+                            var quad = new MyQuadD();
+                            Vector3D gridSize = (Vector3I.One + (grid.Max - grid.Min)) * grid.GridSizeHalf;
+                            const float alpha = 0.4f;
+                            const string material = "SquareIgnoreDepth";
+                            
+                            if(grid.XSymmetryPlane.HasValue)
+                            {
+                                var center = matrix.Translation + new Vector3D((grid.XSymmetryPlane.Value.X * grid.GridSize) - (grid.XSymmetryOdd ? grid.GridSizeHalf : 0), 0, 0);
+                                
+                                var minY = matrix.Up * ((grid.Min.Y - 1.5f) * grid.GridSize);
+                                var maxY = matrix.Up * ((grid.Max.Y + 1.5f) * grid.GridSize);
+                                var minZ = matrix.Backward * ((grid.Min.Z - 1.5f) * grid.GridSize);
+                                var maxZ = matrix.Backward * ((grid.Max.Z + 1.5f) * grid.GridSize);
+                                
+                                quad.Point0 = center + maxY + maxZ;
+                                quad.Point1 = center + maxY + minZ;
+                                quad.Point2 = center + minY + minZ;
+                                quad.Point3 = center + minY + maxZ;
+                                
+                                var color = Color.Red * alpha;
+                                
+                                MyTransparentGeometry.AddQuad(material, ref quad, ref color, ref center, 0, -1);
+                            }
+                            
+                            if(grid.YSymmetryPlane.HasValue)
+                            {
+                                var center = matrix.Translation + new Vector3D(0, (grid.YSymmetryPlane.Value.Y * grid.GridSize) - (grid.YSymmetryOdd ? grid.GridSizeHalf : 0), 0);
+                                
+                                var minY = matrix.Backward * ((grid.Min.Z - 1.5f) * grid.GridSize);
+                                var maxY = matrix.Backward * ((grid.Max.Z + 1.5f) * grid.GridSize);
+                                var minZ = matrix.Right * ((grid.Min.X - 1.5f) * grid.GridSize);
+                                var maxZ = matrix.Right * ((grid.Max.X + 1.5f) * grid.GridSize);
+                                
+                                quad.Point0 = center + maxY + maxZ;
+                                quad.Point1 = center + maxY + minZ;
+                                quad.Point2 = center + minY + minZ;
+                                quad.Point3 = center + minY + maxZ;
+                                
+                                var color = Color.Green * alpha;
+                                
+                                MyTransparentGeometry.AddQuad(material, ref quad, ref color, ref center, 0, -1);
+                            }
+                            
+                            if(grid.ZSymmetryPlane.HasValue)
+                            {
+                                var center = matrix.Translation + new Vector3D(0, 0, (grid.ZSymmetryPlane.Value.Z * grid.GridSize) + (grid.ZSymmetryOdd ? grid.GridSizeHalf : 0));
+                                
+                                var minY = matrix.Up * ((grid.Min.Y - 1.5f) * grid.GridSize);
+                                var maxY = matrix.Up * ((grid.Max.Y + 1.5f) * grid.GridSize);
+                                var minX = matrix.Right * ((grid.Min.X - 1.5f) * grid.GridSize);
+                                var maxX = matrix.Right * ((grid.Max.X + 1.5f) * grid.GridSize);
+                                
+                                quad.Point0 = center + maxY + maxX;
+                                quad.Point1 = center + maxY + minX;
+                                quad.Point2 = center + minY + minX;
+                                quad.Point3 = center + minY + maxX;
+                                
+                                var color = Color.Blue * alpha;
+                                
+                                MyTransparentGeometry.AddQuad(material, ref quad, ref color, ref center, 0, -1);
+                            }
+                        }
+                        
+                        if(MyGuiScreenGamePlay.ActiveGameplayScreen == null && MyGuiScreenTerminal.GetCurrentScreen() == MyTerminalPageEnum.None)
+                        {
+                            var controlSymmetry = MyAPIGateway.Input.GetGameControl(MyControlsSpace.USE_SYMMETRY);
+                            
+                            if(controlSymmetry.IsNewPressed())
+                                MyAPIGateway.CubeBuilder.UseSymmetry = !MyAPIGateway.CubeBuilder.UseSymmetry;
+                        }
+                    }
                 }
             }
             catch(Exception e)
@@ -447,8 +624,7 @@ namespace Digi.PaintGun
         public void PlaySound(string name, float volume)
         {
             var emitter = new MyEntity3DSoundEmitter(MyAPIGateway.Session.ControlledObject.Entity as MyEntity);
-            emitter.CustomVolume = 1;
-            emitter.SetVelocity(MyAPIGateway.Session.ControlledObject.Entity.Physics.LinearVelocity);
+            emitter.CustomVolume = volume;
             emitter.PlaySingleSound(new MySoundPair(name));
         }
         
@@ -519,7 +695,7 @@ namespace Digi.PaintGun
                     
                     SetToolStatus(0, "Already painted this color.", MyFontEnum.Red);
                     SetToolStatus(1, blockName, MyFontEnum.White);
-                    SetToolStatus(2, null);
+                    SetToolStatus(2, symmetryStatus, MyFontEnum.DarkBlue);
                     SetToolStatus(3, null);
                     
                     return false;
@@ -529,9 +705,13 @@ namespace Digi.PaintGun
                 
                 if(!trigger)
                 {
-                    SetToolStatus(0, (MyAPIGateway.Session.CreativeMode ? "Click" : "Hold click") + " to paint.", MyFontEnum.Green);
+                    if(MyAPIGateway.Session.CreativeMode)
+                        SetToolStatus(0, "Click to paint.", MyFontEnum.Green);
+                    else
+                        SetToolStatus(0, "Hold click to paint.", MyFontEnum.Green);
+                    
                     SetToolStatus(1, blockName, MyFontEnum.White);
-                    SetToolStatus(2, null);
+                    SetToolStatus(2, symmetryStatus, MyFontEnum.DarkBlue);
                     SetToolStatus(3, null);
                 }
                 
@@ -550,7 +730,7 @@ namespace Digi.PaintGun
                 {
                     SetToolStatus(0, "Aim at a block to paint it.", MyFontEnum.Red);
                     SetToolStatus(1, null);
-                    SetToolStatus(2, null);
+                    SetToolStatus(2, symmetryStatus, MyFontEnum.DarkBlue);
                     SetToolStatus(3, null);
                 }
                 
@@ -567,7 +747,7 @@ namespace Digi.PaintGun
                 blockColor = color;
                 SetToolStatus(0, "Painted!", MyFontEnum.Blue);
                 SetToolStatus(1, blockName, MyFontEnum.White);
-                SetToolStatus(2, null);
+                SetToolStatus(2, symmetryStatus, MyFontEnum.DarkBlue);
                 SetToolStatus(3, null);
                 return;
             }
@@ -746,7 +926,7 @@ namespace Digi.PaintGun
                     }
                 }
                 
-                var grid = MyAPIGateway.CubeBuilder.FindClosestGrid();
+                grid = MyAPIGateway.CubeBuilder.FindClosestGrid() as MyCubeGrid;
                 
                 SetCrosshairColor(CROSSHAIR_NO_TARGET);
                 
@@ -775,17 +955,64 @@ namespace Digi.PaintGun
                     var color = GetBuildColor();
                     Vector3 blockColor;
                     string blockName;
+                    symmetryStatus = null;
+                    
+                    if(MyAPIGateway.Session.CreativeMode)
+                    {
+                        if(grid.XSymmetryPlane.HasValue || grid.YSymmetryPlane.HasValue || grid.ZSymmetryPlane.HasValue)
+                        {
+                            var controlSymmetry = MyAPIGateway.Input.GetGameControl(MyControlsSpace.USE_SYMMETRY);
+                            StringBuilder assigned = new StringBuilder();
+                            
+                            if(controlSymmetry.GetKeyboardControl() != MyKeys.None)
+                                assigned.Append(MyAPIGateway.Input.GetKeyName(controlSymmetry.GetKeyboardControl()));
+                            
+                            if(controlSymmetry.GetSecondKeyboardControl() != MyKeys.None)
+                            {
+                                if(assigned.Length > 0)
+                                    assigned.Append(" or ");
+                                
+                                assigned.Append(MyAPIGateway.Input.GetKeyName(controlSymmetry.GetSecondKeyboardControl()));
+                            }
+                            
+                            if(MyGuiScreenGamePlay.ActiveGameplayScreen == null && MyGuiScreenTerminal.GetCurrentScreen() == MyTerminalPageEnum.None)
+                            {
+                                symmetryInput = true;
+                                
+                                if(MyAPIGateway.CubeBuilder.UseSymmetry)
+                                    symmetryStatus = "Symmetry enabled. Press "+assigned+" to turn off.";
+                                else
+                                    symmetryStatus = "Symmetry is off. Press "+assigned+" to enable.";
+                            }
+                            else
+                            {
+                                if(MyAPIGateway.CubeBuilder.UseSymmetry)
+                                    symmetryStatus = "Symmetry enabled.";
+                                else
+                                    symmetryStatus = "Symmetry is off.";
+                            }
+                        }
+                        else
+                        {
+                            symmetryStatus = "No symmetry on this ship.";
+                        }
+                    }
                     
                     if(!IsBlockValid(block, color, trigger, out blockName, out blockColor))
                         return false;
                     
-                    if(trigger && block != null)
+                    if(block != null)
                     {
-                        float paintSpeed = (1.0f / GetBlockSurface(block));
-                        PaintProcess(ref blockColor, color, paintSpeed, blockName);
-                        SetCrosshairColor(CROSSHAIR_PAINTING);
-                        SendPaintPacket(grid.EntityId, block.Position, blockColor);
-                        return true;
+                        selectedSlimBlock = block;
+                        
+                        if(trigger)
+                        {
+                            float paintSpeed = (1.0f / GetBlockSurface(block));
+                            PaintProcess(ref blockColor, color, paintSpeed, blockName);
+                            SetCrosshairColor(CROSSHAIR_PAINTING);
+                            SendPaintPacket(grid.EntityId, block.Position, blockColor, MyAPIGateway.CubeBuilder.UseSymmetry);
+                            return true;
+                        }
                     }
                 }
             }

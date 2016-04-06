@@ -482,7 +482,7 @@ namespace Digi.PaintGun
                         case "lastpaintcolor":
                             hsv = args[1].Split(',');
                             if(hsv.Length >= 3 && int.TryParse(hsv[0].Trim(), out h) && int.TryParse(hsv[1].Trim(), out s) && int.TryParse(hsv[2].Trim(), out v))
-                                Mod.instance.SetBuildColor(new Vector3(h / 360.0f, s / 100.0f, v / 100.0f), false);
+                                PaintGunMod.instance.SetBuildColor(new Vector3(h / 360.0f, s / 100.0f, v / 100.0f), false);
                             else
                                 Log.Error("Invalid "+args[0]+" value: " + args[1]);
                             continue;
@@ -551,7 +551,7 @@ namespace Digi.PaintGun
             if(comments)
                 str.AppendLine().AppendLine().AppendLine();
             
-            var paint = Mod.instance.GetBuildColor().ToHSVI();
+            var paint = PaintGunMod.instance.GetBuildColor().ToHSVI();
             str.Append("lastpaintcolor=").Append(paint.X).Append(",").Append(paint.Y).Append(",").Append(paint.Z).AppendLine(comments ? " // DO NOT EDIT! Used to keep track of your last used color between game sessions." : "");
             
             return str.ToString();
