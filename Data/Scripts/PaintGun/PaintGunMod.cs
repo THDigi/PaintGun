@@ -506,15 +506,15 @@ namespace Digi.PaintGun
                             {
                                 var center = matrix.Translation + new Vector3D(0, (grid.YSymmetryPlane.Value.Y * grid.GridSize) - (grid.YSymmetryOdd ? grid.GridSizeHalf : 0), 0);
                                 
-                                var minY = matrix.Backward * ((grid.Min.Z - 1.5f) * grid.GridSize);
-                                var maxY = matrix.Backward * ((grid.Max.Z + 1.5f) * grid.GridSize);
-                                var minZ = matrix.Right * ((grid.Min.X - 1.5f) * grid.GridSize);
-                                var maxZ = matrix.Right * ((grid.Max.X + 1.5f) * grid.GridSize);
+                                var minZ = matrix.Backward * ((grid.Min.Z - 1.5f) * grid.GridSize);
+                                var maxZ = matrix.Backward * ((grid.Max.Z + 1.5f) * grid.GridSize);
+                                var minX = matrix.Right * ((grid.Min.X - 1.5f) * grid.GridSize);
+                                var maxX = matrix.Right * ((grid.Max.X + 1.5f) * grid.GridSize);
                                 
-                                quad.Point0 = center + maxY + maxZ;
-                                quad.Point1 = center + maxY + minZ;
-                                quad.Point2 = center + minY + minZ;
-                                quad.Point3 = center + minY + maxZ;
+                                quad.Point0 = center + maxZ + maxX;
+                                quad.Point1 = center + maxZ + minX;
+                                quad.Point2 = center + minZ + minX;
+                                quad.Point3 = center + minZ + maxX;
                                 
                                 var color = Color.Green * alpha;
                                 
@@ -523,7 +523,7 @@ namespace Digi.PaintGun
                             
                             if(grid.ZSymmetryPlane.HasValue)
                             {
-                                var center = matrix.Translation + new Vector3D(0, 0, (grid.ZSymmetryPlane.Value.Z * grid.GridSize) + (grid.ZSymmetryOdd ? grid.GridSizeHalf : 0));
+                                var center = matrix.Translation - new Vector3D(0, 0, (grid.ZSymmetryPlane.Value.Z * grid.GridSize) + (grid.ZSymmetryOdd ? grid.GridSizeHalf : 0));
                                 
                                 var minY = matrix.Up * ((grid.Min.Y - 1.5f) * grid.GridSize);
                                 var maxY = matrix.Up * ((grid.Max.Y + 1.5f) * grid.GridSize);
