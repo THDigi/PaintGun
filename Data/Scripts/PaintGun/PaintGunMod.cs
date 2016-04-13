@@ -83,8 +83,8 @@ namespace Digi.PaintGun
         
         public void Init()
         {
-            instance = this;
             init = true;
+            instance = this;
             isThisHost = MyAPIGateway.Session.OnlineMode == MyOnlineModeEnum.OFFLINE || MyAPIGateway.Multiplayer.IsServer;
             isThisHostDedicated = (MyAPIGateway.Utilities.IsDedicated && isThisHost);
             
@@ -117,19 +117,22 @@ namespace Digi.PaintGun
         
         protected override void UnloadData()
         {
-            init = false;
-            
-            MyAPIGateway.Utilities.MessageEntered -= MessageEntered;
-            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PACKET, ReceivedPacket);
-            
-            if(settings != null)
+            if(init)
             {
-                settings.Close();
-                settings = null;
+                init = false;
+                
+                MyAPIGateway.Utilities.MessageEntered -= MessageEntered;
+                MyAPIGateway.Multiplayer.UnregisterMessageHandler(PACKET, ReceivedPacket);
+                
+                if(settings != null)
+                {
+                    settings.Close();
+                    settings = null;
+                }
+                
+                Log.Info("Mod unloaded");
+                Log.Close();
             }
-            
-            Log.Info("Mod unloaded");
-            Log.Close();
         }
         
         public void ReceivedPacket(byte[] bytes)
