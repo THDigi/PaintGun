@@ -485,7 +485,7 @@ namespace Digi.PaintGun
                             
                             if(grid.XSymmetryPlane.HasValue)
                             {
-                                var center = matrix.Translation + new Vector3D((grid.XSymmetryPlane.Value.X * grid.GridSize) - (grid.XSymmetryOdd ? grid.GridSizeHalf : 0), 0, 0);
+                                var center = matrix.Translation + matrix.Right * ((grid.XSymmetryPlane.Value.X * grid.GridSize) - (grid.XSymmetryOdd ? grid.GridSizeHalf : 0));
                                 
                                 var minY = matrix.Up * ((grid.Min.Y - 1.5f) * grid.GridSize);
                                 var maxY = matrix.Up * ((grid.Max.Y + 1.5f) * grid.GridSize);
@@ -504,7 +504,7 @@ namespace Digi.PaintGun
                             
                             if(grid.YSymmetryPlane.HasValue)
                             {
-                                var center = matrix.Translation + new Vector3D(0, (grid.YSymmetryPlane.Value.Y * grid.GridSize) - (grid.YSymmetryOdd ? grid.GridSizeHalf : 0), 0);
+                                var center = matrix.Translation + matrix.Up * ((grid.YSymmetryPlane.Value.Y * grid.GridSize) - (grid.YSymmetryOdd ? grid.GridSizeHalf : 0));
                                 
                                 var minZ = matrix.Backward * ((grid.Min.Z - 1.5f) * grid.GridSize);
                                 var maxZ = matrix.Backward * ((grid.Max.Z + 1.5f) * grid.GridSize);
@@ -523,7 +523,7 @@ namespace Digi.PaintGun
                             
                             if(grid.ZSymmetryPlane.HasValue)
                             {
-                                var center = matrix.Translation - new Vector3D(0, 0, (grid.ZSymmetryPlane.Value.Z * grid.GridSize) + (grid.ZSymmetryOdd ? grid.GridSizeHalf : 0));
+                                var center = matrix.Translation + matrix.Backward * ((grid.ZSymmetryPlane.Value.Z * grid.GridSize) + (grid.ZSymmetryOdd ? grid.GridSizeHalf : 0));
                                 
                                 var minY = matrix.Up * ((grid.Min.Y - 1.5f) * grid.GridSize);
                                 var maxY = matrix.Up * ((grid.Max.Y + 1.5f) * grid.GridSize);
