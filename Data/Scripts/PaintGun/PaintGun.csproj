@@ -7,8 +7,9 @@
     <OutputType>Library</OutputType>
     <RootNamespace>PaintGun</RootNamespace>
     <AssemblyName>PaintGun</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
     <NoWin32Manifest>False</NoWin32Manifest>
     <AllowUnsafeBlocks>False</AllowUnsafeBlocks>
     <NoStdLib>False</NoStdLib>
@@ -40,6 +41,12 @@
     <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
     <DefineConstants>TRACE</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Sandbox.Common">
       <HintPath>C:\Steam\SteamApps\common\SpaceEngineers\Bin64\Sandbox.Common.dll</HintPath>
@@ -69,6 +76,9 @@
     </Reference>
     <Reference Include="VRage.Game">
       <HintPath>C:\Steam\SteamApps\common\SpaceEngineers\Bin64\VRage.Game.dll</HintPath>
+    </Reference>
+    <Reference Include="VRage.Input">
+      <HintPath>C:\Steam\steamapps\common\SpaceEngineers\Bin64\VRage.Input.dll</HintPath>
     </Reference>
     <Reference Include="VRage.Library">
       <HintPath>C:\Steam\SteamApps\common\SpaceEngineers\Bin64\VRage.Library.dll</HintPath>
