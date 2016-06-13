@@ -28,6 +28,309 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        private Vector3I? MirrorPaint(MyCubeGrid grid, int axis, Vector3I originalPosition, Vector3 color)
+        {
+            switch(axis)
+            {
+                case 0:
+                    if(grid.XSymmetryPlane.HasValue)
+                    {
+                        var mirrorX = originalPosition + new Vector3I(((grid.XSymmetryPlane.Value.X - originalPosition.X) * 2) - (grid.XSymmetryOdd ? 1 : 0), 0, 0);
+                        var slimX = grid.GetCubeBlock(mirrorX);
+                        
+                        if(slimX != null)
+                        {
+                            grid.ChangeColor(slimX, color);
+                        }
+                        
+                        return mirrorX;
+                    }
+                    break;
+                    
+                case 1:
+                    if(grid.YSymmetryPlane.HasValue)
+                    {
+                        var mirrorY = originalPosition + new Vector3I(0, ((grid.YSymmetryPlane.Value.Y - originalPosition.Y) * 2) - (grid.YSymmetryOdd ? 1 : 0), 0);
+                        var slimY = grid.GetCubeBlock(mirrorY);
+                        
+                        if(slimY != null)
+                        {
+                            grid.ChangeColor(slimY, color);
+                        }
+                        
+                        return mirrorY;
+                    }
+                    break;
+                    
+                case 2:
+                    if(grid.ZSymmetryPlane.HasValue)
+                    {
+                        var mirrorZ = originalPosition + new Vector3I(0, 0, ((grid.ZSymmetryPlane.Value.Z - originalPosition.Z) * 2) + (grid.ZSymmetryOdd ? 1 : 0)); // reversed on odd
+                        var slimZ = grid.GetCubeBlock(mirrorZ);
+                        
+                        if(slimZ != null)
+                        {
+                            grid.ChangeColor(slimZ, color);
+                        }
+                        
+                        return mirrorZ;
+                    }
+                    break;
+            }
+            
+            return null;
+        }
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        public List<Vector3> paletteColors = new List<Vector3>();
+        public bool paletteMenuShow = false;
+        
+
+
+
+                        case "palette":
+                            PaintGunMod.instance.paletteColors.Clear();
+                            if(args[1].Length > 0)
+                            {
+                                var list = args[1].Split(';');
+                                foreach(var c in list)
+                                {
+                                    hsv = c.Split(',');
+                                    if(hsv.Length >= 3 && int.TryParse(hsv[0].Trim(), out h) && int.TryParse(hsv[1].Trim(), out s) && int.TryParse(hsv[2].Trim(), out v))
+                                        PaintGunMod.instance.paletteColors.Add(new Vector3(h / 360.0f, s / 100.0f, v / 100.0f));
+                                    else
+                                        Log.Error("Invalid "+args[0]+" color: " + args[1]);
+                                }
+                            }
+                            continue;
+                            
+                            
+                            
+                            
+                            
+                            
+                            
+                            
+                            
+                            
+                            
+                            
+                            
+            str.Append("Palette=");
+            
+            if(PaintGunMod.instance.paletteColors.Count > 0)
+            {
+                foreach(var c in PaintGunMod.instance.paletteColors)
+                {
+                    paint = c.ToHSVI();
+                    str.Append(paint.X).Append(",").Append(paint.Y).Append(",").Append(paint.Z).Append(";");
+                }
+                
+                str.Length -= 1;
+            }
+            
+            str.AppendLine();
+            
+            
+            
+            
+            
+            
+            
+            
+            
+
+                    else if(msg.StartsWith("default", StringComparison.Ordinal))
+                    {
+                        msg = msg.Substring("default".Length).Trim();
+                        
+                        int num;
+                        
+                        if(!int.TryParse(msg, out num))
+                        {
+                            MyAPIGateway.Utilities.ShowMessage(MOD_NAME, "Argument is not a number.");
+                        }
+                        else
+                        {
+                            num = MathHelper.Clamp(num, 1, 14);
+                            SetBuildColor(defaultColors[num-1]);
+                            MyAPIGateway.Utilities.ShowMessage(MOD_NAME, "Got color from default " + num + " with color " + ColorToString(GetBuildColor()));
+                        }
+                        
+                        return;
+                    }
+
+
+
+        //PaintGun.cs / public override void UpdateAfterSimulation()
+
+
+                if(heldByLocalPlayer)
+                {
+                    if(MyAPIGateway.Input.IsNewMiddleMousePressed()) // TODO << key assignment
+                    {
+                        mod.paletteMenuShow = !mod.paletteMenuShow;
+                        return;
+                    }
+
+
+<?xml version="1.0"?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <TransparentMaterials>
+    <TransparentMaterial>
+    <Id>
+        <TypeId>TransparentMaterialDefinition</TypeId>
+        <SubtypeId>PaintGunHUDColor</SubtypeId>
+      </Id>
+      <AlphaMistingEnable>false</AlphaMistingEnable>
+      <AlphaSaturation>1</AlphaSaturation>
+      <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
+      <Emissivity>0</Emissivity>
+      <IgnoreDepth>true</IgnoreDepth>
+      <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
+      <Texture>Textures\Particles\Square.dds</Texture>
+      <UseAtlas>false</UseAtlas>
+      <UVOffset>
+        <X>0</X>
+        <Y>0</Y>
+      </UVOffset>
+      <UVSize>
+        <X>1</X>
+        <Y>1</Y>
+      </UVSize>
+    </TransparentMaterial>
+  </TransparentMaterials>
+</Definitions>
+
+
+        public override void Draw() // TODO FINISH!
+        {
+            try
+            {
+                if(!init)
+                    return;
+                
+                var myId = MyAPIGateway.Multiplayer.MyId;
+                IMyEntity ent;
+                
+                if(holdingTools.TryGetValue(myId, out ent))
+                {
+                    if(!MyHud.MinimalHud)
+                    {
+                        var cam = MyAPIGateway.Session.Camera;
+                        var camMatrix = cam.WorldMatrix;
+                        var pos = camMatrix.Translation + camMatrix.Forward * 0.1 + camMatrix.Down * 0.2 + camMatrix.Right * 0.05;
+                        
+                        var bg = HSVtoRGB(GetBuildColor());
+                        
+                        var viewProjectionMatrix = MatrixD.Invert(cam.ViewMatrix * cam.ProjectionMatrix);
+                        var screenPos = new Vector3D(0.32, -0.76, 0);
+                        var world = Vector3D.Transform(screenPos, viewProjectionMatrix);
+                        
+                        var scaleFOV = cam.FovWithZoom / MathHelper.ToRadians(90); // TODO make it better?
+                        var width = 0.0066f * scaleFOV;
+                        var height = 0.0013f * scaleFOV;
+                        
+                        // TODO fix shaking when far away from 0,0,0
+                        
+                        MyTransparentGeometry.AddBillboardOriented("PaintGunHUDColor", bg, world, camMatrix.Left, camMatrix.Up, width, height, 0, true);
+                    }
+                    
+                    if(paletteMenuShow) // TODO resize menu according to FOV ?
+                    {
+                        var camMatrix = MyAPIGateway.Session.Camera.WorldMatrix;
+                        var pos = camMatrix.Translation + camMatrix.Forward * 0.1 + camMatrix.Right * 0.05;
+                        var bg = Color.Black * 0.5f;
+                        MyQuadD quad;
+                        MyUtils.GenerateQuad(out quad, ref pos, 0.01f, 0.03f, ref camMatrix);
+                        MyTransparentGeometry.AddQuad("Square", ref quad, bg, ref pos, 0, -1);
+                        
+                        pos += camMatrix.Up * 0.024;
+                        
+                        foreach(var v in defaultColors)
+                        {
+                            //Color c = HSVtoRGB(v);
+                            var c = new Vector3(v.X, MathHelper.Clamp(v.Y + 0.8f, 0f, 1f), MathHelper.Clamp(v.Z + 0.55f, 0f, 1f)).HSVtoColor();
+                            pos += camMatrix.Down * 0.0041;
+                            MyUtils.GenerateQuad(out quad, ref pos, 0.009f, 0.002f, ref camMatrix);
+                            MyTransparentGeometry.AddQuad("Square", ref quad, c, ref pos, 0, -1);
+                        }
+                        
+                        return;
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+                Log.Error(e);
+            }
+        }
+        
+
+
+
+
 //////// ACCIDENTAL FIRE EXTINGUISHER ////////
 
                     if(trigger)

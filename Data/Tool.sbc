@@ -38,19 +38,17 @@
   </PhysicalItems>
   <HandItems>
     <HandItem>
-      <Id>
-        <TypeId>MyObjectBuilder_AutomaticRifle</TypeId>
-        <SubtypeId>PaintGun</SubtypeId>
-      </Id>
-      <SimulateLeftHand>false</SimulateLeftHand>
+      <Id Type="MyObjectBuilder_AutomaticRifle" Subtype="PaintGun" />
+
+      <!-- Hand Items -->
       <RightHandOrientation>
-        <X>-0.404110372</X>
-        <Y>-0.455362</Y>
-        <Z>-0.595675</Z>
+        <X>-0.404110253</X>
+        <Y>-0.455361873</Y>
+        <Z>-0.5956749</Z>
         <W>0.523938656</W>
       </RightHandOrientation>
       <RightHandPosition>
-        <X>0.0127354835</X>
+        <X>0.0127354832</X>
         <Y>-0.062458396</Y>
         <Z>0.1</Z>
       </RightHandPosition>
@@ -61,98 +59,103 @@
         <W>1</W>
       </ItemOrientation>
       <ItemPosition>
-        <X>0.1</X>
-        <Y>-0.18</Y>
-        <Z>-0.22</Z>
+        <X>0.2</X>
+        <Y>-0.2</Y>
+        <Z>-0.3</Z>
       </ItemPosition>
+
+	<!-- Hand Item Animations -->
       <ItemWalkingOrientation>
-        <X>0</X>
-        <Y>0</Y>
-        <Z>0</Z>
-        <W>1</W>
+        <X>0.158379346</X>
+        <Y>0.010264338</Y>
+        <Z>0.06385316</Z>
+        <W>0.985258043</W>
       </ItemWalkingOrientation>
       <ItemWalkingPosition>
-        <X>0.1</X>
-        <Y>-0.18</Y>
-        <Z>-0.22</Z>
+        <X>0.268463254</X>
+        <Y>-0.131492972</Y>
+        <Z>-0.3</Z>
       </ItemWalkingPosition>
-      <BlendTime>1</BlendTime>
+      <BlendTime>0.5</BlendTime>
       <XAmplitudeOffset>0</XAmplitudeOffset>
       <YAmplitudeOffset>0</YAmplitudeOffset>
       <ZAmplitudeOffset>0</ZAmplitudeOffset>
-      <XAmplitudeScale>0</XAmplitudeScale>
-      <YAmplitudeScale>0</YAmplitudeScale>
-      <ZAmplitudeScale>0</ZAmplitudeScale>
+      <XAmplitudeScale>0.0821828842</XAmplitudeScale>
+      <YAmplitudeScale>0.2191534</YAmplitudeScale>
+      <ZAmplitudeScale>0.2</ZAmplitudeScale>
       <RunMultiplier>1.0</RunMultiplier>
-      <ItemWalkingOrientation3rd>
-        <X>0</X>
-        <Y>0</Y>
-        <Z>0</Z>
-        <W>1</W>
-      </ItemWalkingOrientation3rd>
-      <ItemWalkingPosition3rd>
-        <X>0.1</X>
-        <Y>-0.18</Y>
-        <Z>-0.22</Z>
-      </ItemWalkingPosition3rd>
-      <AmplitudeMultiplier3rd>0.5634576</AmplitudeMultiplier3rd>
-      <ItemOrientation3rd>
-        <X>0</X>
-        <Y>0</Y>
-        <Z>0</Z>
-        <W>1</W>
-      </ItemOrientation3rd>
-      <ItemPosition3rd>
-        <X>0.1</X>
-        <Y>-0.18</Y>
-        <Z>-0.22</Z>
-      </ItemPosition3rd>
-      <FingersAnimation>HoldingTool</FingersAnimation>
+      <SimulateLeftHand>false</SimulateLeftHand>
+      <SimulateRightHand>true</SimulateRightHand>
+
+      <!-- Hand Item Shoot -->
       <ItemShootOrientation>
-        <X>0</X>
+        <X>0.0605503358</X>
         <Y>0</Y>
         <Z>0</Z>
-        <W>1</W>
+        <W>0.998165131</W>
       </ItemShootOrientation>
       <ItemShootPosition>
-        <X>0.1</X>
-        <Y>-0.18</Y>
-        <Z>-0.22</Z>
+        <X>0.2</X>
+        <Y>-0.2</Y>
+        <Z>-0.3</Z>
       </ItemShootPosition>
       <ItemShootOrientation3rd>
-        <X>0</X>
+        <X>0.0302890688</X>
         <Y>0</Y>
         <Z>0</Z>
-        <W>1</W>
+        <W>0.999541163</W>
       </ItemShootOrientation3rd>
       <ItemShootPosition3rd>
-        <X>0.1</X>
-        <Y>-0.18</Y>
-        <Z>-0.22</Z>
+        <X>0.165</X>
+        <Y>-0.11</Y>
+        <Z>-0.2</Z>
       </ItemShootPosition3rd>
-      <ShootBlend>1.28796792</ShootBlend>
+      <ShootBlend>0.2</ShootBlend>
       <MuzzlePosition>
         <X>0</X>
         <Y>0.19</Y>
         <Z>-0.16</Z>
       </MuzzlePosition>
       <ShootScatter>
-        <X>0.0</X>
-        <Y>0.0</Y>
-        <Z>0.0</Z>
+        <X>0.1</X>
+        <Y>0</Y>
+        <Z>0</Z>
       </ShootScatter>
-      <ScatterSpeed>0.0</ScatterSpeed>
-      <PhysicalItemId>
-        <TypeId>MyObjectBuilder_PhysicalGunObject</TypeId>
-        <SubtypeId>PhysicalPaintGun</SubtypeId>
-      </PhysicalItemId>
+      <ScatterSpeed>0.1</ScatterSpeed>
+
+	<!-- Hand Item Animations 3rd -->
+      <ItemOrientation3rd>
+        <X>0.167450413</X>
+        <Y>0.0821511149</Y>
+        <Z>0.09435017</Z>
+        <W>0.9779109</W>
+      </ItemOrientation3rd>
+      <ItemPosition3rd>
+        <X>0.165</X>
+        <Y>-0.11</Y>
+        <Z>-0.2</Z>
+      </ItemPosition3rd>
+      <ItemWalkingOrientation3rd>
+        <X>-0.048529</X>
+        <Y>0.168846026</Y>
+        <Z>0.271936327</Z>
+        <W>0.946143031</W>
+      </ItemWalkingOrientation3rd>
+      <ItemWalkingPosition3rd>
+        <X>0.241069078</X>
+        <Y>-0.202718079</Y>
+        <Z>-0.208196521</Z>
+      </ItemWalkingPosition3rd>
+      <AmplitudeMultiplier3rd>1.0</AmplitudeMultiplier3rd>
+
+      <FingersAnimation>HoldingTool</FingersAnimation>
+      <PhysicalItemId Type="MyObjectBuilder_PhysicalGunObject" Subtype="PhysicalPaintGun" />
       <ShakeAmountTarget>0</ShakeAmountTarget>
       <ShakeAmountNoTarget>0</ShakeAmountNoTarget>
       <LightColor>
         <X>0</X>
         <Y>0</Y>
         <Z>0</Z>
-        <W>0</W>
       </LightColor>
       <LightFalloff>0</LightFalloff>
       <LightRadius>0</LightRadius>

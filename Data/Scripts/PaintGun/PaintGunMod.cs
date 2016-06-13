@@ -1,22 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Text;
-using System.Threading.Tasks;
-using System.IO;
-using Sandbox.Common;
-using Sandbox.Common.ObjectBuilders;
 using Sandbox.Definitions;
-using Sandbox.Engine;
-using Sandbox.Engine.Physics;
-using Sandbox.Engine.Multiplayer;
 using Sandbox.ModAPI;
-using Sandbox.ModAPI.Interfaces;
 using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Gui;
-using VRage.Common.Utils;
 using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.Gui;
@@ -24,10 +14,10 @@ using VRage.Game.ModAPI;
 using VRage.Input;
 using VRageMath;
 using VRage;
-using VRage.ObjectBuilders;
 using VRage.Game.Components;
 using VRage.ModAPI;
 using VRage.Utils;
+
 using Digi.Utils;
 
 namespace Digi.PaintGun
@@ -47,6 +37,7 @@ namespace Digi.PaintGun
         public string symmetryStatus = null;
         public MyCubeGrid grid = null; // currently selected grid by the local paint gun
         public IMySlimBlock selectedSlimBlock = null;
+        public bool selectedInvalid = false;
         public Vector3 prevColorPreview;
         public Vector3 customColor = DEFAULT_COLOR;
         public Vector3 prevCustomColor = DEFAULT_COLOR;
@@ -64,6 +55,7 @@ namespace Digi.PaintGun
         public const float DEPAINT_SPEED = 1.5f;
         public const int SKIP_UPDATES = 10;
         public static Vector3 DEFAULT_COLOR = new Vector3(0, -1, 0);
+        public const float SAME_COLOR_RANGE = 0.001f;
         public static MyObjectBuilder_AmmoMagazine PAINT_MAG = new MyObjectBuilder_AmmoMagazine() { SubtypeName = PAINT_MAG_ID, ProjectilesCount = 1 };
         
         public const ushort PACKET = 9318;
@@ -79,7 +71,14 @@ namespace Digi.PaintGun
         public static Color CROSSHAIR_PAINTING = new Color(0, 255, 155);
         public static readonly MyStringId CROSSHAIR_SPRITEID = MyStringId.GetOrCompute("Default");
         
+        private readonly StringBuilder assigned = new StringBuilder();
+        
         public static HashSet<IMyEntity> ents = new HashSet<IMyEntity>();
+        
+        private MyCubeBlockDefinition anyCubeBlockDef = null;
+        private bool colorNeedsUpdate = false;
+        private bool inColorPickerMenu = false;
+        private byte colorPickerSkip = 0;
         
         public void Init()
         {
@@ -112,43 +111,76 @@ namespace Digi.PaintGun
                 {
                     defaultColors[i] = (defaultColors[i - 7] + new Vector3(0, 0.15f, 0.2f));
                 }
+                
+                // get the first CubeBlock definition we can find, used in the method to get the player's selected color, hacky stuff
+                var defList = MyDefinitionManager.Static.GetAllDefinitions();
+                
+                foreach(var d in defList)
+                {
+                    anyCubeBlockDef = d as  MyCubeBlockDefinition;
+                    
+                    if(anyCubeBlockDef != null)
+                        break;
+                }
             }
         }
         
         protected override void UnloadData()
         {
-            if(init)
+            try
             {
-                init = false;
-                
-                MyAPIGateway.Utilities.MessageEntered -= MessageEntered;
-                MyAPIGateway.Multiplayer.UnregisterMessageHandler(PACKET, ReceivedPacket);
-                
-                if(settings != null)
+                if(init)
                 {
-                    settings.Close();
-                    settings = null;
+                    init = false;
+                    
+                    MyAPIGateway.Utilities.MessageEntered -= MessageEntered;
+                    MyAPIGateway.Multiplayer.UnregisterMessageHandler(PACKET, ReceivedPacket);
+                    
+                    if(settings != null)
+                    {
+                        settings.Close();
+                        settings = null;
+                    }
+                    
+                    Log.Info("Mod unloaded");
                 }
-                
-                Log.Info("Mod unloaded");
-                Log.Close();
             }
+            catch(Exception e)
+            {
+                Log.Error(e);
+            }
+            
+            Log.Close();
         }
         
         public void ReceivedPacket(byte[] bytes)
         {
             try
             {
-                string[] data = encode.GetString(bytes).Split(SEPARATOR);
-                int type = int.Parse(data[0]);
-                int i = 1;
+                int index = 0;
+                
+                byte type = bytes[index];
+                index += sizeof(byte);
+                
+                if(type >= 2 && MyAPIGateway.Multiplayer.IsServer) // relay to clients if it's any type except inventory because those get synchronized by the game
+                {
+                    var myId = MyAPIGateway.Multiplayer.MyId;
+                    MyAPIGateway.Players.GetPlayers(new List<IMyPlayer>(), delegate(IMyPlayer p)
+                                                    {
+                                                        if(myId != p.SteamUserId)
+                                                            MyAPIGateway.Multiplayer.SendMessageTo(PACKET, bytes, p.SteamUserId, true);
+                                                        
+                                                        return false;
+                                                    });
+                }
                 
                 switch(type)
                 {
                     case 0: // inventory remove
                     case 1: // inventory add
                         {
-                            long entId = long.Parse(data[i++]);
+                            long entId = BitConverter.ToInt64(bytes, index);
+                            index += sizeof(long);
                             
                             if(!MyAPIGateway.Entities.EntityExists(entId))
                                 return;
@@ -167,19 +199,8 @@ namespace Digi.PaintGun
                         }
                     case 2: // block painted
                         {
-                            if(MyAPIGateway.Multiplayer.IsServer)
-                            {
-                                var myId = MyAPIGateway.Multiplayer.MyId;
-                                MyAPIGateway.Players.GetPlayers(new List<IMyPlayer>(), delegate(IMyPlayer p)
-                                                                {
-                                                                    if(myId != p.SteamUserId)
-                                                                        MyAPIGateway.Multiplayer.SendMessageTo(PACKET, bytes, p.SteamUserId, true);
-                                                                    
-                                                                    return false;
-                                                                });
-                            }
-                            
-                            long entId = long.Parse(data[i++]);
+                            long entId = BitConverter.ToInt64(bytes, index);
+                            index += sizeof(long);
                             
                             if(!MyAPIGateway.Entities.EntityExists(entId))
                                 return;
@@ -190,53 +211,67 @@ namespace Digi.PaintGun
                             if(grid == null)
                                 return;
                             
-                            var pos = new Vector3I(int.Parse(data[i++]), int.Parse(data[i++]), int.Parse(data[i++]));
+                            var pos = new Vector3I(BitConverter.ToInt32(bytes, index),
+                                                   BitConverter.ToInt32(bytes, index + sizeof(int)),
+                                                   BitConverter.ToInt32(bytes, index + sizeof(int) * 2));
+                            index += sizeof(int) * 3;
+                            
                             var slim = grid.GetCubeBlock(pos);
                             
                             if(slim == null)
                                 return;
                             
-                            var color = new Vector3(float.Parse(data[i++]), float.Parse(data[i++]), float.Parse(data[i++]));
+                            var color = new Vector3(BitConverter.ToSingle(bytes, index),
+                                                    BitConverter.ToSingle(bytes, index + sizeof(float)),
+                                                    BitConverter.ToSingle(bytes, index + sizeof(float) * 2));
+                            index += sizeof(float) * 3;
+                            
                             grid.ChangeColor(slim, color);
                             
-                            if(MyAPIGateway.Session.CreativeMode && data.Length > i) // symmetry paint
+                            if(bytes.Length > index) // symmetry paint
                             {
-                                var mirrorX = MirrorPaint(grid, 0, pos, color);
-                                var mirrorY = MirrorPaint(grid, 1, pos, color);
-                                var mirrorZ = MirrorPaint(grid, 2, pos, color);
+                                var mirrorPlane = new Vector3I(BitConverter.ToInt32(bytes, index),
+                                                               BitConverter.ToInt32(bytes, index + sizeof(int)),
+                                                               BitConverter.ToInt32(bytes, index + sizeof(int) * 2));
+                                index += sizeof(int) * 3;
+                                
+                                bool[] odd =
+                                {
+                                    BitConverter.ToBoolean(bytes, index),
+                                    BitConverter.ToBoolean(bytes, index + sizeof(bool)),
+                                    BitConverter.ToBoolean(bytes, index + sizeof(bool) * 2)
+                                };
+                                index += sizeof(bool) * 3;
+                                
+                                var mirrorX = MirrorPaint(grid, 0, mirrorPlane, odd[0], pos, color); // X
+                                var mirrorY = MirrorPaint(grid, 1, mirrorPlane, odd[1], pos, color); // Y
+                                var mirrorZ = MirrorPaint(grid, 2, mirrorPlane, odd[2], pos, color); // Z
                                 Vector3I? mirrorYZ = null;
                                 
-                                if(mirrorX.HasValue && grid.YSymmetryPlane.HasValue) // XY
-                                    MirrorPaint(grid, 1, mirrorX.Value, color);
+                                if(mirrorX.HasValue && mirrorPlane.Y > int.MinValue) // XY
+                                    MirrorPaint(grid, 1, mirrorPlane, odd[1], mirrorX.Value, color);
                                 
-                                if(mirrorX.HasValue && grid.ZSymmetryPlane.HasValue) // XZ
-                                    MirrorPaint(grid, 2, mirrorX.Value, color);
+                                if(mirrorX.HasValue && mirrorPlane.Z > int.MinValue) // XZ
+                                    MirrorPaint(grid, 2, mirrorPlane, odd[2], mirrorX.Value, color);
                                 
-                                if(mirrorY.HasValue && grid.ZSymmetryPlane.HasValue) // YZ
-                                    mirrorYZ = MirrorPaint(grid, 2, mirrorY.Value, color);
+                                if(mirrorY.HasValue && mirrorPlane.Z > int.MinValue) // YZ
+                                    mirrorYZ = MirrorPaint(grid, 2, mirrorPlane, odd[2], mirrorY.Value, color);
                                 
-                                if(grid.XSymmetryPlane.HasValue && mirrorYZ.HasValue) // XYZ
-                                    MirrorPaint(grid, 0, mirrorYZ.Value, color);
+                                if(mirrorPlane.X > int.MinValue && mirrorYZ.HasValue) // XYZ
+                                    MirrorPaint(grid, 0, mirrorPlane, odd[0], mirrorYZ.Value, color);
                             }
                             
                             break;
                         }
                     case 3: // set tool color
                         {
-                            if(MyAPIGateway.Multiplayer.IsServer)
-                            {
-                                var myId = MyAPIGateway.Multiplayer.MyId;
-                                MyAPIGateway.Players.GetPlayers(new List<IMyPlayer>(), delegate(IMyPlayer p)
-                                                                {
-                                                                    if(myId != p.SteamUserId)
-                                                                        MyAPIGateway.Multiplayer.SendMessageTo(PACKET, bytes, p.SteamUserId, true);
-                                                                    
-                                                                    return false;
-                                                                });
-                            }
+                            ulong steamId = BitConverter.ToUInt64(bytes, index);
+                            index += sizeof(ulong);
                             
-                            ulong steamId = ulong.Parse(data[i++]);
-                            var color = new Vector3(float.Parse(data[i++]), float.Parse(data[i++]), float.Parse(data[i++]));
+                            var color = new Vector3(BitConverter.ToSingle(bytes, index),
+                                                    BitConverter.ToSingle(bytes, index + sizeof(float)),
+                                                    BitConverter.ToSingle(bytes, index + sizeof(float) * 2));
+                            index += sizeof(float) * 3;
                             
                             if(!playerColors.ContainsKey(steamId))
                                 playerColors.Add(steamId, color);
@@ -257,19 +292,8 @@ namespace Digi.PaintGun
                     case 4: // set color pick mode
                     case 5:
                         {
-                            if(MyAPIGateway.Multiplayer.IsServer)
-                            {
-                                var myId = MyAPIGateway.Multiplayer.MyId;
-                                MyAPIGateway.Players.GetPlayers(new List<IMyPlayer>(), delegate(IMyPlayer p)
-                                                                {
-                                                                    if(myId != p.SteamUserId)
-                                                                        MyAPIGateway.Multiplayer.SendMessageTo(PACKET, bytes, p.SteamUserId, true);
-                                                                    
-                                                                    return false;
-                                                                });
-                            }
-                            
-                            ulong steamId = ulong.Parse(data[i++]);
+                            ulong steamId = BitConverter.ToUInt64(bytes, index);
+                            index += sizeof(ulong);
                             
                             if(type == 4)
                             {
@@ -287,14 +311,12 @@ namespace Digi.PaintGun
                                     if(logic == null)
                                         return;
                                     
-                                    logic.lastPickTime = DateTime.UtcNow.Ticks;
+                                    logic.cooldown = DateTime.UtcNow.Ticks;
                                 }
                             }
                             break;
                         }
                 }
-                
-                
             }
             catch(Exception e)
             {
@@ -302,19 +324,19 @@ namespace Digi.PaintGun
             }
         }
         
-        private Vector3I? MirrorPaint(MyCubeGrid grid, int axis, Vector3I originalPosition, Vector3 color)
+        private Vector3I? MirrorPaint(MyCubeGrid g, int axis, Vector3I mirror, bool odd, Vector3I originalPosition, Vector3 color)
         {
             switch(axis)
             {
                 case 0:
-                    if(grid.XSymmetryPlane.HasValue)
+                    if(mirror.X > int.MinValue)
                     {
-                        var mirrorX = originalPosition + new Vector3I(((grid.XSymmetryPlane.Value.X - originalPosition.X) * 2) - (grid.XSymmetryOdd ? 1 : 0), 0, 0);
-                        var slimX = grid.GetCubeBlock(mirrorX);
+                        var mirrorX = originalPosition + new Vector3I(((mirror.X - originalPosition.X) * 2) - (odd ? 1 : 0), 0, 0);
+                        var slimX = g.GetCubeBlock(mirrorX);
                         
                         if(slimX != null)
                         {
-                            grid.ChangeColor(slimX, color);
+                            g.ChangeColor(slimX, color);
                         }
                         
                         return mirrorX;
@@ -322,14 +344,14 @@ namespace Digi.PaintGun
                     break;
                     
                 case 1:
-                    if(grid.YSymmetryPlane.HasValue)
+                    if(mirror.Y > int.MinValue)
                     {
-                        var mirrorY = originalPosition + new Vector3I(0, ((grid.YSymmetryPlane.Value.Y - originalPosition.Y) * 2) - (grid.YSymmetryOdd ? 1 : 0), 0);
-                        var slimY = grid.GetCubeBlock(mirrorY);
+                        var mirrorY = originalPosition + new Vector3I(0, ((mirror.Y - originalPosition.Y) * 2) - (odd ? 1 : 0), 0);
+                        var slimY = g.GetCubeBlock(mirrorY);
                         
                         if(slimY != null)
                         {
-                            grid.ChangeColor(slimY, color);
+                            g.ChangeColor(slimY, color);
                         }
                         
                         return mirrorY;
@@ -337,14 +359,113 @@ namespace Digi.PaintGun
                     break;
                     
                 case 2:
-                    if(grid.ZSymmetryPlane.HasValue)
+                    if(mirror.Z > int.MinValue)
                     {
-                        var mirrorZ = originalPosition + new Vector3I(0, 0, ((grid.ZSymmetryPlane.Value.Z - originalPosition.Z) * 2) + (grid.ZSymmetryOdd ? 1 : 0)); // reversed on odd
-                        var slimZ = grid.GetCubeBlock(mirrorZ);
+                        var mirrorZ = originalPosition + new Vector3I(0, 0, ((mirror.Z - originalPosition.Z) * 2) + (odd ? 1 : 0)); // reversed on odd
+                        var slimZ = g.GetCubeBlock(mirrorZ);
                         
                         if(slimZ != null)
                         {
-                            grid.ChangeColor(slimZ, color);
+                            g.ChangeColor(slimZ, color);
+                        }
+                        
+                        return mirrorZ;
+                    }
+                    break;
+            }
+            
+            return null;
+        }
+        
+        private bool MirrorCheckSameColor(MyCubeGrid g, int axis, Vector3I originalPosition, Vector3 color, out Vector3I? mirror)
+        {
+            mirror = null;
+            
+            switch(axis)
+            {
+                case 0:
+                    if(g.XSymmetryPlane.HasValue)
+                    {
+                        var mirrorX = originalPosition + new Vector3I(((g.XSymmetryPlane.Value.X - originalPosition.X) * 2) - (g.XSymmetryOdd ? 1 : 0), 0, 0);
+                        var slimX = g.GetCubeBlock(mirrorX) as IMySlimBlock;
+                        mirror = mirrorX;
+                        
+                        if(slimX != null)
+                            return NearEqual(slimX.GetColorMask(), color, SAME_COLOR_RANGE);
+                    }
+                    break;
+                    
+                case 1:
+                    if(g.YSymmetryPlane.HasValue)
+                    {
+                        var mirrorY = originalPosition + new Vector3I(0, ((g.YSymmetryPlane.Value.Y - originalPosition.Y) * 2) - (g.YSymmetryOdd ? 1 : 0), 0);
+                        var slimY = g.GetCubeBlock(mirrorY) as IMySlimBlock;
+                        mirror = mirrorY;
+                        
+                        if(slimY != null)
+                            return NearEqual(slimY.GetColorMask(), color, SAME_COLOR_RANGE);
+                    }
+                    break;
+                    
+                case 2:
+                    if(g.ZSymmetryPlane.HasValue)
+                    {
+                        var mirrorZ = originalPosition + new Vector3I(0, 0, ((g.ZSymmetryPlane.Value.Z - originalPosition.Z) * 2) + (g.ZSymmetryOdd ? 1 : 0)); // reversed on odd
+                        var slimZ = g.GetCubeBlock(mirrorZ) as IMySlimBlock;
+                        mirror = mirrorZ;
+                        
+                        if(slimZ != null)
+                            return NearEqual(slimZ.GetColorMask(), color, SAME_COLOR_RANGE);
+                    }
+                    break;
+            }
+            
+            return true;
+        }
+        
+        private Vector3I? MirrorHighlight(MyCubeGrid g, int axis, Vector3I originalPosition)
+        {
+            switch(axis)
+            {
+                case 0:
+                    if(g.XSymmetryPlane.HasValue)
+                    {
+                        var mirrorX = originalPosition + new Vector3I(((g.XSymmetryPlane.Value.X - originalPosition.X) * 2) - (g.XSymmetryOdd ? 1 : 0), 0, 0);
+                        var slimX = g.GetCubeBlock(mirrorX);
+                        
+                        if(slimX != null)
+                        {
+                            MyCubeBuilder.DrawSemiTransparentBox(g, slimX, Color.White, true, selectedInvalid ? "GizmoDrawLineRed" : "GizmoDrawLine", null);
+                        }
+                        
+                        return mirrorX;
+                    }
+                    break;
+                    
+                case 1:
+                    if(g.YSymmetryPlane.HasValue)
+                    {
+                        var mirrorY = originalPosition + new Vector3I(0, ((g.YSymmetryPlane.Value.Y - originalPosition.Y) * 2) - (g.YSymmetryOdd ? 1 : 0), 0);
+                        var slimY = g.GetCubeBlock(mirrorY);
+                        
+                        if(slimY != null)
+                        {
+                            MyCubeBuilder.DrawSemiTransparentBox(g, slimY, Color.White, true, selectedInvalid ? "GizmoDrawLineRed" : "GizmoDrawLine", null);
+                        }
+                        
+                        return mirrorY;
+                    }
+                    break;
+                    
+                case 2:
+                    if(g.ZSymmetryPlane.HasValue)
+                    {
+                        var mirrorZ = originalPosition + new Vector3I(0, 0, ((g.ZSymmetryPlane.Value.Z - originalPosition.Z) * 2) + (g.ZSymmetryOdd ? 1 : 0)); // reversed on odd
+                        var slimZ = g.GetCubeBlock(mirrorZ);
+                        
+                        if(slimZ != null)
+                        {
+                            MyCubeBuilder.DrawSemiTransparentBox(g, slimZ, Color.White, true, selectedInvalid ? "GizmoDrawLineRed" : "GizmoDrawLine", null);
                         }
                         
                         return mirrorZ;
@@ -359,11 +480,16 @@ namespace Digi.PaintGun
         {
             try
             {
-                var data = new StringBuilder();
-                data.Append(type == 1 ? 1 : 0);
-                data.Append(SEPARATOR);
-                data.Append(entId);
-                var bytes = encode.GetBytes(data.ToString());
+                int len = sizeof(byte) + sizeof(long);
+                
+                var bytes = new byte[len];
+                bytes[0] = (byte)(type == 1 ? 1 : 0);
+                len = 1;
+                
+                var data = BitConverter.GetBytes(entId);
+                Array.Copy(data, 0, bytes, len, data.Length);
+                len += data.Length;
+                
                 MyAPIGateway.Multiplayer.SendMessageToServer(PACKET, bytes, true);
             }
             catch(Exception e)
@@ -372,34 +498,74 @@ namespace Digi.PaintGun
             }
         }
         
-        public void SendPaintPacket(long entId, Vector3I pos, Vector3 color, bool useSymmetry = false)
+        public void SendPaintPacket(long entId, Vector3I pos, Vector3 color, Vector3I? mirrorPlane = null, bool[] odd = null)
         {
             try
             {
-                var data = new StringBuilder();
-                data.Append(2);
-                data.Append(SEPARATOR);
-                data.Append(entId);
-                data.Append(SEPARATOR);
-                data.Append(pos.X);
-                data.Append(SEPARATOR);
-                data.Append(pos.Y);
-                data.Append(SEPARATOR);
-                data.Append(pos.Z);
-                data.Append(SEPARATOR);
-                data.Append(color.X);
-                data.Append(SEPARATOR);
-                data.Append(color.Y);
-                data.Append(SEPARATOR);
-                data.Append(color.Z);
+                int len = sizeof(byte) + sizeof(long) + sizeof(int) * 3 + sizeof(float) * 3;
                 
-                if(useSymmetry)
+                if(mirrorPlane.HasValue && odd != null)
+                    len += sizeof(int) * 3 + sizeof(bool) * 3;
+                
+                var bytes = new byte[len];
+                bytes[0] = 2;
+                len = 1;
+                
+                var data = BitConverter.GetBytes(entId);
+                Array.Copy(data, 0, bytes, len, data.Length);
+                len += data.Length;
+                
+                data = BitConverter.GetBytes(pos.X);
+                Array.Copy(data, 0, bytes, len, data.Length);
+                len += data.Length;
+                
+                data = BitConverter.GetBytes(pos.Y);
+                Array.Copy(data, 0, bytes, len, data.Length);
+                len += data.Length;
+                
+                data = BitConverter.GetBytes(pos.Z);
+                Array.Copy(data, 0, bytes, len, data.Length);
+                len += data.Length;
+                
+                data = BitConverter.GetBytes(color.X);
+                Array.Copy(data, 0, bytes, len, data.Length);
+                len += data.Length;
+                
+                data = BitConverter.GetBytes(color.Y);
+                Array.Copy(data, 0, bytes, len, data.Length);
+                len += data.Length;
+                
+                data = BitConverter.GetBytes(color.Z);
+                Array.Copy(data, 0, bytes, len, data.Length);
+                len += data.Length;
+                
+                if(mirrorPlane.HasValue && odd != null)
                 {
-                    data.Append(SEPARATOR);
-                    data.Append(0);
+                    data = BitConverter.GetBytes(mirrorPlane.Value.X);
+                    Array.Copy(data, 0, bytes, len, data.Length);
+                    len += data.Length;
+                    
+                    data = BitConverter.GetBytes(mirrorPlane.Value.Y);
+                    Array.Copy(data, 0, bytes, len, data.Length);
+                    len += data.Length;
+                    
+                    data = BitConverter.GetBytes(mirrorPlane.Value.Z);
+                    Array.Copy(data, 0, bytes, len, data.Length);
+                    len += data.Length;
+                    
+                    data = BitConverter.GetBytes(odd[0]);
+                    Array.Copy(data, 0, bytes, len, data.Length);
+                    len += data.Length;
+                    
+                    data = BitConverter.GetBytes(odd[1]);
+                    Array.Copy(data, 0, bytes, len, data.Length);
+                    len += data.Length;
+                    
+                    data = BitConverter.GetBytes(odd[2]);
+                    Array.Copy(data, 0, bytes, len, data.Length);
+                    len += data.Length;
                 }
                 
-                var bytes = encode.GetBytes(data.ToString());
                 MyAPIGateway.Multiplayer.SendMessageToServer(PACKET, bytes, true);
             }
             catch(Exception e)
@@ -412,17 +578,28 @@ namespace Digi.PaintGun
         {
             try
             {
-                var data = new StringBuilder();
-                data.Append(3);
-                data.Append(SEPARATOR);
-                data.Append(myId);
-                data.Append(SEPARATOR);
-                data.Append(color.X);
-                data.Append(SEPARATOR);
-                data.Append(color.Y);
-                data.Append(SEPARATOR);
-                data.Append(color.Z);
-                var bytes = encode.GetBytes(data.ToString());
+                int len = sizeof(byte) + sizeof(ulong) + sizeof(float) * 3;
+                
+                var bytes = new byte[len];
+                bytes[0] = 3;
+                len = 1;
+                
+                var data = BitConverter.GetBytes(myId);
+                Array.Copy(data, 0, bytes, len, data.Length);
+                len += data.Length;
+                
+                data = BitConverter.GetBytes(color.X);
+                Array.Copy(data, 0, bytes, len, data.Length);
+                len += data.Length;
+                
+                data = BitConverter.GetBytes(color.Y);
+                Array.Copy(data, 0, bytes, len, data.Length);
+                len += data.Length;
+                
+                data = BitConverter.GetBytes(color.Z);
+                Array.Copy(data, 0, bytes, len, data.Length);
+                len += data.Length;
+                
                 MyAPIGateway.Multiplayer.SendMessageToServer(PACKET, bytes, true);
             }
             catch(Exception e)
@@ -435,11 +612,16 @@ namespace Digi.PaintGun
         {
             try
             {
-                var data = new StringBuilder();
-                data.Append(pickMode ? 4 : 5);
-                data.Append(SEPARATOR);
-                data.Append(myId);
-                var bytes = encode.GetBytes(data.ToString());
+                int len = sizeof(byte) + sizeof(ulong);
+                
+                var bytes = new byte[len];
+                bytes[0] = (byte)(pickMode ? 4 : 5);
+                len = 1;
+                
+                var data = BitConverter.GetBytes(myId);
+                Array.Copy(data, 0, bytes, len, data.Length);
+                len += data.Length;
+                
                 MyAPIGateway.Multiplayer.SendMessageToServer(PACKET, bytes, true);
                 
                 pickColor = pickMode;
@@ -449,6 +631,12 @@ namespace Digi.PaintGun
             {
                 Log.Error(e);
             }
+        }
+        
+        private bool IsInColorPickerMenu()
+        {
+            string activeScreen = (MyGuiScreenGamePlay.ActiveGameplayScreen == null ? null : MyGuiScreenGamePlay.ActiveGameplayScreen.ToString());
+            return activeScreen != null && activeScreen.EndsWith("ColorPicker", StringComparison.Ordinal);
         }
         
         public override void UpdateAfterSimulation()
@@ -463,17 +651,33 @@ namespace Digi.PaintGun
                     Init();
                 }
                 
-                if(holdingTools.ContainsKey(MyAPIGateway.Multiplayer.MyId))
+                bool holdingPaintGun = holdingTools.ContainsKey(MyAPIGateway.Multiplayer.MyId);
+                
+                if((MyCubeBuilder.Static.IsActivated && InputHandler.IsInputReadable() && MyAPIGateway.Input.IsKeyPress(MyKeys.Shift) && MyAPIGateway.Input.IsGameControlPressed(MyControlsSpace.LANDING_GEAR))
+                   || IsInColorPickerMenu())
                 {
-                    if(selectedSlimBlock != null)
+                    inColorPickerMenu = true;
+                    
+                    if(holdingPaintGun && ++colorPickerSkip > 10)
+                        colorNeedsUpdate = true;
+                }
+                else
+                {
+                    if(!colorNeedsUpdate && inColorPickerMenu)
                     {
-                        if(selectedSlimBlock.IsDestroyed || selectedSlimBlock.IsFullyDismounted)
-                        {
-                            selectedSlimBlock = null;
-                            return;
-                        }
-                        
-                        MyCubeBuilder.DrawSemiTransparentBox(selectedSlimBlock.CubeGrid as MyCubeGrid, selectedSlimBlock as Sandbox.Game.Entities.Cube.MySlimBlock, Color.White, true, "GizmoDrawLine", null);
+                        colorNeedsUpdate = true;
+                        inColorPickerMenu = false;
+                    }
+                }
+                
+                if(holdingPaintGun)
+                {
+                    if(colorNeedsUpdate && anyCubeBlockDef != null) // TODO what about paintgun's color pick from env ? :(
+                    {
+                        colorPickerSkip = 0;
+                        colorNeedsUpdate = false;
+                        var obj = MyCubeBuilder.CreateBlockGridBuilder(anyCubeBlockDef, Matrix.Identity, false); // used to get the player's selected color since there's no other way
+                        SetBuildColor(obj.CubeBlocks[0].ColorMaskHSV);
                     }
                     
                     if(symmetryInput)
@@ -500,9 +704,7 @@ namespace Digi.PaintGun
                                 quad.Point2 = center + minY + minZ;
                                 quad.Point3 = center + minY + maxZ;
                                 
-                                var color = Color.Red * alpha;
-                                
-                                MyTransparentGeometry.AddQuad(material, ref quad, ref color, ref center, 0, -1);
+                                MyTransparentGeometry.AddQuad(material, ref quad, Color.Red * alpha, ref center, 0, -1);
                             }
                             
                             if(grid.YSymmetryPlane.HasValue)
@@ -519,9 +721,7 @@ namespace Digi.PaintGun
                                 quad.Point2 = center + minZ + minX;
                                 quad.Point3 = center + minZ + maxX;
                                 
-                                var color = Color.Green * alpha;
-                                
-                                MyTransparentGeometry.AddQuad(material, ref quad, ref color, ref center, 0, -1);
+                                MyTransparentGeometry.AddQuad(material, ref quad, Color.Green * alpha, ref center, 0, -1);
                             }
                             
                             if(grid.ZSymmetryPlane.HasValue)
@@ -538,18 +738,45 @@ namespace Digi.PaintGun
                                 quad.Point2 = center + minY + minX;
                                 quad.Point3 = center + minY + maxX;
                                 
-                                var color = Color.Blue * alpha;
-                                
-                                MyTransparentGeometry.AddQuad(material, ref quad, ref color, ref center, 0, -1);
+                                MyTransparentGeometry.AddQuad(material, ref quad, Color.Blue * alpha, ref center, 0, -1);
                             }
                         }
                         
-                        if(MyGuiScreenGamePlay.ActiveGameplayScreen == null && MyGuiScreenTerminal.GetCurrentScreen() == MyTerminalPageEnum.None)
+                        if(InputHandler.IsInputReadable() && MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.USE_SYMMETRY))
                         {
-                            var controlSymmetry = MyAPIGateway.Input.GetGameControl(MyControlsSpace.USE_SYMMETRY);
+                            MyAPIGateway.CubeBuilder.UseSymmetry = !MyAPIGateway.CubeBuilder.UseSymmetry;
+                        }
+                    }
+                    
+                    if(selectedSlimBlock != null)
+                    {
+                        if(selectedSlimBlock.IsDestroyed || selectedSlimBlock.IsFullyDismounted)
+                        {
+                            selectedSlimBlock = null;
+                            return;
+                        }
+                        
+                        MyCubeBuilder.DrawSemiTransparentBox(selectedSlimBlock.CubeGrid as MyCubeGrid, selectedSlimBlock as Sandbox.Game.Entities.Cube.MySlimBlock, Color.White, true, selectedInvalid ? "GizmoDrawLineRed" : "GizmoDrawLine", null);
+                        
+                        // symmetry highlight
+                        if(MyAPIGateway.Session.CreativeMode && MyCubeBuilder.Static.UseSymmetry && (grid.XSymmetryPlane.HasValue || grid.YSymmetryPlane.HasValue || grid.ZSymmetryPlane.HasValue))
+                        {
+                            var mirrorX = MirrorHighlight(grid, 0, selectedSlimBlock.Position); // X
+                            var mirrorY = MirrorHighlight(grid, 1, selectedSlimBlock.Position); // Y
+                            var mirrorZ = MirrorHighlight(grid, 2, selectedSlimBlock.Position); // Z
+                            Vector3I? mirrorYZ = null;
                             
-                            if(controlSymmetry.IsNewPressed())
-                                MyAPIGateway.CubeBuilder.UseSymmetry = !MyAPIGateway.CubeBuilder.UseSymmetry;
+                            if(mirrorX.HasValue && grid.YSymmetryPlane.HasValue) // XY
+                                MirrorHighlight(grid, 1, mirrorX.Value);
+                            
+                            if(mirrorX.HasValue && grid.ZSymmetryPlane.HasValue) // XZ
+                                MirrorHighlight(grid, 2, mirrorX.Value);
+                            
+                            if(mirrorY.HasValue && grid.ZSymmetryPlane.HasValue) // YZ
+                                mirrorYZ = MirrorHighlight(grid, 2, mirrorY.Value);
+                            
+                            if(grid.XSymmetryPlane.HasValue && mirrorYZ.HasValue) // XYZ
+                                MirrorHighlight(grid, 0, mirrorYZ.Value);
                         }
                     }
                 }
@@ -579,27 +806,27 @@ namespace Digi.PaintGun
             toolStatus[line].Show();
         }
         
-        public string ColorToString(Vector3 hsv)
+        public static string ColorToString(Vector3 hsv)
         {
             return "Hue: " + Math.Round(hsv.X * 360) + "°, saturation: " + Math.Round(hsv.Y * 100) + ", value: " + Math.Round(hsv.Z * 100);
         }
         
-        public string ColorToStringShort(Vector3 hsv)
+        public static string ColorToStringShort(Vector3 hsv)
         {
             return "HSV: " + Math.Round(hsv.X * 360) + "°, " + Math.Round(hsv.Y * 100) + ", " + Math.Round(hsv.Z * 100);
         }
         
-        public bool NearEqual(float val1, float val2, float epsilon = 0.01f)
+        public static bool NearEqual(float val1, float val2, float epsilon = 0.01f)
         {
             return Math.Abs(val1 - val2) < epsilon;
         }
         
-        public bool NearEqual(Vector3 val1, Vector3 val2, float epsilon = 0.01f)
+        public static bool NearEqual(Vector3 val1, Vector3 val2, float epsilon = 0.01f)
         {
             return (NearEqual(val1.X, val2.X, epsilon) && NearEqual(val1.Y, val2.Y, epsilon) && NearEqual(val1.Z, val2.Z, epsilon));
         }
         
-        public void SetCrosshairColor(Color? color)
+        public static void SetCrosshairColor(Color? color)
         {
             if(color.HasValue)
                 MyHud.Crosshair.AddTemporarySprite(MyHudTexturesEnum.crosshair, CROSSHAIR_SPRITEID, 1000, 500, color.Value, 0.02f);
@@ -624,7 +851,7 @@ namespace Digi.PaintGun
             }
         }
         
-        public void PlaySound(string name, float volume)
+        public static void PlaySound(string name, float volume)
         {
             var emitter = new MyEntity3DSoundEmitter(MyAPIGateway.Session.ControlledObject.Entity as MyEntity);
             emitter.CustomVolume = volume;
@@ -635,6 +862,8 @@ namespace Digi.PaintGun
         {
             if(block != null)
             {
+                selectedSlimBlock = block;
+                selectedInvalid = false;
                 blockColor = block.GetColorMask();
                 blockName = (block.FatBlock == null ? block.ToString() : block.FatBlock.DefinitionDisplayNameText);
                 
@@ -683,6 +912,7 @@ namespace Digi.PaintGun
                         PlaySound("HudUnable", 0.5f);
                     
                     SetCrosshairColor(CROSSHAIR_BAD_TARGET);
+                    selectedInvalid = true;
                     
                     SetToolStatus(0, (block.FatBlock != null && !block.FatBlock.IsFunctional ? "Block not fully built!" : "Block is damaged!"), MyFontEnum.Red);
                     SetToolStatus(1, blockName, MyFontEnum.White);
@@ -692,23 +922,79 @@ namespace Digi.PaintGun
                     return false;
                 }
                 
-                if(NearEqual(blockColor, color, 0.001f))
+                var grid = block.CubeGrid as MyCubeGrid;
+                bool symmetry = MyAPIGateway.Session.CreativeMode && MyCubeBuilder.Static.UseSymmetry && (grid.XSymmetryPlane.HasValue || grid.YSymmetryPlane.HasValue || grid.ZSymmetryPlane.HasValue);
+                bool symmetrySameColor = true;
+                
+                if(NearEqual(blockColor, color, SAME_COLOR_RANGE))
                 {
-                    SetCrosshairColor(CROSSHAIR_BAD_TARGET);
+                    if(symmetry)
+                    {
+                        Vector3I? mirrorX = null;
+                        Vector3I? mirrorY = null;
+                        Vector3I? mirrorZ = null;
+                        Vector3I? mirrorYZ = null;
+                        
+                        // NOTE: do not optimize, all methods must be called
+                        if(!MirrorCheckSameColor(grid, 0, block.Position, color, out mirrorX))
+                            symmetrySameColor = false;
+                        
+                        if(!MirrorCheckSameColor(grid, 1, block.Position, color, out mirrorY))
+                            symmetrySameColor = false;
+                        
+                        if(!MirrorCheckSameColor(grid, 2, block.Position, color, out mirrorZ))
+                            symmetrySameColor = false;
+                        
+                        if(mirrorX.HasValue && grid.YSymmetryPlane.HasValue) // XY
+                        {
+                            if(!MirrorCheckSameColor(grid, 1, mirrorX.Value, color, out mirrorX))
+                                symmetrySameColor = false;
+                        }
+                        
+                        if(mirrorX.HasValue && grid.ZSymmetryPlane.HasValue) // XZ
+                        {
+                            if(!MirrorCheckSameColor(grid, 2, mirrorX.Value, color, out mirrorX))
+                                symmetrySameColor = false;
+                        }
+                        
+                        if(mirrorY.HasValue && grid.ZSymmetryPlane.HasValue) // YZ
+                        {
+                            if(!MirrorCheckSameColor(grid, 2, mirrorY.Value, color, out mirrorYZ))
+                                symmetrySameColor = false;
+                        }
+                        
+                        if(grid.XSymmetryPlane.HasValue && mirrorYZ.HasValue) // XYZ
+                        {
+                            if(!MirrorCheckSameColor(grid, 0, mirrorYZ.Value, color, out mirrorX))
+                                symmetrySameColor = false;
+                        }
+                    }
                     
-                    SetToolStatus(0, "Already painted this color.", MyFontEnum.Red);
-                    SetToolStatus(1, blockName, MyFontEnum.White);
-                    SetToolStatus(2, symmetryStatus, MyFontEnum.DarkBlue);
-                    SetToolStatus(3, null);
-                    
-                    return false;
+                    if(!symmetry || symmetrySameColor)
+                    {
+                        SetCrosshairColor(CROSSHAIR_BAD_TARGET);
+                        selectedInvalid = true;
+                        
+                        if(symmetry)
+                            SetToolStatus(0, "All symmetry blocks are this color.", MyFontEnum.Red);
+                        else
+                            SetToolStatus(0, "Already painted this color.", MyFontEnum.Red);
+                        
+                        SetToolStatus(1, blockName, MyFontEnum.White);
+                        SetToolStatus(2, symmetryStatus, MyFontEnum.DarkBlue);
+                        SetToolStatus(3, null);
+                        
+                        return false;
+                    }
                 }
                 
                 SetCrosshairColor(CROSSHAIR_TARGET);
                 
                 if(!trigger)
                 {
-                    if(MyAPIGateway.Session.CreativeMode)
+                    if(symmetry && !symmetrySameColor)
+                        SetToolStatus(0, "Selection is already painted but symmetry blocks are not - click to paint.", MyFontEnum.Green);
+                    else if(MyAPIGateway.Session.CreativeMode)
                         SetToolStatus(0, "Click to paint.", MyFontEnum.Green);
                     else
                         SetToolStatus(0, "Hold click to paint.", MyFontEnum.Green);
@@ -796,11 +1082,7 @@ namespace Digi.PaintGun
                 paintSpeed *= MyAPIGateway.Session.GrinderSpeedMultiplier;
                 
                 blockColor.Y = Math.Max(blockColor.Y - paintSpeed, DEFAULT_COLOR.Y);
-                
-                if(blockColor.Z > 0)
-                    blockColor.Z = Math.Max(blockColor.Z - paintSpeed, DEFAULT_COLOR.Z);
-                else
-                    blockColor.Z = Math.Min(blockColor.Z + paintSpeed, DEFAULT_COLOR.Z);
+                blockColor.Z = (blockColor.Z > 0 ? Math.Max(blockColor.Z - paintSpeed, DEFAULT_COLOR.Z) : Math.Min(blockColor.Z + paintSpeed, DEFAULT_COLOR.Z));
                 
                 if(NearEqual(blockColor.Y, DEFAULT_COLOR.Y) && NearEqual(blockColor.Z, DEFAULT_COLOR.Z))
                 {
@@ -841,13 +1123,13 @@ namespace Digi.PaintGun
             return (blockSize.X * blockSize.Y) + (blockSize.Y * blockSize.Z) + (blockSize.Z * blockSize.X) / 6;
         }
         
-        private IMySlimBlock GetTargetBlock(IMyCubeGrid grid, IMyEntity player)
+        private IMySlimBlock GetTargetBlock(IMyCubeGrid g, IMyEntity player)
         {
             var view = MyAPIGateway.Session.ControlledObject.GetHeadMatrix(false, true);
             var rayFrom = view.Translation + view.Forward * 1.6;
             var rayTo = view.Translation + view.Forward * 5;
-            var blockPos = grid.RayCastBlocks(rayFrom, rayTo);
-            return (blockPos.HasValue ? grid.GetCubeBlock(blockPos.Value) : null);
+            var blockPos = g.RayCastBlocks(rayFrom, rayTo);
+            return (blockPos.HasValue ? g.GetCubeBlock(blockPos.Value) : null);
         }
         
         public bool HoldingTool(bool trigger)
@@ -965,7 +1247,7 @@ namespace Digi.PaintGun
                         if(grid.XSymmetryPlane.HasValue || grid.YSymmetryPlane.HasValue || grid.ZSymmetryPlane.HasValue)
                         {
                             var controlSymmetry = MyAPIGateway.Input.GetGameControl(MyControlsSpace.USE_SYMMETRY);
-                            StringBuilder assigned = new StringBuilder();
+                            assigned.Clear();
                             
                             if(controlSymmetry.GetKeyboardControl() != MyKeys.None)
                                 assigned.Append(MyAPIGateway.Input.GetKeyName(controlSymmetry.GetKeyboardControl()));
@@ -978,7 +1260,7 @@ namespace Digi.PaintGun
                                 assigned.Append(MyAPIGateway.Input.GetKeyName(controlSymmetry.GetSecondKeyboardControl()));
                             }
                             
-                            if(MyGuiScreenGamePlay.ActiveGameplayScreen == null && MyGuiScreenTerminal.GetCurrentScreen() == MyTerminalPageEnum.None)
+                            if(InputHandler.IsInputReadable())
                             {
                                 symmetryInput = true;
                                 
@@ -1006,14 +1288,26 @@ namespace Digi.PaintGun
                     
                     if(block != null)
                     {
-                        selectedSlimBlock = block;
-                        
                         if(trigger)
                         {
                             float paintSpeed = (1.0f / GetBlockSurface(block));
                             PaintProcess(ref blockColor, color, paintSpeed, blockName);
                             SetCrosshairColor(CROSSHAIR_PAINTING);
-                            SendPaintPacket(grid.EntityId, block.Position, blockColor, MyAPIGateway.CubeBuilder.UseSymmetry);
+                            
+                            Vector3I? mirrorPlane = null;
+                            bool[] odd = null;
+                            
+                            if(MyAPIGateway.Session.CreativeMode && MyAPIGateway.CubeBuilder.UseSymmetry && (grid.XSymmetryPlane.HasValue || grid.YSymmetryPlane.HasValue || grid.ZSymmetryPlane.HasValue))
+                            {
+                                mirrorPlane = new Vector3I(
+                                    (grid.XSymmetryPlane.HasValue ? grid.XSymmetryPlane.Value.X : int.MinValue),
+                                    (grid.YSymmetryPlane.HasValue ? grid.YSymmetryPlane.Value.Y : int.MinValue),
+                                    (grid.ZSymmetryPlane.HasValue ? grid.ZSymmetryPlane.Value.Z : int.MinValue));
+                                
+                                odd = new [] { grid.XSymmetryOdd, grid.YSymmetryOdd, grid.ZSymmetryOdd };
+                            }
+                            
+                            SendPaintPacket(grid.EntityId, block.Position, blockColor, mirrorPlane, odd);
                             return true;
                         }
                     }
@@ -1031,12 +1325,23 @@ namespace Digi.PaintGun
         {
             try
             {
-                if(msg.StartsWith("/pg", StringComparison.InvariantCultureIgnoreCase))
+                if(msg.StartsWith("/pg", StringComparison.OrdinalIgnoreCase))
                 {
                     send = false;
                     msg = msg.Substring("/pg".Length).Trim().ToLower();
                     
-                    if(msg.Equals("pick"))
+                    if(msg.StartsWith("reload", StringComparison.Ordinal))
+                    {
+                        if(settings.Load())
+                            MyAPIGateway.Utilities.ShowMessage(MOD_NAME, "Reloaded and re-saved config.");
+                        else
+                            MyAPIGateway.Utilities.ShowMessage(MOD_NAME, "Config created with the current settings.");
+                        
+                        settings.Save();
+                        return;
+                    }
+                    
+                    if(msg.StartsWith("pick", StringComparison.Ordinal))
                     {
                         if(!holdingTools.ContainsKey(MyAPIGateway.Multiplayer.MyId))
                         {
@@ -1050,49 +1355,39 @@ namespace Digi.PaintGun
                         
                         return;
                     }
-                    else if(msg.Equals("reload"))
+                    
+                    if(msg.StartsWith("rgb", StringComparison.Ordinal) || msg.StartsWith("hsv", StringComparison.Ordinal))
                     {
-                        if(settings.Load())
-                            MyAPIGateway.Utilities.ShowMessage(MOD_NAME, "Reloaded and re-saved config.");
-                        else
-                            MyAPIGateway.Utilities.ShowMessage(MOD_NAME, "Config created with the current settings.");
-                        
-                        settings.Save();
-                        return;
-                    }
-                    else if(msg.StartsWith("default"))
-                    {
-                        msg = msg.Substring("default".Length).Trim();
-                        
-                        int num;
-                        
-                        if(!int.TryParse(msg, out num))
-                        {
-                            MyAPIGateway.Utilities.ShowMessage(MOD_NAME, "Argument is not a number.");
-                        }
-                        else
-                        {
-                            num = MathHelper.Clamp(num, 1, 14);
-                            SetBuildColor(defaultColors[num-1]);
-                            MyAPIGateway.Utilities.ShowMessage(MOD_NAME, "Got color from default " + num + " with color " + ColorToString(GetBuildColor()));
-                        }
-                        
-                        return;
-                    }
-                    else if(msg.StartsWith("rgb") || msg.StartsWith("hsv"))
-                    {
-                        bool hsv = msg.StartsWith("hsv");
+                        bool hsv = msg.StartsWith("hsv", StringComparison.Ordinal);
                         msg = msg.Substring("rgb".Length).Trim();
+                        var values = new int[3];
                         
-                        string[] split = msg.Split(' ');
-                        
-                        if(split.Length != 3)
+                        if(!hsv && msg.StartsWith("#", StringComparison.Ordinal))
                         {
-                            MyAPIGateway.Utilities.ShowMessage(MOD_NAME, "Need to specify 3 numbers from 0 to 255 to create a RGB color.");
+                            msg = msg.Substring(1).Trim();
+                            
+                            if(msg.Length < 6)
+                            {
+                                MyAPIGateway.Utilities.ShowMessage(MOD_NAME, "Invalid HEX color, needs 6 characters after #.");
+                                return;
+                            }
+                            
+                            int c = 0;
+                            
+                            for(int i = 1; i < 6; i += 2)
+                            {
+                                values[c++] = Convert.ToInt32("" + msg[i-1] + msg[i], 16);
+                            }
                         }
                         else
                         {
-                            int[] values = new int[3];
+                            string[] split = msg.Split(' ');
+                            
+                            if(split.Length != 3)
+                            {
+                                MyAPIGateway.Utilities.ShowMessage(MOD_NAME, "Need to specify 3 numbers from 0 to 255 to create a RGB color.");
+                                return;
+                            }
                             
                             for(int i = 0; i < 3; i++)
                             {
@@ -1102,31 +1397,34 @@ namespace Digi.PaintGun
                                     return;
                                 }
                             }
-                            
-                            Vector3 color;
-                            
-                            if(hsv)
-                            {
-                                color = new Vector3(MathHelper.Clamp(values[0], 0, 360) / 360.0f, MathHelper.Clamp(values[1], -100, 100) / 100.0f, MathHelper.Clamp(values[2], -100, 100) / 100.0f);
-                            }
-                            else
-                            {
-                                color = new Color((int)MathHelper.Clamp(values[0], 0, 255), (int)MathHelper.Clamp(values[1], 0, 255), (int)MathHelper.Clamp(values[2], 0, 255)).ColorToHSVDX11();
-                            }
-                            
-                            SetBuildColor(color);
-                            MyAPIGateway.Utilities.ShowMessage(MOD_NAME, "Color set to " + ColorToString(color));
                         }
                         
+                        Vector3 color;
+                        
+                        if(hsv)
+                            color = new Vector3(MathHelper.Clamp(values[0], 0, 360) / 360.0f, MathHelper.Clamp(values[1], -100, 100) / 100.0f, MathHelper.Clamp(values[2], -100, 100) / 100.0f);
+                        else
+                            color = new Color(MathHelper.Clamp(values[0], 0, 255), MathHelper.Clamp(values[1], 0, 255), MathHelper.Clamp(values[2], 0, 255)).ColorToHSVDX11();
+                        
+                        SetBuildColor(color);
+                        MyAPIGateway.Utilities.ShowMessage(MOD_NAME, "Color set to " + ColorToString(color));
                         return;
                     }
                     
-                    MyAPIGateway.Utilities.ShowMessage(MOD_NAME, "Available commands:");
-                    MyAPIGateway.Utilities.ShowMessage("/pg pick ", "pick a color from an existing block (alias: Shift+ColorMenu)");
-                    MyAPIGateway.Utilities.ShowMessage("/pg default <1~15> ", "picks one of the default colors");
-                    MyAPIGateway.Utilities.ShowMessage("/pg rgb <0~255> <0~255> <0~255> ", "set the color using RGB format");
-                    MyAPIGateway.Utilities.ShowMessage("/pg hsv <0-360> <-100~100> <-100~100>", "set the color using HSV format");
-                    MyAPIGateway.Utilities.ShowMessage("/pg reload ", "reloads the config file.");
+                    MyAPIGateway.Utilities.ShowMissionScreen("Paint Gun commands", null, null, "/pg pick\n" +
+                                                             "  get color from a block (alias: Shift+[LandingGears])\n" +
+                                                             "\n" +
+                                                             "/pg rgb <0~255> <0~255> <0~255>\n" +
+                                                             "  set the color using RGB format\n" +
+                                                             "\n" +
+                                                             "/pg rgb #<00~FF><00~FF><00~FF>\n" +
+                                                             "  set the color using hex RGB format\n" +
+                                                             "\n" +
+                                                             "/pg hsv <0-360> <-100~100> <-100~100>\n" +
+                                                             "  set the color using HSV format\n" +
+                                                             "\n" +
+                                                             "/pg reload\n" +
+                                                             "  reloads the config file.\n", null, "Close");
                 }
             }
             catch(Exception e)
@@ -1147,14 +1445,6 @@ namespace Digi.PaintGun
         public static Vector3I ToHSVI(this Vector3 vec)
         {
             return new Vector3I(vec.GetDim(0) * 360, vec.GetDim(1) * 100, vec.GetDim(2) * 100);
-        }
-    }
-    
-    public class RenderWorkaround : MyCubeBlock
-    {
-        public static void SetEmissiveParts(uint renderObjectId, float emissivity, Color emissivePartColor, Color displayPartColor)
-        {
-            UpdateEmissiveParts(renderObjectId, emissivity, emissivePartColor, displayPartColor);
         }
     }
 }
