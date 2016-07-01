@@ -64,8 +64,6 @@ namespace Digi.PaintGun
                 int i;
                 bool b;
                 float f;
-                string[] hsv;
-                int h,s,v;
                 
                 while((line = file.ReadLine()) != null)
                 {
@@ -123,13 +121,6 @@ namespace Digi.PaintGun
                                 else
                                     pickColor2 = obj;
                             }
-                            else
-                                Log.Error("Invalid "+args[0]+" value: " + args[1]);
-                            continue;
-                        case "lastpaintcolor":
-                            hsv = args[1].Split(',');
-                            if(hsv.Length >= 3 && int.TryParse(hsv[0].Trim(), out h) && int.TryParse(hsv[1].Trim(), out s) && int.TryParse(hsv[2].Trim(), out v))
-                                PaintGunMod.instance.SetBuildColor(new Vector3(h / 360.0f, s / 100.0f, v / 100.0f), false);
                             else
                                 Log.Error("Invalid "+args[0]+" value: " + args[1]);
                             continue;
@@ -232,15 +223,6 @@ namespace Digi.PaintGun
                 }
                 str.AppendLine();
             }
-            
-            if(comments)
-            {
-                str.AppendLine().AppendLine().AppendLine();
-                str.AppendLine("// DO NOT edit anything below here");
-            }
-            
-            var paint = PaintGunMod.instance.GetBuildColor().ToHSVI();
-            str.Append("LastPaintColor=").Append(paint.X).Append(",").Append(paint.Y).Append(",").Append(paint.Z).AppendLine();
             
             return str.ToString();
         }

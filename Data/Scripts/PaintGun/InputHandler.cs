@@ -488,7 +488,8 @@ namespace Digi.Utils
                 {CONTROL_PREFIX+"specdelta", MyControlsSpace.SPECTATOR_DELTA},
                 {CONTROL_PREFIX+"specfree", MyControlsSpace.SPECTATOR_FREE},
                 {CONTROL_PREFIX+"specstatic", MyControlsSpace.SPECTATOR_STATIC},
-                {CONTROL_PREFIX+"stationrotation", MyControlsSpace.STATION_ROTATION},
+                {CONTROL_PREFIX+"stationrotation", MyControlsSpace.FREE_ROTATION},
+                {CONTROL_PREFIX+"cubesizemode", MyControlsSpace.CUBE_BUILDER_CUBESIZE_MODE},
                 {CONTROL_PREFIX+"switchleft", MyControlsSpace.SWITCH_LEFT}, // previous color or cam
                 {CONTROL_PREFIX+"switchright", MyControlsSpace.SWITCH_RIGHT}, // next color or cam
                 {CONTROL_PREFIX+"voicechat", MyControlsSpace.VOICE_CHAT},

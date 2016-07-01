@@ -39,7 +39,6 @@ namespace Digi.PaintGun
         public IMySlimBlock selectedSlimBlock = null;
         public bool selectedInvalid = false;
         public Vector3 prevColorPreview;
-        public Vector3 customColor = DEFAULT_COLOR;
         public Vector3 prevCustomColor = DEFAULT_COLOR;
         public IMyHudNotification[] toolStatus = new IMyHudNotification[4];
         public Vector3[] defaultColors = new Vector3[14];
@@ -75,10 +74,7 @@ namespace Digi.PaintGun
         
         public static HashSet<IMyEntity> ents = new HashSet<IMyEntity>();
         
-        private MyCubeBlockDefinition anyCubeBlockDef = null;
-        private bool colorNeedsUpdate = false;
-        private bool inColorPickerMenu = false;
-        private byte colorPickerSkip = 0;
+        private byte skipColorUpdate = 0;
         
         public void Init()
         {
@@ -110,17 +106,6 @@ namespace Digi.PaintGun
                 for (int i = 7; i < defaultColors.Length; ++i)
                 {
                     defaultColors[i] = (defaultColors[i - 7] + new Vector3(0, 0.15f, 0.2f));
-                }
-                
-                // get the first CubeBlock definition we can find, used in the method to get the player's selected color, hacky stuff
-                var defList = MyDefinitionManager.Static.GetAllDefinitions();
-                
-                foreach(var d in defList)
-                {
-                    anyCubeBlockDef = d as  MyCubeBlockDefinition;
-                    
-                    if(anyCubeBlockDef != null)
-                        break;
                 }
             }
         }
@@ -653,31 +638,13 @@ namespace Digi.PaintGun
                 
                 bool holdingPaintGun = holdingTools.ContainsKey(MyAPIGateway.Multiplayer.MyId);
                 
-                if((MyCubeBuilder.Static.IsActivated && InputHandler.IsInputReadable() && MyAPIGateway.Input.IsKeyPress(MyKeys.Shift) && MyAPIGateway.Input.IsGameControlPressed(MyControlsSpace.LANDING_GEAR))
-                   || IsInColorPickerMenu())
-                {
-                    inColorPickerMenu = true;
-                    
-                    if(holdingPaintGun && ++colorPickerSkip > 10)
-                        colorNeedsUpdate = true;
-                }
-                else
-                {
-                    if(!colorNeedsUpdate && inColorPickerMenu)
-                    {
-                        colorNeedsUpdate = true;
-                        inColorPickerMenu = false;
-                    }
-                }
-                
                 if(holdingPaintGun)
                 {
-                    if(colorNeedsUpdate && anyCubeBlockDef != null) // TODO what about paintgun's color pick from env ? :(
+                    if(++skipColorUpdate > 10)
                     {
-                        colorPickerSkip = 0;
-                        colorNeedsUpdate = false;
-                        var obj = MyCubeBuilder.CreateBlockGridBuilder(anyCubeBlockDef, Matrix.Identity, false); // used to get the player's selected color since there's no other way
-                        SetBuildColor(obj.CubeBlocks[0].ColorMaskHSV);
+                        skipColorUpdate = 0;
+                        var player = MyAPIGateway.Session.Player as Sandbox.Game.World.MyPlayer;
+                        SetBuildColor(player.SelectedBuildColor); // only updates if color is different
                     }
                     
                     if(symmetryInput)
@@ -836,19 +803,28 @@ namespace Digi.PaintGun
         
         public Vector3 GetBuildColor()
         {
-            return customColor;
+            var player = MyAPIGateway.Session.Player as Sandbox.Game.World.MyPlayer;
+            
+            return (player == null ? DEFAULT_COLOR : player.SelectedBuildColor);
         }
         
         public void SetBuildColor(Vector3 color, bool save = true)
         {
-            if(Vector3.DistanceSquared(color, prevCustomColor) > 0)
-            {
-                prevCustomColor = customColor = color;
-                SendToolColor(MyAPIGateway.Multiplayer.MyId, color);
-                
-                if(save)
-                    settings.Save();
-            }
+            var player = MyAPIGateway.Session.Player as Sandbox.Game.World.MyPlayer;
+            
+            if(player == null)
+                return;
+            
+            if(Vector3.DistanceSquared(color, prevCustomColor) <= 0.00001f)
+                return;
+            
+            prevCustomColor = color;
+            player.ChangeOrSwitchToColor(color);
+            
+            SendToolColor(MyAPIGateway.Multiplayer.MyId, color);
+            
+            if(save)
+                settings.Save();
         }
         
         public static void PlaySound(string name, float volume)
