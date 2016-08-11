@@ -46,6 +46,85 @@
 
 
 
+                            const string material = "GizmoDrawLine";
+                            const float thickness = 0.05f;
+                            var color = (Color.Green * 1.3f).ToVector4();
+                            var matrix = selectedCharacter.WorldMatrix;
+                            var localBox = selectedCharacter.LocalAABB;
+                            var halfWidth = localBox.Width / 2;
+                            var halfDepth = localBox.Depth / 2;
+                            var bottom = matrix.Translation;
+                            var top = bottom + matrix.Up * localBox.Height;
+                            var worldToLocal = MatrixD.Identity;
+
+                            // top square
+                            MyTransparentGeometry.AddLineBillboard(material, color, top + matrix.Left * halfWidth + matrix.Forward * halfDepth, matrix.Right, localBox.Width, thickness);
+                            MyTransparentGeometry.AddLineBillboard(material, color, top + matrix.Right * halfWidth + matrix.Forward * halfDepth, matrix.Backward, localBox.Width, thickness);
+                            MyTransparentGeometry.AddLineBillboard(material, color, top + matrix.Left * halfWidth + matrix.Backward * halfDepth, matrix.Forward, localBox.Width, thickness);
+                            MyTransparentGeometry.AddLineBillboard(material, color, top + matrix.Right * halfWidth + matrix.Backward * halfDepth, matrix.Left, localBox.Width, thickness);
+
+                            // vertical lines
+                            MyTransparentGeometry.AddLineBillboard(material, color, top + matrix.Left * halfWidth + matrix.Forward * halfDepth, matrix.Down, localBox.Height, thickness);
+                            MyTransparentGeometry.AddLineBillboard(material, color, top + matrix.Right * halfWidth + matrix.Forward * halfDepth, matrix.Down, localBox.Height, thickness);
+                            MyTransparentGeometry.AddLineBillboard(material, color, top + matrix.Left * halfWidth + matrix.Backward * halfDepth, matrix.Down, localBox.Height, thickness);
+                            MyTransparentGeometry.AddLineBillboard(material, color, top + matrix.Right * halfWidth + matrix.Backward * halfDepth, matrix.Down, localBox.Height, thickness);
+
+                            // bottom square
+                            MyTransparentGeometry.AddLineBillboard(material, color, bottom + matrix.Left * halfWidth + matrix.Forward * halfDepth, matrix.Right, localBox.Width, thickness);
+                            MyTransparentGeometry.AddLineBillboard(material, color, bottom + matrix.Right * halfWidth + matrix.Forward * halfDepth, matrix.Backward, localBox.Width, thickness);
+                            MyTransparentGeometry.AddLineBillboard(material, color, bottom + matrix.Left * halfWidth + matrix.Backward * halfDepth, matrix.Forward, localBox.Width, thickness);
+                            MyTransparentGeometry.AddLineBillboard(material, color, bottom + matrix.Right * halfWidth + matrix.Backward * halfDepth, matrix.Left, localBox.Width, thickness);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        private bool IsInColorPickerMenu()
+        {
+            // TODO > whitelist
+            //string activeScreen = (MyGuiScreenGamePlay.ActiveGameplayScreen == null ? null : MyGuiScreenGamePlay.ActiveGameplayScreen.ToString());
+            //return activeScreen != null && activeScreen.EndsWith("ColorPicker", StringComparison.Ordinal);
+            
+            return false;
+        }
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+
+
+
+
+
+
 
 
         private Vector3I? MirrorPaint(MyCubeGrid grid, int axis, Vector3I originalPosition, Vector3 color)

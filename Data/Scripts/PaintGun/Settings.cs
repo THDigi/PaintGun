@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.IO;
 using Sandbox.ModAPI;
@@ -13,17 +11,25 @@ namespace Digi.PaintGun
     public class Settings
     {
         private const string FILE = "paintgun.cfg";
-        
+
         public bool extraSounds = true;
         public bool sprayParticles = true;
         public float spraySoundVolume = 0.8f;
+        public bool selectColorZigZag = false;
+        public bool hidePaletteWithHud = true;
+        public Vector3D paletteScreenPos = new Vector3D(0.29, -0.73, 0);
+        public float paletteScale = 1.0f;
+
         public ControlCombination pickColor1 = ControlCombination.CreateFrom("shift c.landinggear");
         public ControlCombination pickColor2 = ControlCombination.CreateFrom("g.lb g.rb");
-        
+
+        public ControlCombination replaceMode1 = ControlCombination.CreateFrom("shift c.cubesizemode");
+        public ControlCombination replaceMode2 = null;
+
         private static char[] CHARS = new char[] { '=' };
-        
+
         public bool firstLoad = false;
-        
+
         public Settings()
         {
             // load the settings if they exist
@@ -31,10 +37,10 @@ namespace Digi.PaintGun
             {
                 firstLoad = true; // config didn't exist, assume it's the first time the mod is loaded
             }
-            
+
             Save(); // refresh config in case of any missing or extra settings
         }
-        
+
         public bool Load()
         {
             try
@@ -51,10 +57,10 @@ namespace Digi.PaintGun
             {
                 Log.Error(e);
             }
-            
+
             return false;
         }
-        
+
         private void ReadSettings(TextReader file)
         {
             try
@@ -64,69 +70,109 @@ namespace Digi.PaintGun
                 int i;
                 bool b;
                 float f;
-                
+
                 while((line = file.ReadLine()) != null)
                 {
                     if(line.Length == 0)
                         continue;
-                    
+
                     i = line.IndexOf("//", StringComparison.Ordinal);
-                    
+
                     if(i > -1)
                         line = (i == 0 ? "" : line.Substring(0, i));
-                    
+
                     if(line.Length == 0)
                         continue;
-                    
+
                     args = line.Split(CHARS, 2);
-                    
+
                     if(args.Length != 2)
                     {
-                        Log.Error("Unknown "+FILE+" line: "+line+"\nMaybe is missing the '=' ?");
+                        Log.Error("Unknown " + FILE + " line: " + line + "\nMaybe is missing the '=' ?");
                         continue;
                     }
-                    
+
                     args[0] = args[0].Trim().ToLower();
                     args[1] = args[1].Trim().ToLower();
-                    
+
                     switch(args[0])
                     {
                         case "extrasounds":
                             if(bool.TryParse(args[1], out b))
                                 extraSounds = b;
                             else
-                                Log.Error("Invalid "+args[0]+" value: " + args[1]);
+                                Log.Error("Invalid " + args[0] + " value: " + args[1]);
                             continue;
                         case "sprayparticles":
                             if(bool.TryParse(args[1], out b))
                                 sprayParticles = b;
                             else
-                                Log.Error("Invalid "+args[0]+" value: " + args[1]);
+                                Log.Error("Invalid " + args[0] + " value: " + args[1]);
                             continue;
                         case "spraysoundvolume":
                             if(float.TryParse(args[1], out f))
                                 spraySoundVolume = MathHelper.Clamp(f, 0, 1);
                             else
-                                Log.Error("Invalid "+args[0]+" value: " + args[1]);
+                                Log.Error("Invalid " + args[0] + " value: " + args[1]);
+                            continue;
+                        case "selectcolorzigzag":
+                            if(bool.TryParse(args[1], out b))
+                                selectColorZigZag = b;
+                            else
+                                Log.Error("Invalid " + args[0] + " value: " + args[1]);
+                            continue;
+                        case "hidepalettewithhud":
+                            if(bool.TryParse(args[1], out b))
+                                hidePaletteWithHud = b;
+                            else
+                                Log.Error("Invalid " + args[0] + " value: " + args[1]);
+                            continue;
+                        case "palettescreenpos":
+                            var vars = args[1].Split(',');
+                            double x, y;
+                            if(vars.Length == 2 && double.TryParse(vars[0].Trim(), out x) && double.TryParse(vars[1].Trim(), out y))
+                            {
+                                paletteScreenPos = new Vector3D(x, y, 0);
+                                continue;
+                            }
+                            Log.Error("Invalid " + args[0] + " value: " + args[1]);
+                            continue;
+                        case "palettescale":
+                            if(float.TryParse(args[1], out f))
+                                paletteScale = MathHelper.Clamp(f, -100, 100);
+                            else
+                                Log.Error("Invalid " + args[0] + " value: " + args[1]);
                             continue;
                         case "pickcolorinput1":
                         case "pickcolorinput2":
+                        case "replacemodeinput1":
+                        case "replacemodeinput2":
                             if(args[1].Length == 0)
                                 continue;
                             var obj = ControlCombination.CreateFrom(args[1]);
                             if(obj != null)
                             {
-                                if(args[0] == "pickcolorinput1")
-                                    pickColor1 = obj;
+                                if(args[0].StartsWith("pick", StringComparison.Ordinal))
+                                {
+                                    if(args[0].EndsWith("1", StringComparison.Ordinal))
+                                        pickColor1 = obj;
+                                    else
+                                        pickColor2 = obj;
+                                }
                                 else
-                                    pickColor2 = obj;
+                                {
+                                    if(args[0].EndsWith("1", StringComparison.Ordinal))
+                                        replaceMode1 = obj;
+                                    else
+                                        replaceMode2 = obj;
+                                }
                             }
                             else
-                                Log.Error("Invalid "+args[0]+" value: " + args[1]);
+                                Log.Error("Invalid " + args[0] + " value: " + args[1]);
                             continue;
                     }
                 }
-                
+
                 Log.Info("Loaded settings:\n" + GetSettingsString(false));
             }
             catch(Exception e)
@@ -134,7 +180,7 @@ namespace Digi.PaintGun
                 Log.Error(e);
             }
         }
-        
+
         public void Save()
         {
             try
@@ -149,11 +195,11 @@ namespace Digi.PaintGun
                 Log.Error(e);
             }
         }
-        
+
         public string GetSettingsString(bool comments)
         {
             var str = new StringBuilder();
-            
+
             if(comments)
             {
                 str.AppendLine("// Paint Gun mod config; this file gets automatically overwritten after being loaded so don't leave custom comments.");
@@ -161,26 +207,39 @@ namespace Digi.PaintGun
                 str.AppendLine("// Lines starting with // are comments. All values are case insensitive unless otherwise specified.");
                 str.AppendLine();
             }
-            
-            str.Append("ExtraSounds=").Append(extraSounds).AppendLine(comments ? " // toggle sounds: when aiming at a different color in color pick mode and when finishing painting in survival. Default: true" : "");
+
+            str.Append("ExtraSounds=").Append(extraSounds).AppendLine(comments ? " // toggle sounds: when aiming at a different color in color pick mode, when finishing painting in survival and when cycling colors. Default: true" : "");
             str.Append("SprayParticles=").Append(sprayParticles).AppendLine(comments ? " // toggles the spray particles. Default: true" : "");
             str.Append("SpraySoundVolume=").Append(spraySoundVolume).AppendLine(comments ? " // paint gun spraying sound volume. Default: 0.8" : "");
-            
+            str.Append("SelectColorZigZag=").Append(selectColorZigZag).AppendLine(comments ? " // type of scrolling through colors in the palette, false is each row at a time, true is in zig-zag. Default: false" : "");
+            str.Append("HidePaletteWithHUD=").Append(hidePaletteWithHud).AppendLine(comments ? " // wether to hide the color palette along with the HUD. Set to false to always show the color palette regardless if HUD is visible or not. Default: true" : "");
+            str.Append("PaletteScreenPos=").Append(Math.Round(paletteScreenPos.X, 5)).Append(", ").Append(Math.Round(paletteScreenPos.Y, 5)).AppendLine(comments ? " // color palette screen position in X and Y coordinates where 0,0 is the screen center. Positive values are right and up and negative ones are opposite of that. Default: 0.29, -0.73" : "");
+            str.Append("PaletteScale=").Append(Math.Round(paletteScale, 5)).AppendLine(comments ? " // color palette overall scale. Default: 1.0" : "");
+
             if(comments)
             {
                 str.AppendLine();
                 str.AppendLine("// Key/mouse/gamepad combination to trigger '/pg pick' command.");
-                str.AppendLine("// Separate multiple keys/buttons/controls with spaces. For gamepad add "+InputHandler.GAMEPAD_PREFIX+" prefix, for mouse add "+InputHandler.MOUSE_PREFIX+" prefix and for game controls add "+InputHandler.CONTROL_PREFIX+" prefix.");
+                str.AppendLine("// Separate multiple keys/buttons/controls with spaces. For gamepad add " + InputHandler.GAMEPAD_PREFIX + " prefix, for mouse add " + InputHandler.MOUSE_PREFIX + " prefix and for game controls add " + InputHandler.CONTROL_PREFIX + " prefix.");
                 str.AppendLine("// All keys, mouse buttons, gamepad buttons/axes and control names are at the bottom of this file.");
             }
             str.Append("PickColorInput1=").Append(pickColor1 == null ? "" : pickColor1.GetStringCombination()).AppendLine(comments ? " // Default: shift c.landinggear" : "");
             str.Append("PickColorInput2=").Append(pickColor2 == null ? "" : pickColor2.GetStringCombination()).AppendLine(comments ? " // Default: g.lb g.rb" : "");
-            
+
+            if(comments)
+            {
+                str.AppendLine();
+                str.AppendLine("// Key/mouse/gamepad combination to toggle the replace color mode, which only works in creative.");
+                str.AppendLine("// Same input rules as above.");
+            }
+            str.Append("ReplaceModeInput1=").Append(replaceMode1 == null ? "" : replaceMode1.GetStringCombination()).AppendLine(comments ? " // Default: shift c.cubesizemode" : "");
+            str.Append("ReplaceModeInput2=").Append(replaceMode2 == null ? "" : replaceMode2.GetStringCombination()).AppendLine(comments ? " // Default: " : "");
+
             if(comments)
             {
                 str.AppendLine();
                 str.AppendLine("// List of inputs, generated from game data.");
-                
+
                 str.Append("// Key names: ");
                 foreach(var kv in InputHandler.inputs)
                 {
@@ -188,11 +247,11 @@ namespace Digi.PaintGun
                        || kv.Key.StartsWith(InputHandler.GAMEPAD_PREFIX, StringComparison.Ordinal)
                        || kv.Key.StartsWith(InputHandler.CONTROL_PREFIX, StringComparison.Ordinal))
                         continue;
-                    
+
                     str.Append(kv.Key).Append(", ");
                 }
                 str.AppendLine();
-                
+
                 str.Append("// Mouse button names: ");
                 foreach(var kv in InputHandler.inputs)
                 {
@@ -202,7 +261,7 @@ namespace Digi.PaintGun
                     }
                 }
                 str.AppendLine();
-                
+
                 str.Append("// Gamepad button/axes names: ");
                 foreach(var kv in InputHandler.inputs)
                 {
@@ -212,7 +271,7 @@ namespace Digi.PaintGun
                     }
                 }
                 str.AppendLine();
-                
+
                 str.Append("// Control names: ");
                 foreach(var kv in InputHandler.inputs)
                 {
@@ -223,10 +282,10 @@ namespace Digi.PaintGun
                 }
                 str.AppendLine();
             }
-            
+
             return str.ToString();
         }
-        
+
         public void Close()
         {
         }
