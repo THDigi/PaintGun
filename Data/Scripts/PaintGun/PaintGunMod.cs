@@ -468,10 +468,6 @@ namespace Digi.PaintGun
                                 var cd = playerColorData[steamId];
                                 SendToPlayer_SendColorList(0, steamId, cd.selectedSlot, cd.colors);
                             }
-                            else
-                            {
-                                Dev.AppendConsole("; WARNING: playerColorData not found for '" + GetPlayerName(steamId) + "'");
-                            }
 
                             return; // don't relay to clients
                         }
@@ -514,8 +510,6 @@ namespace Digi.PaintGun
                                 cd.colors[i] = bytes.BytesToColor(ref index);
                             }
 
-                            Dev.AppendConsole(" for '" + GetPlayerName(steamId) + "'");
-
                             return; // don't relay (not that it even can since it's clientside only)
                         }
                 }
@@ -524,8 +518,6 @@ namespace Digi.PaintGun
                 if(isServer && MyAPIGateway.Players.Count > 1)
                 {
                     var myId = MyAPIGateway.Multiplayer.MyId;
-
-                    Dev.AppendConsole(" & RELAYED, skipId=" + skipSteamId);
 
                     MyAPIGateway.Players.GetPlayers(playersCache, delegate (IMyPlayer p)
                                                     {
