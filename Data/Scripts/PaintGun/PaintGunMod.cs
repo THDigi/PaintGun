@@ -58,6 +58,11 @@ namespace Digi.PaintGun
     [MySessionComponentDescriptor(MyUpdateOrder.AfterSimulation)]
     public class PaintGunMod : MySessionComponentBase
     {
+        public override void LoadData()
+        {
+            Log.SetUp("Paint Gun", 500818376, "PaintGun");
+        }
+
         public static PaintGunMod instance = null;
 
         public bool init = false;
@@ -86,7 +91,6 @@ namespace Digi.PaintGun
         public readonly Dictionary<ulong, PlayerColorData> playerColorData = new Dictionary<ulong, PlayerColorData>();
         public PlayerColorData localColorData = null;
 
-        public Dictionary<ulong, IMyEntity> holdingTools = new Dictionary<ulong, IMyEntity>(); // TODO remove ? seems unused
         public PaintGun localHeldTool = null;
 
         public HashSet<ulong> playersColorPickMode = new HashSet<ulong>();
@@ -108,7 +112,6 @@ namespace Digi.PaintGun
         };
 
         public const ushort PACKET = 9319;
-        public const char SEPARATOR = ' ';
 
         public const int TOOLSTATUS_TIMEOUT = 200;
 

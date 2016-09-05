@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
+using Sandbox.ModAPI.Weapons;
 using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
@@ -61,61 +62,49 @@ namespace Digi.PaintGun
 
         public void FirstUpdate()
         {
-            var tool = Entity.GetObjectBuilder(false) as MyObjectBuilder_AutomaticRifle;
-            lastShotTime = tool.GunBase.LastShootTime;
+            var tool = Entity as IMyAutomaticRifleGun;
+            lastShotTime = tool.GunBase.LastShootTime.Ticks;
+            var owner = tool.Owner as IMyCharacter;
+
+            if(owner == null)
+            {
+                Log.Error("ERROR: Can't find holder of a paint gun entity because it's null or not a character; ent=" + tool.Owner + "; id=" + tool.OwnerId,
+                    "Can't find holder of paint gun entity, please report the circumstances!");
+                return;
+            }
 
             var charEnt = MyAPIGateway.Session.ControlledObject as IMyCharacter;
 
-            if(charEnt != null) // first check if local player holds the tool
+            if(charEnt != null && charEnt.EntityId == owner.EntityId)
             {
-                var charObj = charEnt.GetObjectBuilder(false) as MyObjectBuilder_Character;
-
-                if(charObj.HandWeapon != null && charObj.HandWeapon.EntityId == Entity.EntityId)
-                {
-                    heldById = MyAPIGateway.Multiplayer.MyId;
-                    heldByLocalPlayer = true;
-
-                    //PaintGunMod.SetToolStatus("Type /pg for Paint Gun options.", MyFontEnum.DarkBlue, 3000);
-                }
+                heldById = MyAPIGateway.Multiplayer.MyId;
+                heldByLocalPlayer = true;
             }
 
             if(heldById == 0) // then find the owner through the player list
             {
-                // TODO if holdingTools is removed then no reason to know which player holds this entity
-
-                long skipEntId = (MyAPIGateway.Session.ControlledObject is IMyCharacter ? MyAPIGateway.Session.ControlledObject.Entity.EntityId : -1);
                 MyAPIGateway.Players.GetPlayers(players, delegate (IMyPlayer p)
-                                                {
-                                                    if(heldById == 0 && p.Controller != null && p.Controller.ControlledEntity is IMyCharacter)
-                                                    {
-                                                        var ent = p.Controller.ControlledEntity.Entity;
+                {
+                    if(heldById == 0 && p.Controller != null && p.Controller.ControlledEntity is IMyCharacter)
+                    {
+                        var ent = p.Controller.ControlledEntity.Entity;
 
-                                                        if(skipEntId != ent.EntityId) // skip local character entity
-                                                        {
-                                                            var charObj = ent.GetObjectBuilder(false) as MyObjectBuilder_Character;
+                        if(ent != null && owner.EntityId == ent.EntityId)
+                        {
+                            heldById = p.SteamUserId;
+                        }
+                    }
 
-                                                            if(charObj != null && charObj.HandWeapon != null && charObj.HandWeapon.EntityId == Entity.EntityId)
-                                                            {
-                                                                heldById = p.SteamUserId;
-                                                            }
-                                                        }
-                                                    }
-
-                                                    return false; // no need to add anything to the list.
-                                                });
+                    return false; // no need to add anything to the list.
+                });
             }
 
             if(heldById == 0)
             {
-                Log.Info("ERROR: Can't find holder of a paint gun entity."); // silent error
-                MyAPIGateway.Utilities.ShowNotification("Can't find holder of paint gun entity, please report the circumstances!", 10000, MyFontEnum.Red);
+                Log.Error("ERROR: Can't find holder of a paint gun entity.",
+                    "Can't find holder of paint gun entity, please report the circumstances!");
                 return;
             }
-
-            if(mod.holdingTools.ContainsKey(heldById))
-                mod.holdingTools[heldById] = Entity;
-            else
-                mod.holdingTools.Add(heldById, Entity);
 
             if(heldByLocalPlayer)
                 mod.localHeldTool = this;
@@ -164,10 +153,10 @@ namespace Digi.PaintGun
                 if(mod.isThisHostDedicated || heldById == 0)
                     return;
 
-                var tool = Entity.GetObjectBuilder(false) as MyObjectBuilder_AutomaticRifle;
+                var tool = Entity as IMyAutomaticRifleGun;
                 var player = (heldByLocalPlayer && MyAPIGateway.Session.ControlledObject != null ? MyAPIGateway.Session.ControlledObject.Entity : null);
                 long ticks = DateTime.UtcNow.Ticks;
-                long shootTime = tool.GunBase.LastShootTime;
+                long shootTime = tool.GunBase.LastShootTime.Ticks;
                 bool trigger = shootTime + DELAY_SHOOT > ticks;
 
                 if(heldByLocalPlayer)
@@ -362,8 +351,6 @@ namespace Digi.PaintGun
             {
                 if(mod == null)
                     return;
-
-                mod.holdingTools.Remove(heldById);
 
                 if(heldByLocalPlayer)
                 {

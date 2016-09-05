@@ -820,19 +820,22 @@ namespace Digi.Utils
                 if(tmp.Length > 0)
                     tmp.Append(" or ");
 
-                tmp.Append(inputNames.GetValueOrDefault(control.GetKeyboardControl(), control.GetKeyboardControl().ToString()).ToUpper());
+                var def = control.GetKeyboardControl().ToString();
+                tmp.Append(inputNiceNames.GetValueOrDefault(inputNames.GetValueOrDefault(control.GetKeyboardControl(), def), def));
             }
 
             if(control.GetMouseControl() != MyMouseButtonsEnum.None)
             {
-                tmp.Append(inputNames.GetValueOrDefault(control.GetMouseControl(), control.GetMouseControl().ToString()).ToUpper());
+                var def = control.GetMouseControl().ToString();
+                tmp.Append(inputNiceNames.GetValueOrDefault(inputNames.GetValueOrDefault(control.GetMouseControl(), def), def));
             }
             else if(control.GetSecondKeyboardControl() != MyKeys.None)
             {
                 if(tmp.Length > 0)
                     tmp.Append(" or ");
 
-                tmp.Append(inputNames.GetValueOrDefault(control.GetSecondKeyboardControl(), control.GetSecondKeyboardControl().ToString()).ToUpper());
+                var def = control.GetSecondKeyboardControl().ToString();
+                tmp.Append(inputNiceNames.GetValueOrDefault(inputNames.GetValueOrDefault(control.GetSecondKeyboardControl(), def), def));
             }
 
             var val = tmp.ToString();

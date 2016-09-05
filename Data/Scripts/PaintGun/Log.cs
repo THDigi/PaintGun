@@ -10,11 +10,11 @@ using VRage.Utils;
 
 namespace Digi.Utils
 {
-    public static class Log // v1.0
+    public static class Log // v1.3
     {
-        public const string MOD_NAME = "Paint Gun";
-        public const string MOD_FOLDER = "PaintGun";
-        public const int WORKSHOP_ID = 500818376;
+        public static string modName = "UNNAMED";
+        public static string modFolder = "UNNAMED";
+        public static ulong workshopId = 0;
         public const string LOG_FILE = "info.log";
 
         private static TextWriter writer = null;
@@ -23,11 +23,18 @@ namespace Digi.Utils
         private static readonly List<string> preInitMessages = new List<string>(0);
         private static int indent = 0;
 
+        public static void SetUp(string modName, ulong workshopId, string modFolder = null)
+        {
+            Log.modName = modName;
+            Log.modFolder = (modFolder == null ? modName : modFolder);
+            Log.workshopId = workshopId;
+        }
+
         public static void Init()
         {
             if(MyAPIGateway.Utilities == null)
             {
-                MyLog.Default.WriteLineAndConsole(MOD_NAME + " Log.Init() called before API was ready!");
+                MyLog.Default.WriteLineAndConsole(modName + " Log.Init() called before API was ready!");
                 return;
             }
 
@@ -68,8 +75,8 @@ namespace Digi.Utils
             cache.Append("BRANCH_STABLE, ");
 #endif
 
-#if BRANCH_DEVELOPMENT
-            cache.Append("BRANCH_DEVELOPMENT, ");
+#if BRANCH_DEVELOP
+            cache.Append("BRANCH_DEVELOP, ");
 #endif
 
 #if BRANCH_UNKNOWN
@@ -116,25 +123,33 @@ namespace Digi.Utils
             Error(e.ToString());
         }
 
+        public static void Error(Exception e, string printText)
+        {
+            Error(e.ToString(), printText);
+        }
+
         public static void Error(string msg)
+        {
+            Error(msg, modName + " error - open %AppData%/SpaceEngineers/Storage/" + workshopId + "_" + modFolder + "/" + LOG_FILE + " for details");
+        }
+
+        public static void Error(string msg, string printText)
         {
             Info("ERROR: " + msg);
 
             try
             {
-                MyLog.Default.WriteLineAndConsole(MOD_NAME + " error/exception: " + msg);
+                MyLog.Default.WriteLineAndConsole(modName + " error/exception: " + msg);
 
                 if(MyAPIGateway.Session != null)
                 {
-                    string text = MOD_NAME + " error - open %AppData%/SpaceEngineers/Storage/" + WORKSHOP_ID + "_" + MOD_FOLDER + "/" + LOG_FILE + " for details";
-
                     if(notify == null)
                     {
-                        notify = MyAPIGateway.Utilities.CreateNotification(text, 10000, MyFontEnum.Red);
+                        notify = MyAPIGateway.Utilities.CreateNotification(printText, 10000, MyFontEnum.Red);
                     }
                     else
                     {
-                        notify.Text = text;
+                        notify.Text = printText;
                         notify.ResetAliveTime();
                     }
 
@@ -144,7 +159,7 @@ namespace Digi.Utils
             catch(Exception e)
             {
                 Info("ERROR: Could not send notification to local client: " + e);
-                MyLog.Default.WriteLineAndConsole(MOD_NAME + " error/exception: Could not send notification to local client: " + e);
+                MyLog.Default.WriteLineAndConsole(modName + " error/exception: Could not send notification to local client: " + e);
             }
         }
 
@@ -184,7 +199,7 @@ namespace Digi.Utils
             }
             catch(Exception e)
             {
-                MyLog.Default.WriteLineAndConsole(MOD_NAME + " had an error while logging message='" + msg + "'\nLogger error: " + e.Message + "\n" + e.StackTrace);
+                MyLog.Default.WriteLineAndConsole(modName + " had an error while logging message='" + msg + "'\nLogger error: " + e.Message + "\n" + e.StackTrace);
             }
         }
     }

@@ -19,6 +19,25 @@
 
 
 
+            if(heldById == 0) // then find the owner through the player list
+            {
+                long skipEntId = (MyAPIGateway.Session.ControlledObject is IMyCharacter ? MyAPIGateway.Session.ControlledObject.Entity.EntityId : -1);
+                MyAPIGateway.Players.GetPlayers(players, delegate (IMyPlayer p)
+                                                {
+                                                    if(heldById == 0 && p.Controller != null && p.Controller.ControlledEntity is IMyCharacter)
+                                                    {
+                                                        var ent = p.Controller.ControlledEntity.Entity;
+
+                                                        if(ent != null && skipEntId != ent.EntityId && owner.EntityId == ent.EntityId) // skip local character entity
+                                                        {
+                                                            heldById = p.SteamUserId;
+                                                        }
+                                                    }
+
+                                                    return false; // no need to add anything to the list.
+                                                });
+            }
+
 
 
 
