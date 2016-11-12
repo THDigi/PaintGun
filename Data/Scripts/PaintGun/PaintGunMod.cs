@@ -14,8 +14,6 @@ using VRage.Game.Components;
 using VRage.ModAPI;
 using VRage.Utils;
 
-using Digi.Utils;
-
 namespace Digi.PaintGun
 {
     public class PlayerColorData
@@ -136,8 +134,6 @@ namespace Digi.PaintGun
 
             Log.Init();
 
-            InputHandler.Init();
-
             MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET, ReceivedPacket);
 
             if(!isThisHostDedicated) // stuff that shouldn't happen DS-side.
@@ -158,8 +154,6 @@ namespace Digi.PaintGun
                 if(init)
                 {
                     init = false;
-
-                    InputHandler.Close();
 
                     MyAPIGateway.Utilities.MessageEntered -= MessageEntered;
                     MyAPIGateway.Multiplayer.UnregisterMessageHandler(PACKET, ReceivedPacket);
@@ -1037,7 +1031,9 @@ namespace Digi.PaintGun
                     var viewProjectionMatrixInv = MatrixD.Invert(cam.ViewMatrix * cam.ProjectionMatrix);
                     var pos = Vector3D.Transform(settings.paletteScreenPos, viewProjectionMatrixInv);
 
+                    /*
                     const int MIN_FOV = 40;
+
                     var FOV = MathHelper.ToDegrees(cam.FovWithZoom);
                     float scaleFOV = 1;
 
@@ -1053,12 +1049,14 @@ namespace Digi.PaintGun
                     }
 
                     scaleFOV *= settings.paletteScale;
-
+                    */
+                    
+                    var scaleFOV = (float)Math.Tan(MyAPIGateway.Session.Camera.FovWithZoom / 2);
                     float SQUARE_WIDTH = 0.0014f * scaleFOV;
                     float SQUARE_HEIGHT = 0.0011f * scaleFOV;
-                    float SQUARE_SELECTED_WIDTH = (SQUARE_WIDTH + 0.0002f) * scaleFOV;
-                    float SQUARE_SELECTED_HEIGHT = (SQUARE_HEIGHT + 0.0002f) * scaleFOV;
-                    const double SPACING_ADD = 0.0006;
+                    float SQUARE_SELECTED_WIDTH = (SQUARE_WIDTH + (SQUARE_WIDTH / 7f));
+                    float SQUARE_SELECTED_HEIGHT = (SQUARE_HEIGHT + (SQUARE_HEIGHT / 7f));
+                    double SPACING_ADD = 0.0006 * scaleFOV;
                     double SPACING_WIDTH = (SQUARE_WIDTH * 2) + SPACING_ADD;
                     double SPACING_HEIGHT = (SQUARE_HEIGHT * 2) + SPACING_ADD;
                     const int MIDDLE_INDEX = 7;
@@ -1143,23 +1141,22 @@ namespace Digi.PaintGun
                 if(!init)
                     return;
 
-                InputHandler.Update();
-
-                if(localHeldTool != null && InputHandler.IsInputReadable())
+                // HACK calling InputHandler.IsInputReadable() as late as possible as it's expensive with its exception throwing when not in a menu
+                if(localHeldTool != null) // && InputHandler.IsInputReadable())
                 {
-                    if(symmetryInput && MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.USE_SYMMETRY))
+                    if(symmetryInput && MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.USE_SYMMETRY) && InputHandler.IsInputReadable())
                     {
                         MyAPIGateway.CubeBuilder.UseSymmetry = !MyAPIGateway.CubeBuilder.UseSymmetry;
                     }
 
-                    if(replaceAllMode && MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.USE_SYMMETRY))
+                    if(replaceAllMode && MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.USE_SYMMETRY) && InputHandler.IsInputReadable())
                     {
                         replaceGridSystem = !replaceGridSystem;
                     }
 
                     if(!MyAPIGateway.Input.IsKeyPress(MyKeys.Alt))
                     {
-                        int change = 0;
+                        var change = 0;
 
                         if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.SWITCH_LEFT))
                             change = 1;
@@ -1168,7 +1165,7 @@ namespace Digi.PaintGun
                         else
                             change = MyAPIGateway.Input.DeltaMouseScrollWheelValue();
 
-                        if(change != 0 && localColorData != null)
+                        if(change != 0 && localColorData != null && InputHandler.IsInputReadable())
                         {
                             if(settings.extraSounds)
                                 PlaySound("HudClick", 0.1f);
@@ -1408,7 +1405,11 @@ namespace Digi.PaintGun
             }
         }
 
+#if STABLE // HACK >>> STABLE condition
         public void SetToolStatus(int line, string text, MyFontEnum font = MyFontEnum.White, int aliveTime = TOOLSTATUS_TIMEOUT)
+#else
+        public void SetToolStatus(int line, string text, string font = MyFontEnum.White, int aliveTime = TOOLSTATUS_TIMEOUT)
+#endif
         {
             if(text == null)
             {
@@ -1783,7 +1784,7 @@ namespace Digi.PaintGun
             try
             {
                 var character = MyAPIGateway.Session.Player.Controller.ControlledEntity.Entity;
-
+                
                 if(pickColorMode && MyAPIGateway.Players.Count > 1)
                 {
                     var view = MyAPIGateway.Session.ControlledObject.GetHeadMatrix(false, true);

@@ -8,9 +8,9 @@ using VRage.Input;
 using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
-using Digi.Utils;
+using VRage.Game.ModAPI;
 
-namespace Digi.Utils
+namespace Digi
 {
     public class ControlCombination
     {
@@ -117,9 +117,7 @@ namespace Digi.Utils
         public const string MOUSE_PREFIX = "m.";
         public const string GAMEPAD_PREFIX = "g.";
         public const string CONTROL_PREFIX = "c.";
-
-        private static byte menuInChat = 0;
-
+        
         private static readonly StringBuilder tmp = new StringBuilder();
 
         private const float EPSILON = 0.000001f;
@@ -584,42 +582,23 @@ namespace Digi.Utils
             };
         }
 
-        public static void Init() // NOTE: this must be called in the session component.
-        {
-            MyAPIGateway.GuiControlCreated += GUICreated;
-        }
-
-        public static void Close() // NOTE: this must be called in the session component.
-        {
-            MyAPIGateway.GuiControlCreated -= GUICreated;
-        }
-
-        public static void Update() // NOTE: this must be called in the session component.
-        {
-            if(menuInChat > 0)
-            {
-                if(menuInChat > 1)
-                    menuInChat--;
-                else if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.CHAT_SCREEN) || MyAPIGateway.Input.IsNewKeyPressed(MyKeys.Escape))
-                    menuInChat = 0;
-            }
-        }
-
-        public static void GUICreated(object obj)
-        {
-            var ui = obj.ToString();
-
-            if(ui == "Sandbox.Game.Gui.MyGuiScreenChat")
-                menuInChat = 2; // need to skip one tick because enter is still being registered as new-pressed this tick
-        }
-
         public static bool IsInputReadable()
         {
-            // this needs to detect properly: escape menu, F10 and F11 menus, mission screens, yes/no notifications.
-            // I can detect all of the above with the GUICreated event except for the F11 menu, but I can't reliably know when they're closed, so not going to use them.
+            // TODO detect properly: escape menu, F10 and F11 menus, mission screens, yes/no notifications.
 
-            // FIXME whitelist broke this
-            return menuInChat == 0; // && MyGuiScreenGamePlay.ActiveGameplayScreen == null && MyGuiScreenTerminal.GetCurrentScreen() == MyTerminalPageEnum.None;
+            var GUI = MyAPIGateway.Gui;
+
+            if(GUI.ChatEntryVisible || GUI.GetCurrentScreen != MyTerminalPageEnum.None)
+                return false;
+
+            try // HACK ActiveGamePlayScreen throws NRE when called while not in a menu
+            {
+                return GUI.ActiveGamePlayScreen == null;
+            }
+            catch(Exception)
+            {
+                return true;
+            }
         }
 
         public static void AppendNiceNamePrefix(string key, object obj, StringBuilder str)

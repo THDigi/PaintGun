@@ -4,8 +4,6 @@ using System.IO;
 using Sandbox.ModAPI;
 using VRageMath;
 
-using Digi.Utils;
-
 namespace Digi.PaintGun
 {
     public class Settings

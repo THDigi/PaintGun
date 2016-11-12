@@ -13,8 +13,6 @@ using VRage.ObjectBuilders;
 using VRage.Game.Components;
 using VRage.ModAPI;
 
-using Digi.Utils;
-
 namespace Digi.PaintGun
 {
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_AutomaticRifle), PaintGunMod.PAINT_GUN_ID)]
