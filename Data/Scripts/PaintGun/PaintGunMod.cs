@@ -103,7 +103,8 @@ namespace Digi.PaintGun
         public const int SKIP_UPDATES = 10;
         public static Vector3 DEFAULT_COLOR = new Vector3(0, -1, 0);
         public const float SAME_COLOR_RANGE = 0.001f;
-        public static MyObjectBuilder_AmmoMagazine PAINT_MAG = new MyObjectBuilder_AmmoMagazine()
+
+        public static readonly MyObjectBuilder_AmmoMagazine PAINT_MAG = new MyObjectBuilder_AmmoMagazine()
         {
             SubtypeName = PAINT_MAG_ID,
             ProjectilesCount = 1
@@ -115,14 +116,14 @@ namespace Digi.PaintGun
 
         public const int COLOR_PALETTE_SIZE = 14;
 
-        public static Color CROSSHAIR_NO_TARGET = new Color(255, 0, 0);
-        public static Color CROSSHAIR_BAD_TARGET = new Color(255, 200, 0);
-        public static Color CROSSHAIR_TARGET = new Color(0, 255, 0);
-        public static Color CROSSHAIR_PAINTING = new Color(0, 255, 155);
+        public static readonly Color CROSSHAIR_NO_TARGET = new Color(255, 0, 0);
+        public static readonly Color CROSSHAIR_BAD_TARGET = new Color(255, 200, 0);
+        public static readonly Color CROSSHAIR_TARGET = new Color(0, 255, 0);
+        public static readonly Color CROSSHAIR_PAINTING = new Color(0, 255, 155);
         public static readonly MyStringId CROSSHAIR_SPRITEID = MyStringId.GetOrCompute("Default");
 
+        private readonly HashSet<IMyEntity> ents = new HashSet<IMyEntity>();
         private readonly StringBuilder assigned = new StringBuilder();
-        public static HashSet<IMyEntity> ents = new HashSet<IMyEntity>();
         private readonly List<MyCubeGrid> gridsInSystemCache = new List<MyCubeGrid>();
         private readonly List<IMyPlayer> playersCache = new List<IMyPlayer>(0); // always empty
 
@@ -1050,7 +1051,7 @@ namespace Digi.PaintGun
 
                     scaleFOV *= settings.paletteScale;
                     */
-                    
+
                     var scaleFOV = (float)Math.Tan(MyAPIGateway.Session.Camera.FovWithZoom / 2);
                     float SQUARE_WIDTH = 0.0014f * scaleFOV;
                     float SQUARE_HEIGHT = 0.0011f * scaleFOV;
@@ -1078,7 +1079,7 @@ namespace Digi.PaintGun
                         if(i == localColorData.selectedSlot)
                         {
                             MyUtils.GenerateQuad(out quad, ref pos, SQUARE_SELECTED_WIDTH, SQUARE_SELECTED_HEIGHT, ref camMatrix);
-                            MyTransparentGeometry.AddQuad("PaintGunSelectedColor", ref quad, Color.White, ref pos, 0, -1);
+                            MyTransparentGeometry.AddQuad("PaintGunSelectedColor", ref quad, Color.White, ref pos);
                         }
 
                         pos += camMatrix.Right * SPACING_WIDTH;
@@ -1307,7 +1308,7 @@ namespace Digi.PaintGun
                                 quad.Point2 = center + minY + minZ;
                                 quad.Point3 = center + minY + maxZ;
 
-                                MyTransparentGeometry.AddQuad(material, ref quad, Color.Red * alpha, ref center, 0, -1);
+                                MyTransparentGeometry.AddQuad(material, ref quad, Color.Red * alpha, ref center);
                             }
 
                             if(grid.YSymmetryPlane.HasValue)
@@ -1324,7 +1325,7 @@ namespace Digi.PaintGun
                                 quad.Point2 = center + minZ + minX;
                                 quad.Point3 = center + minZ + maxX;
 
-                                MyTransparentGeometry.AddQuad(material, ref quad, Color.Green * alpha, ref center, 0, -1);
+                                MyTransparentGeometry.AddQuad(material, ref quad, Color.Green * alpha, ref center);
                             }
 
                             if(grid.ZSymmetryPlane.HasValue)
@@ -1341,7 +1342,7 @@ namespace Digi.PaintGun
                                 quad.Point2 = center + minY + minX;
                                 quad.Point3 = center + minY + maxX;
 
-                                MyTransparentGeometry.AddQuad(material, ref quad, Color.Blue * alpha, ref center, 0, -1);
+                                MyTransparentGeometry.AddQuad(material, ref quad, Color.Blue * alpha, ref center);
                             }
                         }
                     }
@@ -1394,7 +1395,7 @@ namespace Digi.PaintGun
                             var color = Color.Green;
                             var worldToLocal = selectedCharacter.WorldMatrixInvScaled;
 
-                            MySimpleObjectDraw.DrawAttachedTransparentBox(ref matrix, ref box, ref color, selectedCharacter.Render.GetRenderObjectID(), ref worldToLocal, MySimpleObjectRasterizer.Wireframe, 1, 0.05f, null, "GizmoDrawLine", false, 0);
+                            MySimpleObjectDraw.DrawAttachedTransparentBox(ref matrix, ref box, ref color, selectedCharacter.Render.GetRenderObjectID(), ref worldToLocal, MySimpleObjectRasterizer.Wireframe, 1, 0.05f, null, "GizmoDrawLine", false);
                         }
                     }
                 }
@@ -1784,7 +1785,7 @@ namespace Digi.PaintGun
             try
             {
                 var character = MyAPIGateway.Session.Player.Controller.ControlledEntity.Entity;
-                
+
                 if(pickColorMode && MyAPIGateway.Players.Count > 1)
                 {
                     var view = MyAPIGateway.Session.ControlledObject.GetHeadMatrix(false, true);

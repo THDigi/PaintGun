@@ -247,7 +247,7 @@ namespace Digi.PaintGun
                                         continue;
                                     }
 
-                                    MyTransparentGeometry.AddPointBillboard("Smoke", p.color, pos + p.relativePosition, p.radius, p.angle, 0, true, true, false, -1);
+                                    MyTransparentGeometry.AddPointBillboard("Smoke", p.color, pos + p.relativePosition, p.radius, p.angle);
 
                                     if(p.angle > 0)
                                         p.angle += (p.life * 0.001f);

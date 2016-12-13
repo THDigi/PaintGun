@@ -86,6 +86,10 @@
     <Reference Include="VRage.Math">
       <HintPath>C:\Steam\SteamApps\common\SpaceEngineers\Bin64\VRage.Math.dll</HintPath>
     </Reference>
+    <Reference Include="VRage.Render, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Steam\steamapps\common\SpaceEngineers\Bin64\VRage.Render.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="InputHandler.cs" />
