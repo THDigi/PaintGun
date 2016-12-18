@@ -1406,11 +1406,7 @@ namespace Digi.PaintGun
             }
         }
 
-#if STABLE // HACK >>> STABLE condition
-        public void SetToolStatus(int line, string text, MyFontEnum font = MyFontEnum.White, int aliveTime = TOOLSTATUS_TIMEOUT)
-#else
         public void SetToolStatus(int line, string text, string font = MyFontEnum.White, int aliveTime = TOOLSTATUS_TIMEOUT)
-#endif
         {
             if(text == null)
             {
