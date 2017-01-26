@@ -60,13 +60,13 @@ namespace Digi.PaintGun
 
         public void FirstUpdate()
         {
-            var tool = Entity as IMyAutomaticRifleGun;
+            var tool = (IMyAutomaticRifleGun)Entity;
             lastShotTime = tool.GunBase.LastShootTime.Ticks;
             var owner = tool.Owner as IMyCharacter;
 
             if(owner == null)
             {
-                Log.Error("ERROR: Can't find holder of a paint gun entity because it's null or not a character; ent=" + tool.Owner + "; id=" + tool.OwnerId,
+                Log.Error("ERROR: Can't find holder of a paint gun entity because it's null or not a character; ent=" + tool.Owner,
                     "Can't find holder of paint gun entity, please report the circumstances!");
                 return;
             }

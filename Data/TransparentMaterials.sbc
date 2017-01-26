@@ -11,7 +11,7 @@
       <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
       <Emissivity>0</Emissivity>
       <IgnoreDepth>false</IgnoreDepth>
-      <SoftParticleDistanceScale>1</SoftParticleDistanceScale>
+      <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
       <Texture>Textures\SelectedColor.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <UVOffset>
