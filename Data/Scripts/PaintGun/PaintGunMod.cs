@@ -104,6 +104,11 @@ namespace Digi.PaintGun
         public static Vector3 DEFAULT_COLOR = new Vector3(0, -1, 0);
         public const float SAME_COLOR_RANGE = 0.001f;
 
+        public static readonly MyStringId MATERIAL_GIZMIDRAWLINE = MyStringId.GetOrCompute("GizmoDrawLine");
+        public static readonly MyStringId MATERIAL_GIZMIDRAWLINERED = MyStringId.GetOrCompute("GizmoDrawLineRed");
+        public static readonly MyStringId MATERIAL_SQUARE = MyStringId.GetOrCompute("Square");
+        public static readonly MyStringId MATERIAL_SELECTEDCOLOR = MyStringId.GetOrCompute("PaintGunSelectedColor");
+
         public static readonly MyObjectBuilder_AmmoMagazine PAINT_MAG = new MyObjectBuilder_AmmoMagazine()
         {
             SubtypeName = PAINT_MAG_ID,
@@ -124,7 +129,7 @@ namespace Digi.PaintGun
 
         private readonly HashSet<IMyEntity> ents = new HashSet<IMyEntity>();
         private readonly StringBuilder assigned = new StringBuilder();
-        private readonly List<MyCubeGrid> gridsInSystemCache = new List<MyCubeGrid>();
+        private readonly HashSet<MyCubeGrid> gridsInSystemCache = new HashSet<MyCubeGrid>();
         private readonly List<IMyPlayer> playersCache = new List<IMyPlayer>(0); // always empty
 
         public void Init()
@@ -198,7 +203,7 @@ namespace Digi.PaintGun
             gridsInSystemCache.Clear();
 
             if(useGridSystem)
-                grid.GetLogicalGridSystem(gridsInSystemCache);
+                grid.GetShipSubgrids(gridsInSystemCache);
             else
                 gridsInSystemCache.Add(grid);
 
@@ -751,9 +756,7 @@ namespace Digi.PaintGun
                 color.ColorToBytes(bytes, ref len);
 
                 MyAPIGateway.Multiplayer.SendMessageToServer(PACKET, bytes, true);
-
-                // TODO find a way to set client's color on the color picker menu
-
+                MyAPIGateway.Session.Player.ChangeOrSwitchToColor(color);
                 return true;
             }
             catch(Exception e)
@@ -980,7 +983,7 @@ namespace Digi.PaintGun
                         var mirrorX = originalPosition + new Vector3I(((g.XSymmetryPlane.Value.X - originalPosition.X) * 2) - (g.XSymmetryOdd ? 1 : 0), 0, 0);
 
                         if(g.CubeExists(mirrorX))
-                            MyCubeBuilder.DrawSemiTransparentBox(g, g.GetCubeBlock(mirrorX), Color.White, true, selectedInvalid ? "GizmoDrawLineRed" : "GizmoDrawLine", null);
+                            MyCubeBuilder.DrawSemiTransparentBox(g, g.GetCubeBlock(mirrorX), Color.White, true, selectedInvalid ? MATERIAL_GIZMIDRAWLINERED : MATERIAL_GIZMIDRAWLINE, null);
 
                         return mirrorX;
                     }
@@ -992,7 +995,7 @@ namespace Digi.PaintGun
                         var mirrorY = originalPosition + new Vector3I(0, ((g.YSymmetryPlane.Value.Y - originalPosition.Y) * 2) - (g.YSymmetryOdd ? 1 : 0), 0);
 
                         if(g.CubeExists(mirrorY))
-                            MyCubeBuilder.DrawSemiTransparentBox(g, g.GetCubeBlock(mirrorY), Color.White, true, selectedInvalid ? "GizmoDrawLineRed" : "GizmoDrawLine", null);
+                            MyCubeBuilder.DrawSemiTransparentBox(g, g.GetCubeBlock(mirrorY), Color.White, true, selectedInvalid ? MATERIAL_GIZMIDRAWLINERED : MATERIAL_GIZMIDRAWLINE, null);
 
                         return mirrorY;
                     }
@@ -1004,7 +1007,7 @@ namespace Digi.PaintGun
                         var mirrorZ = originalPosition + new Vector3I(0, 0, ((g.ZSymmetryPlane.Value.Z - originalPosition.Z) * 2) + (g.ZSymmetryOdd ? 1 : 0)); // reversed on odd
 
                         if(g.CubeExists(mirrorZ))
-                            MyCubeBuilder.DrawSemiTransparentBox(g, g.GetCubeBlock(mirrorZ), Color.White, true, selectedInvalid ? "GizmoDrawLineRed" : "GizmoDrawLine", null);
+                            MyCubeBuilder.DrawSemiTransparentBox(g, g.GetCubeBlock(mirrorZ), Color.White, true, selectedInvalid ? MATERIAL_GIZMIDRAWLINERED : MATERIAL_GIZMIDRAWLINE, null);
 
                         return mirrorZ;
                     }
@@ -1074,12 +1077,12 @@ namespace Digi.PaintGun
                             pos += camMatrix.Left * (SPACING_WIDTH * MIDDLE_INDEX) + camMatrix.Down * SPACING_HEIGHT;
 
                         MyUtils.GenerateQuad(out quad, ref pos, SQUARE_WIDTH, SQUARE_HEIGHT, ref camMatrix);
-                        MyTransparentGeometry.AddQuad("Square", ref quad, c, ref pos);
+                        MyTransparentGeometry.AddQuad(MATERIAL_SQUARE, ref quad, c, ref pos);
 
                         if(i == localColorData.selectedSlot)
                         {
                             MyUtils.GenerateQuad(out quad, ref pos, SQUARE_SELECTED_WIDTH, SQUARE_SELECTED_HEIGHT, ref camMatrix);
-                            MyTransparentGeometry.AddQuad("PaintGunSelectedColor", ref quad, Color.White, ref pos);
+                            MyTransparentGeometry.AddQuad(MATERIAL_SELECTEDCOLOR, ref quad, Color.White, ref pos);
                         }
 
                         pos += camMatrix.Right * SPACING_WIDTH;
@@ -1142,20 +1145,19 @@ namespace Digi.PaintGun
                 if(!init)
                     return;
 
-                // HACK calling InputHandler.IsInputReadable() as late as possible as it's expensive with its exception throwing when not in a menu
-                if(localHeldTool != null) // && InputHandler.IsInputReadable())
+                if(localHeldTool != null && InputHandler.IsInputReadable())
                 {
-                    if(symmetryInput && MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.USE_SYMMETRY) && InputHandler.IsInputReadable())
+                    if(symmetryInput && MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.USE_SYMMETRY))
                     {
                         MyAPIGateway.CubeBuilder.UseSymmetry = !MyAPIGateway.CubeBuilder.UseSymmetry;
                     }
 
-                    if(replaceAllMode && MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.USE_SYMMETRY) && InputHandler.IsInputReadable())
+                    if(replaceAllMode && MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.USE_SYMMETRY))
                     {
                         replaceGridSystem = !replaceGridSystem;
                     }
 
-                    if(!MyAPIGateway.Input.IsKeyPress(MyKeys.Alt))
+                    if(!MyAPIGateway.Input.IsAnyAltKeyPressed())
                     {
                         var change = 0;
 
@@ -1166,7 +1168,7 @@ namespace Digi.PaintGun
                         else
                             change = MyAPIGateway.Input.DeltaMouseScrollWheelValue();
 
-                        if(change != 0 && localColorData != null && InputHandler.IsInputReadable())
+                        if(change != 0 && localColorData != null)
                         {
                             if(settings.extraSounds)
                                 PlaySound("HudClick", 0.1f);
@@ -1292,7 +1294,6 @@ namespace Digi.PaintGun
                             var quad = new MyQuadD();
                             Vector3D gridSize = (Vector3I.One + (grid.Max - grid.Min)) * grid.GridSizeHalf;
                             const float alpha = 0.4f;
-                            const string material = "SquareIgnoreDepth";
 
                             if(grid.XSymmetryPlane.HasValue)
                             {
@@ -1308,7 +1309,7 @@ namespace Digi.PaintGun
                                 quad.Point2 = center + minY + minZ;
                                 quad.Point3 = center + minY + maxZ;
 
-                                MyTransparentGeometry.AddQuad(material, ref quad, Color.Red * alpha, ref center);
+                                MyTransparentGeometry.AddQuad(MATERIAL_SQUARE, ref quad, Color.Red * alpha, ref center);
                             }
 
                             if(grid.YSymmetryPlane.HasValue)
@@ -1325,7 +1326,7 @@ namespace Digi.PaintGun
                                 quad.Point2 = center + minZ + minX;
                                 quad.Point3 = center + minZ + maxX;
 
-                                MyTransparentGeometry.AddQuad(material, ref quad, Color.Green * alpha, ref center);
+                                MyTransparentGeometry.AddQuad(MATERIAL_SQUARE, ref quad, Color.Green * alpha, ref center);
                             }
 
                             if(grid.ZSymmetryPlane.HasValue)
@@ -1342,7 +1343,7 @@ namespace Digi.PaintGun
                                 quad.Point2 = center + minY + minX;
                                 quad.Point3 = center + minY + maxX;
 
-                                MyTransparentGeometry.AddQuad(material, ref quad, Color.Blue * alpha, ref center);
+                                MyTransparentGeometry.AddQuad(MATERIAL_SQUARE, ref quad, Color.Blue * alpha, ref center);
                             }
                         }
                     }
@@ -1357,7 +1358,7 @@ namespace Digi.PaintGun
                         {
                             // workaround not being able to cast to MySlimBlock with GetCubeBlock()
                             var internalGrid = selectedSlimBlock.CubeGrid as MyCubeGrid;
-                            MyCubeBuilder.DrawSemiTransparentBox(internalGrid, internalGrid.GetCubeBlock(selectedSlimBlock.Position), Color.White, true, selectedInvalid ? "GizmoDrawLineRed" : "GizmoDrawLine", null);
+                            MyCubeBuilder.DrawSemiTransparentBox(internalGrid, internalGrid.GetCubeBlock(selectedSlimBlock.Position), Color.White, true, selectedInvalid ? MATERIAL_GIZMIDRAWLINERED : MATERIAL_GIZMIDRAWLINE, null);
 
                             // symmetry highlight
                             if(MyAPIGateway.Session.CreativeMode && MyCubeBuilder.Static.UseSymmetry && (grid.XSymmetryPlane.HasValue || grid.YSymmetryPlane.HasValue || grid.ZSymmetryPlane.HasValue))
@@ -1395,7 +1396,7 @@ namespace Digi.PaintGun
                             var color = Color.Green;
                             var worldToLocal = selectedCharacter.WorldMatrixInvScaled;
 
-                            MySimpleObjectDraw.DrawAttachedTransparentBox(ref matrix, ref box, ref color, selectedCharacter.Render.GetRenderObjectID(), ref worldToLocal, MySimpleObjectRasterizer.Wireframe, 1, 0.05f, null, "GizmoDrawLine", false);
+                            MySimpleObjectDraw.DrawAttachedTransparentBox(ref matrix, ref box, ref color, selectedCharacter.Render.GetRenderObjectID(), ref worldToLocal, MySimpleObjectRasterizer.Wireframe, 1, 0.05f, null, MATERIAL_GIZMIDRAWLINE, false);
                         }
                     }
                 }
@@ -1465,21 +1466,18 @@ namespace Digi.PaintGun
                     SetToolStatus(0, "Aim at a block or player and click to pick its color.", MyFontEnum.Blue);
                     SetToolStatus(1, null);
                     SetToolStatus(2, null);
-                    SetToolStatus(3, null);
                 }
                 else if(replaceAllMode)
                 {
                     SetToolStatus(0, "Aim at a block to replace its color from the entire grid.", MyFontEnum.Blue);
                     SetToolStatus(1, null);
                     SetToolStatus(2, null);
-                    SetToolStatus(3, null);
                 }
                 else if(trigger)
                 {
                     SetToolStatus(0, "Aim at a block to paint it.", MyFontEnum.Red);
                     SetToolStatus(1, null);
                     SetToolStatus(2, symmetryStatus, MyFontEnum.DarkBlue);
-                    SetToolStatus(3, null);
                 }
 
                 blockName = null;
@@ -1511,7 +1509,6 @@ namespace Digi.PaintGun
                     SetToolStatus(0, null);
                     SetToolStatus(1, null);
                     SetToolStatus(2, null);
-                    SetToolStatus(3, null);
                 }
                 else
                 {
@@ -1529,7 +1526,6 @@ namespace Digi.PaintGun
                     SetToolStatus(0, "Click to pick the color.", MyFontEnum.Green);
                     SetToolStatus(1, blockName, MyFontEnum.White);
                     SetToolStatus(2, ColorToStringShort(blockColor), MyFontEnum.White);
-                    SetToolStatus(3, null);
                 }
 
                 return false;
@@ -1537,29 +1533,24 @@ namespace Digi.PaintGun
 
             if(replaceAllMode)
             {
-                if(blockColor.EqualsToHSV(color))
-                {
+                selectedInvalid = blockColor.EqualsToHSV(color);
+
+                if(selectedInvalid)
                     SetCrosshairColor(CROSSHAIR_BAD_TARGET);
-                    selectedInvalid = true;
-
-                    SetToolStatus(0, "Already painted this color.", MyFontEnum.Red);
-                    SetToolStatus(1, blockName, MyFontEnum.White);
-                    SetToolStatus(2, symmetryStatus, MyFontEnum.DarkBlue);
-                    SetToolStatus(3, null);
-
-                    return false;
-                }
-
-                SetCrosshairColor(CROSSHAIR_TARGET);
+                else
+                    SetCrosshairColor(CROSSHAIR_TARGET);
 
                 var control = MyAPIGateway.Input.GetGameControl(MyControlsSpace.USE_SYMMETRY);
 
-                SetToolStatus(0, "Click to replace this color on all blocks.", MyFontEnum.Green);
-                SetToolStatus(1, ColorToStringShort(blockColor), MyFontEnum.White);
-                SetToolStatus(2, (replaceGridSystem ? "Replace on all connected grids" : "Replaces only on the selected grid") + ", press " + InputHandler.GetFriendlyStringForControl(control) + " to toggle.", (replaceGridSystem ? MyFontEnum.Red : MyFontEnum.DarkBlue));
-                SetToolStatus(3, null);
+                if(selectedInvalid)
+                    SetToolStatus(0, "Already painted this color.", MyFontEnum.Red);
+                else
+                    SetToolStatus(0, "Click to replace this color on all blocks.", MyFontEnum.Green);
 
-                return true;
+                SetToolStatus(1, ColorToStringShort(blockColor), MyFontEnum.White);
+                SetToolStatus(2, (replaceGridSystem ? "Replace on all attached grids (except connectors)" : "Replaces only on the selected grid") + ", press " + InputHandler.GetFriendlyStringForControl(control) + " to toggle.", (replaceGridSystem ? MyFontEnum.Red : MyFontEnum.DarkBlue));
+
+                return (selectedInvalid ? false : true);
             }
 
             if(!MyAPIGateway.Session.CreativeMode && block.CurrentDamage > (block.MaxIntegrity / 10.0f) || (block.FatBlock != null && !block.FatBlock.IsFunctional))
@@ -1573,7 +1564,6 @@ namespace Digi.PaintGun
                 SetToolStatus(0, (block.FatBlock != null && !block.FatBlock.IsFunctional ? "Block not fully built!" : "Block is damaged!"), MyFontEnum.Red);
                 SetToolStatus(1, blockName, MyFontEnum.White);
                 SetToolStatus(2, null);
-                SetToolStatus(3, null);
 
                 return false;
             }
@@ -1638,7 +1628,6 @@ namespace Digi.PaintGun
 
                     SetToolStatus(1, blockName, MyFontEnum.White);
                     SetToolStatus(2, symmetryStatus, MyFontEnum.DarkBlue);
-                    SetToolStatus(3, null);
 
                     return false;
                 }
@@ -1657,7 +1646,6 @@ namespace Digi.PaintGun
 
                 SetToolStatus(1, blockName, MyFontEnum.White);
                 SetToolStatus(2, symmetryStatus, MyFontEnum.DarkBlue);
-                SetToolStatus(3, null);
             }
 
             return true;
@@ -1679,7 +1667,6 @@ namespace Digi.PaintGun
                 SetToolStatus(0, "Painted!", MyFontEnum.Blue);
                 SetToolStatus(1, blockName, MyFontEnum.White);
                 SetToolStatus(2, symmetryStatus, MyFontEnum.DarkBlue);
-                SetToolStatus(3, null);
                 return;
             }
 
@@ -1703,7 +1690,6 @@ namespace Digi.PaintGun
                     SetToolStatus(0, "Painting done!", MyFontEnum.Blue);
                     SetToolStatus(1, blockName, MyFontEnum.White);
                     SetToolStatus(2, null);
-                    SetToolStatus(3, null);
 
                     if(settings.extraSounds)
                         PlaySound("HudColorBlock", 0.8f);
@@ -1713,7 +1699,6 @@ namespace Digi.PaintGun
                     SetToolStatus(0, "Painting " + ColorPercent(blockColor, color) + "%...", MyFontEnum.Blue);
                     SetToolStatus(1, blockName, MyFontEnum.White);
                     SetToolStatus(2, null);
-                    SetToolStatus(3, null);
                 }
             }
             else
@@ -1741,14 +1726,12 @@ namespace Digi.PaintGun
 
                     SetToolStatus(1, blockName, MyFontEnum.White);
                     SetToolStatus(2, null);
-                    SetToolStatus(3, null);
                 }
                 else
                 {
                     SetToolStatus(0, "Removing paint " + ColorPercent(blockColor, DEFAULT_COLOR) + "%...", MyFontEnum.Blue);
                     SetToolStatus(1, blockName, MyFontEnum.White);
                     SetToolStatus(2, null);
-                    SetToolStatus(3, null);
                 }
             }
         }
@@ -1851,7 +1834,6 @@ namespace Digi.PaintGun
                             SetToolStatus(0, null);
                             SetToolStatus(1, null);
                             SetToolStatus(2, null);
-                            SetToolStatus(3, null);
                         }
                         else
                         {
@@ -1870,7 +1852,6 @@ namespace Digi.PaintGun
                             SetToolStatus(0, "Click to pick this player's selected color.", MyFontEnum.Green);
                             SetToolStatus(1, targetName, MyFontEnum.White);
                             SetToolStatus(2, ColorToStringShort(targetColor), MyFontEnum.White);
-                            SetToolStatus(3, null);
                         }
 
                         return false;
@@ -1890,14 +1871,12 @@ namespace Digi.PaintGun
                         SetToolStatus(0, "Aim at a block or player and click to pick its color.", MyFontEnum.Blue);
                         SetToolStatus(1, null);
                         SetToolStatus(2, null);
-                        SetToolStatus(3, null);
                     }
                     else if(trigger)
                     {
                         SetToolStatus(0, "Aim at a block to paint it.", MyFontEnum.Red);
                         SetToolStatus(1, null);
                         SetToolStatus(2, null);
-                        SetToolStatus(3, null);
                     }
 
                     return false;
@@ -2105,20 +2084,38 @@ namespace Digi.PaintGun
                         return;
                     }
 
-                    MyAPIGateway.Utilities.ShowMissionScreen("Paint Gun commands", null, null, "/pg pick\n" +
-                                                             "  get color from a block (alias: Shift+[LandingGears])\n" +
-                                                             "\n" +
-                                                             "/pg rgb <0~255> <0~255> <0~255>\n" +
-                                                             "  set the color using RGB format\n" +
-                                                             "\n" +
-                                                             "/pg rgb #<00~FF><00~FF><00~FF>\n" +
-                                                             "  set the color using hex RGB format\n" +
-                                                             "\n" +
-                                                             "/pg hsv <0-360> <-100~100> <-100~100>\n" +
-                                                             "  set the color using HSV format\n" +
-                                                             "\n" +
-                                                             "/pg reload\n" +
-                                                             "  reloads the config file.\n", null, "Close");
+                    var help = new StringBuilder();
+
+                    var assignedLG = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.LANDING_GEAR));
+                    var assignedCubeSize = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.CUBE_BUILDER_CUBESIZE_MODE));
+
+                    help.Append("##### Commands #####").Append('\n');
+                    help.Append('\n');
+                    help.Append("/pg pick").Append('\n');
+                    help.Append("  Activate color picker mode (hotkey: Shift+").Append(assignedLG).Append(")").Append('\n');
+                    help.Append('\n');
+                    help.Append("/pg rgb <0~255> <0~255> <0~255>").Append('\n');
+                    help.Append("/pg rgb #<00~FF><00~FF><00~FF>").Append('\n');
+                    help.Append("/pg hsv <0~360> <-100~100> <-100~100>").Append('\n');
+                    help.Append("  Set the currently selected slot's color.").Append('\n');
+                    help.Append('\n');
+                    help.Append("/pg reload").Append('\n');
+                    help.Append("  Reloads the config file.").Append('\n');
+                    help.Append('\n');
+                    help.Append("##### Hotkeys #####").Append('\n');
+                    help.Append('\n');
+                    help.Append("Shift+").Append(assignedLG).Append('\n');
+                    help.Append("  Activate color picker mode.").Append('\n');
+                    help.Append('\n');
+                    help.Append("Shift+").Append(assignedCubeSize).Append('\n');
+                    help.Append("  (Creative only) Toggle replace color mode.").Append('\n');
+                    help.Append('\n');
+                    help.Append("##### Config path #####").Append('\n');
+                    help.Append('\n');
+                    help.Append("%appdata%/SpaceEngineers/Storage").Append('\n');
+                    help.Append("    /").Append(Log.workshopId).Append(".sbm_PaintGun/paintgun.cfg").Append('\n');
+
+                    MyAPIGateway.Utilities.ShowMissionScreen("Paint Gun help", null, null, help.ToString(), null, "Close");
                 }
             }
             catch(Exception e)
@@ -2182,20 +2179,22 @@ namespace Digi.PaintGun
             return (int)(f1 * mul) == (int)(f2 * mul);
         }
 
-        public static void GetLogicalGridSystem(this MyCubeGrid grid, List<MyCubeGrid> grids)
+        public static void GetShipSubgrids(this MyCubeGrid grid, HashSet<MyCubeGrid> grids)
         {
             grids.Add(grid);
-            var addedGrids = new HashSet<long>();
-            addedGrids.Add(grid.EntityId);
+            GetSubgridsRecursive(grid, grids);
+        }
 
+        private static void GetSubgridsRecursive(MyCubeGrid grid, HashSet<MyCubeGrid> grids)
+        {
             foreach(var block in grid.GetFatBlocks())
             {
                 var g = GetGridFromBlock(block) as MyCubeGrid;
 
-                if(g != null && !addedGrids.Contains(g.EntityId))
+                if(g != null && !grids.Contains(g))
                 {
-                    addedGrids.Add(g.EntityId);
                     grids.Add(g);
+                    GetSubgridsRecursive(g, grids);
                 }
             }
         }
@@ -2205,12 +2204,12 @@ namespace Digi.PaintGun
             var motorStator = block as IMyMotorBase;
 
             if(motorStator != null)
-                return motorStator.RotorGrid;
+                return motorStator.TopGrid;
 
             var motorRotor = block as IMyMotorRotor;
 
             if(motorRotor != null)
-                return (motorRotor.Stator == null ? null : motorRotor.Stator.CubeGrid);
+                return motorRotor.Base?.CubeGrid;
 
             var pistonBase = block as IMyPistonBase;
 
@@ -2220,12 +2219,12 @@ namespace Digi.PaintGun
             var pistonTop = block as IMyPistonTop;
 
             if(pistonTop != null)
-                return (pistonTop.Piston == null ? null : pistonTop.Piston.CubeGrid);
+                return pistonTop.Base?.CubeGrid;
 
-            var connector = block as IMyShipConnector;
-
-            if(connector != null)
-                return (connector.OtherConnector == null ? null : connector.OtherConnector.CubeGrid);
+            //var connector = block as IMyShipConnector;
+            //
+            //if(connector != null)
+            //    return connector.OtherConnector?.CubeGrid;
 
             return null;
         }

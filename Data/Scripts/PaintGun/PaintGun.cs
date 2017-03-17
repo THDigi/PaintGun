@@ -12,10 +12,11 @@ using VRage;
 using VRage.ObjectBuilders;
 using VRage.Game.Components;
 using VRage.ModAPI;
+using VRage.Utils;
 
 namespace Digi.PaintGun
 {
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_AutomaticRifle), PaintGunMod.PAINT_GUN_ID)]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_AutomaticRifle), true, PaintGunMod.PAINT_GUN_ID)]
     public class PaintGun : MyGameLogicComponent
     {
         public class Particle
@@ -50,6 +51,7 @@ namespace Digi.PaintGun
         private readonly MySoundPair soundPair = new MySoundPair("PaintGunSpray");
         private static List<IMyPlayer> players = new List<IMyPlayer>(0);
         private const int PARTICLE_MAX_DISTANCE_SQ = 1000 * 1000;
+        private static readonly MyStringId MATERIAL_SMOKE = MyStringId.GetOrCompute("Smoke");
 
         private PaintGunMod mod = null;
 
@@ -105,7 +107,10 @@ namespace Digi.PaintGun
             }
 
             if(heldByLocalPlayer)
+            {
                 mod.localHeldTool = this;
+                mod.SetToolStatus(3, "For control hints type in chat: /pg", MyFontEnum.White, 2000);
+            }
 
             PlayerColorData cd;
 
@@ -126,7 +131,7 @@ namespace Digi.PaintGun
                 return;
 
             this.color = color;
-            Entity.SetEmissiveParts("Emissive", PaintGunMod.HSVtoRGB(color), 0);
+            Entity.SetEmissiveParts("ColorLabel", PaintGunMod.HSVtoRGB(color), 0);
         }
 
         public override void UpdateAfterSimulation()
@@ -179,7 +184,7 @@ namespace Digi.PaintGun
                                 if(MyAPIGateway.Session.CreativeMode)
                                 {
                                     mod.replaceAllMode = !mod.replaceAllMode;
-                                    MyAPIGateway.Utilities.ShowNotification("Replace color mode " + (mod.replaceAllMode ? "enabled." : "turned off."), 2000, MyFontEnum.White);
+                                    mod.SetToolStatus(3, "Replace color mode " + (mod.replaceAllMode ? "enabled." : "turned off."), MyFontEnum.White, 2000);
                                     return;
                                 }
                                 else
@@ -247,7 +252,7 @@ namespace Digi.PaintGun
                                         continue;
                                     }
 
-                                    MyTransparentGeometry.AddPointBillboard("Smoke", p.color, pos + p.relativePosition, p.radius, p.angle);
+                                    MyTransparentGeometry.AddPointBillboard(MATERIAL_SMOKE, p.color, pos + p.relativePosition, p.radius, p.angle);
 
                                     if(p.angle > 0)
                                         p.angle += (p.life * 0.001f);
@@ -363,28 +368,23 @@ namespace Digi.PaintGun
                         mod.SendToServer_ColorPickMode(false);
 
                         mod.SetToolStatus(0, "Color picking cancelled.", MyFontEnum.Red, 1000);
-                        mod.SetToolStatus(1, null);
-                        mod.SetToolStatus(2, null);
-                        mod.SetToolStatus(3, null);
 
                         PaintGunMod.PlaySound("HudUnable", 0.5f);
                     }
                     else if(mod.replaceAllMode)
                     {
                         mod.SetToolStatus(0, "Replace color mode turned off.", MyFontEnum.White, 2000);
-                        mod.SetToolStatus(1, null);
-                        mod.SetToolStatus(2, null);
-                        mod.SetToolStatus(3, null);
 
                         mod.replaceAllMode = false;
                     }
                     else if(mod.toolStatus != null)
                     {
                         mod.SetToolStatus(0, null);
-                        mod.SetToolStatus(1, null);
-                        mod.SetToolStatus(2, null);
-                        mod.SetToolStatus(3, null);
                     }
+
+                    mod.SetToolStatus(1, null);
+                    mod.SetToolStatus(2, null);
+                    mod.SetToolStatus(3, null);
 
                     PaintGunMod.SetCrosshairColor(null);
                 }

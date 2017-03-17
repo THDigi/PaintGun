@@ -117,7 +117,7 @@ namespace Digi
         public const string MOUSE_PREFIX = "m.";
         public const string GAMEPAD_PREFIX = "g.";
         public const string CONTROL_PREFIX = "c.";
-        
+
         private static readonly StringBuilder tmp = new StringBuilder();
 
         private const float EPSILON = 0.000001f;
@@ -584,21 +584,7 @@ namespace Digi
 
         public static bool IsInputReadable()
         {
-            // TODO detect properly: escape menu, F10 and F11 menus, mission screens, yes/no notifications.
-
-            var GUI = MyAPIGateway.Gui;
-
-            if(GUI.ChatEntryVisible || GUI.GetCurrentScreen != MyTerminalPageEnum.None)
-                return false;
-
-            try // HACK ActiveGamePlayScreen throws NRE when called while not in a menu
-            {
-                return GUI.ActiveGamePlayScreen == null;
-            }
-            catch(Exception)
-            {
-                return true;
-            }
+            return !MyAPIGateway.Gui.ChatEntryVisible && !MyAPIGateway.Gui.IsCursorVisible;
         }
 
         public static void AppendNiceNamePrefix(string key, object obj, StringBuilder str)
