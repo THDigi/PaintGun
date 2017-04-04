@@ -312,7 +312,7 @@ namespace Digi.PaintGun
                                 var inv = (player as MyEntity).GetInventory(0) as IMyInventory;
 
                                 if(inv != null)
-                                    inv.RemoveItemsOfType((MyFixedPoint)1, PaintGunMod.PAINT_MAG, false);
+                                    inv.RemoveItemsOfType((MyFixedPoint)1, PaintGunMod.instance.PAINT_MAG, false);
                             }
                             else
                             {
@@ -333,7 +333,7 @@ namespace Digi.PaintGun
                             var inv = (player as MyEntity).GetInventory(0) as IMyInventory;
 
                             if(inv != null)
-                                inv.AddItems((MyFixedPoint)1, PaintGunMod.PAINT_MAG);
+                                inv.AddItems((MyFixedPoint)1, PaintGunMod.instance.PAINT_MAG);
                         }
                         else
                         {

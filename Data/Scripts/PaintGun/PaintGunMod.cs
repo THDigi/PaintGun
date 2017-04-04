@@ -101,15 +101,17 @@ namespace Digi.PaintGun
         public const float PAINT_SPEED = 1.0f;
         public const float DEPAINT_SPEED = 1.5f;
         public const int SKIP_UPDATES = 10;
-        public static Vector3 DEFAULT_COLOR = new Vector3(0, -1, 0);
         public const float SAME_COLOR_RANGE = 0.001f;
 
-        public static readonly MyStringId MATERIAL_GIZMIDRAWLINE = MyStringId.GetOrCompute("GizmoDrawLine");
-        public static readonly MyStringId MATERIAL_GIZMIDRAWLINERED = MyStringId.GetOrCompute("GizmoDrawLineRed");
-        public static readonly MyStringId MATERIAL_SQUARE = MyStringId.GetOrCompute("Square");
-        public static readonly MyStringId MATERIAL_SELECTEDCOLOR = MyStringId.GetOrCompute("PaintGunSelectedColor");
+        public static readonly Vector3 DEFAULT_COLOR = new Vector3(0, -1, 0);
 
-        public static readonly MyObjectBuilder_AmmoMagazine PAINT_MAG = new MyObjectBuilder_AmmoMagazine()
+        public readonly MyStringId MATERIAL_GIZMIDRAWLINE = MyStringId.GetOrCompute("GizmoDrawLine");
+        public readonly MyStringId MATERIAL_GIZMIDRAWLINERED = MyStringId.GetOrCompute("GizmoDrawLineRed");
+        public readonly MyStringId MATERIAL_SQUARE = MyStringId.GetOrCompute("Square");
+        public readonly MyStringId MATERIAL_SELECTEDCOLOR = MyStringId.GetOrCompute("PaintGunSelectedColor");
+        public readonly MyStringId MATERIAL_BACKGROUND = MyStringId.GetOrCompute("PaintGunPaletteBackground");
+
+        public readonly MyObjectBuilder_AmmoMagazine PAINT_MAG = new MyObjectBuilder_AmmoMagazine()
         {
             SubtypeName = PAINT_MAG_ID,
             ProjectilesCount = 1
@@ -1024,38 +1026,18 @@ namespace Digi.PaintGun
                 if(!init)
                     return;
 
-                if(settings.hidePaletteWithHud && MyAPIGateway.Session.Config.MinimalHud)
-                    return;
-
                 if(localHeldTool != null && localColorData != null)
                 {
+                    if(settings.hidePaletteWithHud && MyAPIGateway.Session.Config.MinimalHud)
+                        return;
+
                     var cam = MyAPIGateway.Session.Camera;
                     var camMatrix = cam.WorldMatrix;
-
                     var viewProjectionMatrixInv = MatrixD.Invert(cam.ViewMatrix * cam.ProjectionMatrix);
-                    var pos = Vector3D.Transform(settings.paletteScreenPos, viewProjectionMatrixInv);
-
-                    /*
-                    const int MIN_FOV = 40;
-
-                    var FOV = MathHelper.ToDegrees(cam.FovWithZoom);
-                    float scaleFOV = 1;
-
-                    if(FOV > 90)
-                    {
-                        var FOVRatio = (FOV - 90) / (140 - 90);
-                        scaleFOV = MathHelper.Lerp(1.1f, 3f, FOVRatio);
-                    }
-                    else
-                    {
-                        var FOVRatio = (FOV - MIN_FOV) / (90 - MIN_FOV);
-                        scaleFOV = MathHelper.Lerp(0.4f, 1.1f, FOVRatio);
-                    }
-
-                    scaleFOV *= settings.paletteScale;
-                    */
-
+                    var hudPos = Vector3D.Transform(settings.paletteScreenPos, viewProjectionMatrixInv);
                     var scaleFOV = (float)Math.Tan(MyAPIGateway.Session.Camera.FovWithZoom / 2);
+                    scaleFOV *= settings.paletteScale;
+
                     float SQUARE_WIDTH = 0.0014f * scaleFOV;
                     float SQUARE_HEIGHT = 0.0011f * scaleFOV;
                     float SQUARE_SELECTED_WIDTH = (SQUARE_WIDTH + (SQUARE_WIDTH / 7f));
@@ -1066,7 +1048,7 @@ namespace Digi.PaintGun
                     const int MIDDLE_INDEX = 7;
                     MyQuadD quad;
 
-                    pos += camMatrix.Left * (SPACING_WIDTH * (MIDDLE_INDEX / 2)) + camMatrix.Up * (SPACING_HEIGHT / 2);
+                    var pos = hudPos + camMatrix.Left * (SPACING_WIDTH * (MIDDLE_INDEX / 2)) + camMatrix.Up * (SPACING_HEIGHT / 2);
 
                     for(int i = 0; i < localColorData.colors.Count; i++)
                     {
@@ -1087,6 +1069,12 @@ namespace Digi.PaintGun
 
                         pos += camMatrix.Right * SPACING_WIDTH;
                     }
+                    
+                    const float widthMul = 3.85f;
+                    const float heightMul = 1.3f;
+                    MyUtils.GenerateQuad(out quad, ref hudPos, (float)(SPACING_WIDTH * widthMul), (float)(SPACING_HEIGHT * heightMul), ref camMatrix);
+                    MyTransparentGeometry.AddQuad(MATERIAL_BACKGROUND, ref quad, Color.White * settings.paletteBackgroundOpacity, ref pos);
+                    // TODO use HUD background alpha when it's readable
                 }
             }
             catch(Exception e)

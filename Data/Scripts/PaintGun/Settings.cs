@@ -9,14 +9,20 @@ namespace Digi.PaintGun
     public class Settings
     {
         private const string FILE = "paintgun.cfg";
+        private const int CFG_VERSION = 1;
+        private const int CFG_VERSION_NEWHUDDEFAULTS = 1;
 
         public bool extraSounds = true;
         public bool sprayParticles = true;
         public float spraySoundVolume = 0.8f;
         public bool selectColorZigZag = false;
         public bool hidePaletteWithHud = true;
-        public Vector3D paletteScreenPos = new Vector3D(0.29, -0.73, 0);
-        public float paletteScale = 1.0f;
+        public Vector3D paletteScreenPos = paletteScreenPosDefault;
+        public float paletteScale = paletteScaleDefault;
+        public float paletteBackgroundOpacity = 0.75f; // TODO use HUD background alpha when it's readable
+
+        public static readonly Vector3D paletteScreenPosDefault = new Vector3D(0.4345, -0.691, 0);
+        public static readonly float paletteScaleDefault = 0.5f;
 
         public ControlCombination pickColor1 = ControlCombination.CreateFrom("shift c.landinggear");
         public ControlCombination pickColor2 = ControlCombination.CreateFrom("g.lb g.rb");
@@ -68,6 +74,7 @@ namespace Digi.PaintGun
                 int i;
                 bool b;
                 float f;
+                int prevConfigVersion = 0;
 
                 while((line = file.ReadLine()) != null)
                 {
@@ -95,6 +102,12 @@ namespace Digi.PaintGun
 
                     switch(args[0])
                     {
+                        case "configversion":
+                            if(int.TryParse(args[1], out i))
+                                prevConfigVersion = i;
+                            else
+                                Log.Error("Invalid " + args[0] + " value: " + args[1]);
+                            continue;
                         case "extrasounds":
                             if(bool.TryParse(args[1], out b))
                                 extraSounds = b;
@@ -130,14 +143,27 @@ namespace Digi.PaintGun
                             double x, y;
                             if(vars.Length == 2 && double.TryParse(vars[0].Trim(), out x) && double.TryParse(vars[1].Trim(), out y))
                             {
-                                paletteScreenPos = new Vector3D(x, y, 0);
-                                continue;
+                                if(prevConfigVersion < CFG_VERSION_NEWHUDDEFAULTS && x == 0.29d && y == -0.73d) // reset to default if config is older and had default setting
+                                    paletteScreenPos = paletteScreenPosDefault;
+                                else
+                                    paletteScreenPos = new Vector3D(x, y, 0);
                             }
                             Log.Error("Invalid " + args[0] + " value: " + args[1]);
                             continue;
                         case "palettescale":
                             if(float.TryParse(args[1], out f))
-                                paletteScale = MathHelper.Clamp(f, -100, 100);
+                            {
+                                if(prevConfigVersion < CFG_VERSION_NEWHUDDEFAULTS && f == 1f) // reset to default if config is older and had default setting
+                                    paletteScale = paletteScaleDefault;
+                                else
+                                    paletteScale = MathHelper.Clamp(f, -100, 100);
+                            }
+                            else
+                                Log.Error("Invalid " + args[0] + " value: " + args[1]);
+                            continue;
+                        case "palettebackgroundopacity":
+                            if(float.TryParse(args[1], out f))
+                                paletteBackgroundOpacity = MathHelper.Clamp(f, 0, 1);
                             else
                                 Log.Error("Invalid " + args[0] + " value: " + args[1]);
                             continue;
@@ -200,6 +226,7 @@ namespace Digi.PaintGun
 
             if(comments)
             {
+                str.Append("ConfigVersion=").Append(CFG_VERSION).AppendLine(comments ? " // Do not edit. This is used by the mod to reset settings when their defaults change without changing them if they're custom." : "");
                 str.AppendLine("// Paint Gun mod config; this file gets automatically overwritten after being loaded so don't leave custom comments.");
                 str.AppendLine("// You can reload this while the game is running by typing in chat: /pg reload");
                 str.AppendLine("// Lines starting with // are comments. All values are case insensitive unless otherwise specified.");
@@ -211,8 +238,9 @@ namespace Digi.PaintGun
             str.Append("SpraySoundVolume=").Append(spraySoundVolume).AppendLine(comments ? " // paint gun spraying sound volume. Default: 0.8" : "");
             str.Append("SelectColorZigZag=").Append(selectColorZigZag).AppendLine(comments ? " // type of scrolling through colors in the palette, false is each row at a time, true is in zig-zag. Default: false" : "");
             str.Append("HidePaletteWithHUD=").Append(hidePaletteWithHud).AppendLine(comments ? " // wether to hide the color palette along with the HUD. Set to false to always show the color palette regardless if HUD is visible or not. Default: true" : "");
-            str.Append("PaletteScreenPos=").Append(Math.Round(paletteScreenPos.X, 5)).Append(", ").Append(Math.Round(paletteScreenPos.Y, 5)).AppendLine(comments ? " // color palette screen position in X and Y coordinates where 0,0 is the screen center. Positive values are right and up and negative ones are opposite of that. Default: 0.29, -0.73" : "");
-            str.Append("PaletteScale=").Append(Math.Round(paletteScale, 5)).AppendLine(comments ? " // color palette overall scale. Default: 1.0" : "");
+            str.Append("PaletteScreenPos=").Append(Math.Round(paletteScreenPos.X, 5)).Append(", ").Append(Math.Round(paletteScreenPos.Y, 5)).AppendLine(comments ? " // color palette screen position in X and Y coordinates where 0,0 is the screen center. Positive values are right and up and negative ones are opposite of that. Default: 0.4345, -0.691" : "");
+            str.Append("PaletteScale=").Append(Math.Round(paletteScale, 5)).AppendLine(comments ? " // color palette overall scale. Default: 0.5" : "");
+            str.Append("PaletteBackgroundOpacity=").Append(Math.Round(paletteBackgroundOpacity, 5)).AppendLine(comments ? " // Palette's background opacity percent scale (0 to 1 value). Should be configured to match the game HUD opacity. Default: 0.75" : "");
 
             if(comments)
             {
