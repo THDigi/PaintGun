@@ -148,7 +148,8 @@ namespace Digi.PaintGun
                                 else
                                     paletteScreenPos = new Vector3D(x, y, 0);
                             }
-                            Log.Error("Invalid " + args[0] + " value: " + args[1]);
+                            else
+                                Log.Error("Invalid " + args[0] + " value: " + args[1]);
                             continue;
                         case "palettescale":
                             if(float.TryParse(args[1], out f))
