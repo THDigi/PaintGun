@@ -98,8 +98,8 @@ namespace Digi.PaintGun
         public const string MOD_NAME = "PaintGun";
         public const string PAINT_GUN_ID = "PaintGun";
         public const string PAINT_MAG_ID = "PaintGunMag";
-        public const float PAINT_SPEED = 1.0f;
-        public const float DEPAINT_SPEED = 1.5f;
+        public const float PAINT_SPEED = 4f;
+        public const float DEPAINT_SPEED = 6f;
         public const int SKIP_UPDATES = 10;
         public const float SAME_COLOR_RANGE = 0.001f;
 
