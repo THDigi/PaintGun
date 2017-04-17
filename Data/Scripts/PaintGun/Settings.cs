@@ -16,7 +16,7 @@ namespace Digi.PaintGun
         public bool sprayParticles = true;
         public float spraySoundVolume = 0.8f;
         public bool selectColorZigZag = false;
-        public bool hidePaletteWithHud = true;
+        public bool hidePaletteWithHUD = true;
         public Vector3D paletteScreenPos = paletteScreenPosDefault;
         public float paletteScale = paletteScaleDefault;
         public float paletteBackgroundOpacity = 0.75f; // TODO use HUD background alpha when it's readable
@@ -134,7 +134,7 @@ namespace Digi.PaintGun
                             continue;
                         case "hidepalettewithhud":
                             if(bool.TryParse(args[1], out b))
-                                hidePaletteWithHud = b;
+                                hidePaletteWithHUD = b;
                             else
                                 Log.Error("Invalid " + args[0] + " value: " + args[1]);
                             continue;
@@ -238,7 +238,7 @@ namespace Digi.PaintGun
             str.Append("SprayParticles=").Append(sprayParticles).AppendLine(comments ? " // toggles the spray particles. Default: true" : "");
             str.Append("SpraySoundVolume=").Append(spraySoundVolume).AppendLine(comments ? " // paint gun spraying sound volume. Default: 0.8" : "");
             str.Append("SelectColorZigZag=").Append(selectColorZigZag).AppendLine(comments ? " // type of scrolling through colors in the palette, false is each row at a time, true is in zig-zag. Default: false" : "");
-            str.Append("HidePaletteWithHUD=").Append(hidePaletteWithHud).AppendLine(comments ? " // wether to hide the color palette along with the HUD. Set to false to always show the color palette regardless if HUD is visible or not. Default: true" : "");
+            str.Append("HidePaletteWithHUD=").Append(hidePaletteWithHUD).AppendLine(comments ? " // wether to hide the color palette along with the HUD. Set to false to always show the color palette regardless if HUD is visible or not. Default: true" : "");
             str.Append("PaletteScreenPos=").Append(Math.Round(paletteScreenPos.X, 5)).Append(", ").Append(Math.Round(paletteScreenPos.Y, 5)).AppendLine(comments ? " // color palette screen position in X and Y coordinates where 0,0 is the screen center. Positive values are right and up and negative ones are opposite of that. Default: 0.4345, -0.691" : "");
             str.Append("PaletteScale=").Append(Math.Round(paletteScale, 5)).AppendLine(comments ? " // color palette overall scale. Default: 0.5" : "");
             str.Append("PaletteBackgroundOpacity=").Append(Math.Round(paletteBackgroundOpacity, 5)).AppendLine(comments ? " // Palette's background opacity percent scale (0 to 1 value). Should be configured to match the game HUD opacity. Default: 0.75" : "");

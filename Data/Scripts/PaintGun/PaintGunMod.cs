@@ -13,6 +13,7 @@ using VRage;
 using VRage.Game.Components;
 using VRage.ModAPI;
 using VRage.Utils;
+using Sandbox.Engine.Physics;
 
 namespace Digi.PaintGun
 {
@@ -66,6 +67,7 @@ namespace Digi.PaintGun
         public bool init = false;
         public bool isThisHostDedicated = false;
         public Settings settings = null;
+        public bool vanillaHUD = true;
 
         public bool pickColorMode = false;
         public bool replaceAllMode = false;
@@ -148,7 +150,10 @@ namespace Digi.PaintGun
             {
                 settings = new Settings();
 
+                UpdateConfigValues();
+
                 MyAPIGateway.Utilities.MessageEntered += MessageEntered;
+                MyAPIGateway.Gui.GuiControlRemoved += GuiControlRemoved;
 
                 if(!MyAPIGateway.Multiplayer.IsServer)
                     SendToServer_RequestColorList(MyAPIGateway.Multiplayer.MyId);
@@ -165,6 +170,7 @@ namespace Digi.PaintGun
 
                     MyAPIGateway.Utilities.MessageEntered -= MessageEntered;
                     MyAPIGateway.Multiplayer.UnregisterMessageHandler(PACKET, ReceivedPacket);
+                    MyAPIGateway.Gui.GuiControlRemoved -= GuiControlRemoved;
 
                     if(settings != null)
                     {
@@ -179,6 +185,31 @@ namespace Digi.PaintGun
             }
 
             Log.Close();
+        }
+
+        private void GuiControlRemoved(object obj)
+        {
+            try
+            {
+                if(obj.ToString().EndsWith("ScreenOptionsSpace")) // closing options menu just assumes you changed something so it'll re-check config settings
+                {
+                    UpdateConfigValues();
+                }
+            }
+            catch(Exception e)
+            {
+                Log.Error(e);
+            }
+        }
+
+        /// <summary>
+        /// The config calls are slow so we're caching the ones we use when world loads or player exits the optins menu.
+        /// </summary>
+        private void UpdateConfigValues()
+        {
+            var cfg = MyAPIGateway.Session.Config;
+
+            vanillaHUD = !cfg.MinimalHud;
         }
 
         private bool EnsureColorDataEntry(ulong steamId)
@@ -1028,7 +1059,7 @@ namespace Digi.PaintGun
 
                 if(localHeldTool != null && localColorData != null)
                 {
-                    if(settings.hidePaletteWithHud && MyAPIGateway.Session.Config.MinimalHud)
+                    if(settings.hidePaletteWithHUD && vanillaHUD)
                         return;
 
                     var cam = MyAPIGateway.Session.Camera;
@@ -1038,17 +1069,18 @@ namespace Digi.PaintGun
                     var scaleFOV = (float)Math.Tan(MyAPIGateway.Session.Camera.FovWithZoom / 2);
                     scaleFOV *= settings.paletteScale;
 
-                    float SQUARE_WIDTH = 0.0014f * scaleFOV;
-                    float SQUARE_HEIGHT = 0.0011f * scaleFOV;
-                    float SQUARE_SELECTED_WIDTH = (SQUARE_WIDTH + (SQUARE_WIDTH / 7f));
-                    float SQUARE_SELECTED_HEIGHT = (SQUARE_HEIGHT + (SQUARE_HEIGHT / 7f));
-                    double SPACING_ADD = 0.0006 * scaleFOV;
-                    double SPACING_WIDTH = (SQUARE_WIDTH * 2) + SPACING_ADD;
-                    double SPACING_HEIGHT = (SQUARE_HEIGHT * 2) + SPACING_ADD;
+                    float squareWidth = 0.0014f * scaleFOV;
+                    float squareHeight = 0.0011f * scaleFOV;
+                    float selectedWidth = (squareWidth + (squareWidth / 7f));
+                    float selectedHeight = (squareHeight + (squareHeight / 7f));
+                    double spacingAdd = 0.0006 * scaleFOV;
+                    double spacingWidth = (squareWidth * 2) + spacingAdd;
+                    double spacingHeight = (squareHeight * 2) + spacingAdd;
                     const int MIDDLE_INDEX = 7;
-                    MyQuadD quad;
+                    const float BG_WIDTH_MUL = 3.85f;
+                    const float BG_HEIGHT_MUL = 1.3f;
 
-                    var pos = hudPos + camMatrix.Left * (SPACING_WIDTH * (MIDDLE_INDEX / 2)) + camMatrix.Up * (SPACING_HEIGHT / 2);
+                    var pos = hudPos + camMatrix.Left * (spacingWidth * (MIDDLE_INDEX / 2)) + camMatrix.Up * (spacingHeight / 2);
 
                     for(int i = 0; i < localColorData.colors.Count; i++)
                     {
@@ -1056,24 +1088,17 @@ namespace Digi.PaintGun
                         var c = HSVtoRGB(v) * 0.5f;
 
                         if(i == MIDDLE_INDEX)
-                            pos += camMatrix.Left * (SPACING_WIDTH * MIDDLE_INDEX) + camMatrix.Down * SPACING_HEIGHT;
+                            pos += camMatrix.Left * (spacingWidth * MIDDLE_INDEX) + camMatrix.Down * spacingHeight;
 
-                        MyUtils.GenerateQuad(out quad, ref pos, SQUARE_WIDTH, SQUARE_HEIGHT, ref camMatrix);
-                        MyTransparentGeometry.AddQuad(MATERIAL_SQUARE, ref quad, c, ref pos);
+                        MyTransparentGeometry.AddBillboardOriented(MATERIAL_SQUARE, c, pos, camMatrix.Left, camMatrix.Up, squareWidth, squareHeight);
 
                         if(i == localColorData.selectedSlot)
-                        {
-                            MyUtils.GenerateQuad(out quad, ref pos, SQUARE_SELECTED_WIDTH, SQUARE_SELECTED_HEIGHT, ref camMatrix);
-                            MyTransparentGeometry.AddQuad(MATERIAL_SELECTEDCOLOR, ref quad, Color.White, ref pos);
-                        }
+                            MyTransparentGeometry.AddBillboardOriented(MATERIAL_SELECTEDCOLOR, Color.White, pos, camMatrix.Left, camMatrix.Up, selectedWidth, selectedHeight);
 
-                        pos += camMatrix.Right * SPACING_WIDTH;
+                        pos += camMatrix.Right * spacingWidth;
                     }
-                    
-                    const float widthMul = 3.85f;
-                    const float heightMul = 1.3f;
-                    MyUtils.GenerateQuad(out quad, ref hudPos, (float)(SPACING_WIDTH * widthMul), (float)(SPACING_HEIGHT * heightMul), ref camMatrix);
-                    MyTransparentGeometry.AddQuad(MATERIAL_BACKGROUND, ref quad, Color.White * settings.paletteBackgroundOpacity, ref pos);
+
+                    MyTransparentGeometry.AddBillboardOriented(MATERIAL_BACKGROUND, Color.White, hudPos, camMatrix.Left, camMatrix.Up, (float)(spacingWidth * BG_WIDTH_MUL), (float)(spacingHeight * BG_HEIGHT_MUL));
                     // TODO use HUD background alpha when it's readable
                 }
             }
