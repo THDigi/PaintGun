@@ -67,7 +67,7 @@ namespace Digi.PaintGun
         public bool init = false;
         public bool isThisHostDedicated = false;
         public Settings settings = null;
-        public bool vanillaHUD = true;
+        public bool GameHUD = true;
 
         public bool pickColorMode = false;
         public bool replaceAllMode = false;
@@ -209,7 +209,7 @@ namespace Digi.PaintGun
         {
             var cfg = MyAPIGateway.Session.Config;
 
-            vanillaHUD = !cfg.MinimalHud;
+            GameHUD = !cfg.MinimalHud;
         }
 
         private bool EnsureColorDataEntry(ulong steamId)
@@ -261,7 +261,7 @@ namespace Digi.PaintGun
 
         private void PaintBlock(MyCubeGrid grid, Vector3I pos, Vector3 color)
         {
-            grid.ChangeColor(grid.GetCubeBlock(pos), color);
+            grid.ChangeColor(grid.GetCubeBlock(pos), color); // HACK getting a MySlimBlock and sending it straight to arguments avoids getting prohibited errors.
         }
 
         private void PaintBlockSymmetry(MyCubeGrid grid, Vector3I pos, Vector3 color, Vector3I mirrorPlane, OddAxis odd)
@@ -345,9 +345,7 @@ namespace Digi.PaintGun
                                 playersColorPickMode.Remove(steamId);
 
                                 if(localHeldTool != null)
-                                {
                                     localHeldTool.cooldown = DateTime.UtcNow.Ticks;
-                                }
                             }
 
                             break; // relay to clients
@@ -369,6 +367,11 @@ namespace Digi.PaintGun
                                 var grid = (ent as MyCubeGrid);
 
                                 if(grid == null)
+                                    return;
+
+                                var identity = MyAPIGateway.Players.TryGetIdentityId(steamId);
+
+                                if(!grid.ColorGridOrBlockRequestValidation(identity))
                                     return;
 
                                 var pos = new Vector3I(BitConverter.ToInt32(bytes, index),
@@ -419,6 +422,11 @@ namespace Digi.PaintGun
                                 var grid = (ent as MyCubeGrid);
 
                                 if(grid == null)
+                                    return;
+
+                                var identity = MyAPIGateway.Players.TryGetIdentityId(steamId);
+
+                                if(!grid.ColorGridOrBlockRequestValidation(identity))
                                     return;
 
                                 var oldColor = bytes.BytesToColor(ref index);
@@ -1059,7 +1067,7 @@ namespace Digi.PaintGun
 
                 if(localHeldTool != null && localColorData != null)
                 {
-                    if(settings.hidePaletteWithHUD && vanillaHUD)
+                    if(settings.hidePaletteWithHUD && !GameHUD)
                         return;
 
                     var cam = MyAPIGateway.Session.Camera;
@@ -1090,7 +1098,8 @@ namespace Digi.PaintGun
                         if(i == MIDDLE_INDEX)
                             pos += camMatrix.Left * (spacingWidth * MIDDLE_INDEX) + camMatrix.Down * spacingHeight;
 
-                        MyTransparentGeometry.AddBillboardOriented(MATERIAL_SQUARE, c, pos, camMatrix.Left, camMatrix.Up, squareWidth, squareHeight);
+                        // color * 2 to increase its intensity
+                        MyTransparentGeometry.AddBillboardOriented(MATERIAL_SQUARE, c * 2, pos, camMatrix.Left, camMatrix.Up, squareWidth, squareHeight);
 
                         if(i == localColorData.selectedSlot)
                             MyTransparentGeometry.AddBillboardOriented(MATERIAL_SELECTEDCOLOR, Color.White, pos, camMatrix.Left, camMatrix.Up, selectedWidth, selectedHeight);
@@ -1098,7 +1107,7 @@ namespace Digi.PaintGun
                         pos += camMatrix.Right * spacingWidth;
                     }
 
-                    MyTransparentGeometry.AddBillboardOriented(MATERIAL_BACKGROUND, Color.White, hudPos, camMatrix.Left, camMatrix.Up, (float)(spacingWidth * BG_WIDTH_MUL), (float)(spacingHeight * BG_HEIGHT_MUL));
+                    MyTransparentGeometry.AddBillboardOriented(MATERIAL_BACKGROUND, Color.White * settings.paletteBackgroundOpacity, hudPos, camMatrix.Left, camMatrix.Up, (float)(spacingWidth * BG_WIDTH_MUL), (float)(spacingHeight * BG_HEIGHT_MUL));
                     // TODO use HUD background alpha when it's readable
                 }
             }
@@ -1241,6 +1250,10 @@ namespace Digi.PaintGun
 
                     Init();
                 }
+
+                // HUD toggle monitor; required here because it gets the previous value if used in HandleInput()
+                if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.TOGGLE_HUD))
+                    GameHUD = !MyAPIGateway.Session.Config.MinimalHud;
 
                 if(++skipColorUpdate > 10)
                 {
@@ -1544,6 +1557,18 @@ namespace Digi.PaintGun
                 return false;
             }
 
+            if(!block.CubeGrid.ColorGridOrBlockRequestValidation(MyAPIGateway.Session.Player.IdentityId))
+            {
+                SetToolStatus(0, "You can only paint owned or allied ships.", MyFontEnum.Red);
+                SetToolStatus(1, null);
+                SetToolStatus(2, null);
+
+                if(trigger)
+                    PlaySound("HudUnable", 0.25f);
+
+                return false;
+            }
+
             if(replaceAllMode)
             {
                 selectedInvalid = blockColor.EqualsToHSV(color);
@@ -1770,6 +1795,27 @@ namespace Digi.PaintGun
             var rayTo = view.Translation + view.Forward * 5;
             var blockPos = g.RayCastBlocks(rayFrom, rayTo);
             return (blockPos.HasValue ? g.GetCubeBlock(blockPos.Value) : null);
+            
+            // DEBUG testing alternate targeting, so far this isn't that good for interior lights if you sit inside their block
+            //var view = MyAPIGateway.Session.ControlledObject.GetHeadMatrix(false, true);
+            //var rayFrom = view.Translation + view.Forward * 1.6;
+            //var rayTo = view.Translation + view.Forward * 5;
+            //
+            //Vector3I pos;
+            //var hits = new List<IHitInfo>();
+            //MyAPIGateway.Physics.CastRay(rayFrom, rayTo, hits, 9); // 9 = MyPhysics.CollisionLayers.NoVoxelCollisionLayer
+            //
+            //foreach(var hit in hits)
+            //{
+            //    if(hit.HitEntity == g)
+            //    {
+            //        g.FixTargetCube(out pos, Vector3D.Transform(hit.Position + view.Forward * 0.06, g.WorldMatrixNormalizedInv) * (1d / g.GridSize));
+            //        return g.GetCubeBlock(pos);
+            //    }
+            //}
+            //
+            //g.FixTargetCube(out pos, Vector3D.Transform(rayFrom, g.WorldMatrixNormalizedInv) * (1d / g.GridSize));
+            //return g.GetCubeBlock(pos);
         }
 
         public bool HoldingTool(bool trigger)
@@ -1800,6 +1846,8 @@ namespace Digi.PaintGun
                                                               if(check.HasValue && check.Value <= targetDist)
                                                               {
                                                                   MyObjectBuilder_Character obj = null;
+
+                                                                  // DEBUG TODO iterate players list and compare character instances instead?
 
                                                                   if(!entObjCache.ContainsKey(c.EntityId))
                                                                   {
@@ -2139,7 +2187,7 @@ namespace Digi.PaintGun
 
         public static Color HSVtoRGB(Vector3 hsv)
         {
-            // from the game code... weird values.
+            // from the game code at Sandbox.Game.Gui.MyGuiScreenColorPicker.OnValueChange()... weird values.
             return new Vector3(hsv.X, MathHelper.Clamp(hsv.Y + 0.8f, 0f, 1f), MathHelper.Clamp(hsv.Z + 0.55f, 0f, 1f)).HSVtoColor();
         }
     }
@@ -2240,6 +2288,47 @@ namespace Digi.PaintGun
             //    return connector.OtherConnector?.CubeGrid;
 
             return null;
+        }
+
+        // copied from Sandbox.Game.Entities.MyCubeGrid because it's private
+        public static bool ColorGridOrBlockRequestValidation(this IMyCubeGrid grid, long player)
+        {
+            if(player == 0L || grid.BigOwners.Count == 0)
+                return true;
+
+            foreach(long owner in grid.BigOwners)
+            {
+                var relation = GetRelationsBetweenPlayers(owner, player);
+
+                if(relation == MyRelationsBetweenPlayers.Allies || relation == MyRelationsBetweenPlayers.Self)
+                    return true;
+            }
+
+            return false;
+        }
+
+        // copied from Sandbox.Game.World.MyPlayer because it's not exposed
+        private static MyRelationsBetweenPlayers GetRelationsBetweenPlayers(long id1, long id2)
+        {
+            if(id1 == id2)
+                return MyRelationsBetweenPlayers.Self;
+
+            if(id1 == 0L || id2 == 0L)
+                return MyRelationsBetweenPlayers.Neutral;
+
+            IMyFaction f1 = MyAPIGateway.Session.Factions.TryGetPlayerFaction(id1);
+            IMyFaction f2 = MyAPIGateway.Session.Factions.TryGetPlayerFaction(id2);
+
+            if(f1 == f2)
+                return MyRelationsBetweenPlayers.Allies;
+
+            if(f1 == null || f2 == null)
+                return MyRelationsBetweenPlayers.Enemies;
+
+            if(MyAPIGateway.Session.Factions.GetRelationBetweenFactions(f1.FactionId, f2.FactionId) == MyRelationsBetweenFactions.Neutral)
+                return MyRelationsBetweenPlayers.Neutral;
+
+            return MyRelationsBetweenPlayers.Enemies;
         }
     }
 }
