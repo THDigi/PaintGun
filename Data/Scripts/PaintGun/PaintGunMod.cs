@@ -67,7 +67,7 @@ namespace Digi.PaintGun
         public bool init = false;
         public bool isThisHostDedicated = false;
         public Settings settings = null;
-        public bool GameHUD = true;
+        public bool gameHUD = true;
 
         public bool pickColorMode = false;
         public bool replaceAllMode = false;
@@ -209,7 +209,7 @@ namespace Digi.PaintGun
         {
             var cfg = MyAPIGateway.Session.Config;
 
-            GameHUD = !cfg.MinimalHud;
+            gameHUD = !cfg.MinimalHud;
         }
 
         private bool EnsureColorDataEntry(ulong steamId)
@@ -1067,7 +1067,7 @@ namespace Digi.PaintGun
 
                 if(localHeldTool != null && localColorData != null)
                 {
-                    if(settings.hidePaletteWithHUD && !GameHUD)
+                    if(settings.hidePaletteWithHUD && !gameHUD)
                         return;
 
                     var cam = MyAPIGateway.Session.Camera;
@@ -1253,7 +1253,7 @@ namespace Digi.PaintGun
 
                 // HUD toggle monitor; required here because it gets the previous value if used in HandleInput()
                 if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.TOGGLE_HUD))
-                    GameHUD = !MyAPIGateway.Session.Config.MinimalHud;
+                    gameHUD = !MyAPIGateway.Session.Config.MinimalHud;
 
                 if(++skipColorUpdate > 10)
                 {
