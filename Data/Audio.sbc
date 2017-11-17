@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
 <Definitions xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <Sounds>
-
     <Sound>
       <Id>
         <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
@@ -13,10 +12,24 @@
       <Loopable>true</Loopable>
       <Waves>
         <Wave Type="D3">
-          <Loop>Arc\BLOCK\ArcBlockAirVentExhaleLoop3d.wav</Loop>
+          <Loop>Audio\ArcPaintGunSpray.xwm</Loop>
         </Wave>
       </Waves>
     </Sound>
-
+    <Sound>
+      <Id>
+        <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
+        <SubtypeId>RealPaintGunSpray</SubtypeId>
+      </Id>
+      <Category>R_Block</Category>
+      <MaxDistance>30</MaxDistance>
+      <Volume>0.4</Volume>
+      <Loopable>true</Loopable>
+      <Waves>
+        <Wave Type="D3">
+          <Loop>Audio\RealPaintGunSpray.xwm</Loop>
+        </Wave>
+      </Waves>
+    </Sound>
   </Sounds>
 </Definitions>
