@@ -1070,6 +1070,9 @@ namespace Digi.PaintGun
 
                 if(localHeldTool != null && localColorData != null)
                 {
+                    if(MyAPIGateway.Gui.IsCursorVisible)
+                        return;
+
                     if(settings.hidePaletteWithHUD && !gameHUD)
                         return;
 
