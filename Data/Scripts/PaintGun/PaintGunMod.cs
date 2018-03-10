@@ -68,6 +68,7 @@ namespace Digi.PaintGun
         public bool isThisHostDedicated = false;
         public Settings settings = null;
         public bool gameHUD = true;
+        public float gameHUDBkOpacity = 1f;
 
         public bool pickColorMode = false;
         public bool replaceAllMode = false;
@@ -110,8 +111,9 @@ namespace Digi.PaintGun
         public readonly MyStringId MATERIAL_GIZMIDRAWLINE = MyStringId.GetOrCompute("GizmoDrawLine");
         public readonly MyStringId MATERIAL_GIZMIDRAWLINERED = MyStringId.GetOrCompute("GizmoDrawLineRed");
         public readonly MyStringId MATERIAL_SQUARE = MyStringId.GetOrCompute("Square");
-        public readonly MyStringId MATERIAL_SELECTEDCOLOR = MyStringId.GetOrCompute("PaintGunSelectedColor");
-        public readonly MyStringId MATERIAL_BACKGROUND = MyStringId.GetOrCompute("PaintGunPaletteBackground");
+        public readonly MyStringId MATERIAL_PALETTE_COLOR = MyStringId.GetOrCompute("PaintGunPaletteColor");
+        public readonly MyStringId MATERIAL_PALETTE_SELECTED = MyStringId.GetOrCompute("PaintGunPaletteSelected");
+        public readonly MyStringId MATERIAL_PALETTE_BACKGROUND = MyStringId.GetOrCompute("PaintGunPaletteBackground");
 
         public readonly MyObjectBuilder_AmmoMagazine PAINT_MAG = new MyObjectBuilder_AmmoMagazine()
         {
@@ -210,6 +212,7 @@ namespace Digi.PaintGun
             var cfg = MyAPIGateway.Session.Config;
 
             gameHUD = !cfg.MinimalHud;
+            gameHUDBkOpacity = cfg.HUDBkOpacity;
         }
 
         private bool EnsureColorDataEntry(ulong steamId)
@@ -1073,7 +1076,8 @@ namespace Digi.PaintGun
                     var cam = MyAPIGateway.Session.Camera;
                     var camMatrix = cam.WorldMatrix;
                     var viewProjectionMatrixInv = MatrixD.Invert(cam.ViewMatrix * cam.ProjectionMatrix);
-                    var hudPos = Vector3D.Transform(settings.paletteScreenPos, viewProjectionMatrixInv);
+                    var localPos = new Vector3D(settings.paletteScreenPos.X, settings.paletteScreenPos.Y, 0);
+                    var hudPos = Vector3D.Transform(localPos, viewProjectionMatrixInv);
                     var scaleFOV = (float)Math.Tan(MyAPIGateway.Session.Camera.FovWithZoom / 2);
                     scaleFOV *= settings.paletteScale;
 
@@ -1099,16 +1103,17 @@ namespace Digi.PaintGun
                             pos += camMatrix.Left * (spacingWidth * MIDDLE_INDEX) + camMatrix.Down * spacingHeight;
 
                         // color * 2 to increase its intensity
-                        MyTransparentGeometry.AddBillboardOriented(MATERIAL_SQUARE, c * 2, pos, camMatrix.Left, camMatrix.Up, squareWidth, squareHeight);
+                        MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_COLOR, c * 2, pos, camMatrix.Left, camMatrix.Up, squareWidth, squareHeight);
 
                         if(i == localColorData.selectedSlot)
-                            MyTransparentGeometry.AddBillboardOriented(MATERIAL_SELECTEDCOLOR, Color.White, pos, camMatrix.Left, camMatrix.Up, selectedWidth, selectedHeight);
+                            MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_SELECTED, Color.White, pos, camMatrix.Left, camMatrix.Up, selectedWidth, selectedHeight);
 
                         pos += camMatrix.Right * spacingWidth;
                     }
+                    
+                    var color = Color.White * (settings.paletteBackgroundOpacity < 0 ? gameHUDBkOpacity : settings.paletteBackgroundOpacity);
 
-                    MyTransparentGeometry.AddBillboardOriented(MATERIAL_BACKGROUND, Color.White * settings.paletteBackgroundOpacity, hudPos, camMatrix.Left, camMatrix.Up, (float)(spacingWidth * BG_WIDTH_MUL), (float)(spacingHeight * BG_HEIGHT_MUL));
-                    // TODO use HUD background alpha when it's readable
+                    MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_BACKGROUND, color, hudPos, camMatrix.Left, camMatrix.Up, (float)(spacingWidth * BG_WIDTH_MUL), (float)(spacingHeight * BG_HEIGHT_MUL));
                 }
             }
             catch(Exception e)

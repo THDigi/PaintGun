@@ -9,19 +9,20 @@ namespace Digi.PaintGun
     public class Settings
     {
         private const string FILE = "paintgun.cfg";
-        private const int CFG_VERSION = 1;
+        private const int CFG_VERSION = 2;
         private const int CFG_VERSION_NEWHUDDEFAULTS = 1;
+        private const int CFG_VERSION_HUDBKOPACITYDEFAULTS = 2;
 
         public bool extraSounds = true;
         public bool sprayParticles = true;
         public float spraySoundVolume = 0.8f;
         public bool selectColorZigZag = false;
         public bool hidePaletteWithHUD = true;
-        public Vector3D paletteScreenPos = paletteScreenPosDefault;
+        public Vector2D paletteScreenPos = paletteScreenPosDefault;
         public float paletteScale = paletteScaleDefault;
-        public float paletteBackgroundOpacity = 0.75f; // TODO use HUD background alpha when it's readable
+        public float paletteBackgroundOpacity = -1;
 
-        public static readonly Vector3D paletteScreenPosDefault = new Vector3D(0.4345, -0.691, 0);
+        public static readonly Vector2D paletteScreenPosDefault = new Vector2D(0.4345, -0.691);
         public static readonly float paletteScaleDefault = 0.5f;
 
         public ControlCombination pickColor1 = ControlCombination.CreateFrom("shift c.landinggear");
@@ -146,7 +147,7 @@ namespace Digi.PaintGun
                                 if(prevConfigVersion < CFG_VERSION_NEWHUDDEFAULTS && x == 0.29d && y == -0.73d) // reset to default if config is older and had default setting
                                     paletteScreenPos = paletteScreenPosDefault;
                                 else
-                                    paletteScreenPos = new Vector3D(x, y, 0);
+                                    paletteScreenPos = new Vector2D(x, y);
                             }
                             else
                                 Log.Error("Invalid " + args[0] + " value: " + args[1]);
@@ -163,7 +164,9 @@ namespace Digi.PaintGun
                                 Log.Error("Invalid " + args[0] + " value: " + args[1]);
                             continue;
                         case "palettebackgroundopacity":
-                            if(float.TryParse(args[1], out f))
+                            if(prevConfigVersion < CFG_VERSION_HUDBKOPACITYDEFAULTS || args[1].Equals("hud"))
+                                paletteBackgroundOpacity = -1;
+                            else if(float.TryParse(args[1], out f))
                                 paletteBackgroundOpacity = MathHelper.Clamp(f, 0, 1);
                             else
                                 Log.Error("Invalid " + args[0] + " value: " + args[1]);
@@ -241,7 +244,7 @@ namespace Digi.PaintGun
             str.Append("HidePaletteWithHUD=").Append(hidePaletteWithHUD).AppendLine(comments ? " // wether to hide the color palette along with the HUD. Set to false to always show the color palette regardless if HUD is visible or not. Default: true" : "");
             str.Append("PaletteScreenPos=").Append(Math.Round(paletteScreenPos.X, 5)).Append(", ").Append(Math.Round(paletteScreenPos.Y, 5)).AppendLine(comments ? " // color palette screen position in X and Y coordinates where 0,0 is the screen center. Positive values are right and up and negative ones are opposite of that. Default: 0.4345, -0.691" : "");
             str.Append("PaletteScale=").Append(Math.Round(paletteScale, 5)).AppendLine(comments ? " // color palette overall scale. Default: 0.5" : "");
-            str.Append("PaletteBackgroundOpacity=").Append(Math.Round(paletteBackgroundOpacity, 5)).AppendLine(comments ? " // Palette's background opacity percent scale (0 to 1 value). Should be configured to match the game HUD opacity. Default: 0.75" : "");
+            str.Append("PaletteBackgroundOpacity=").Append(paletteBackgroundOpacity < 0 ? "HUD" : Math.Round(paletteBackgroundOpacity, 5).ToString()).AppendLine(comments ? " // Palette's background opacity percent scale (0 to 1 value) or set to HUD to use the game's HUD opacity. Default: HUD" : "");
 
             if(comments)
             {
@@ -267,7 +270,10 @@ namespace Digi.PaintGun
                 str.AppendLine();
                 str.AppendLine("// List of inputs, generated from game data.");
 
-                str.Append("// Key names: ");
+                const int NEWLINE_EVERY_CHARACTERS = 130;
+
+                int characters = 0;
+                str.Append("// Key names: ").AppendLine().Append("//     ");
                 foreach(var kv in InputHandler.inputs)
                 {
                     if(kv.Key.StartsWith(InputHandler.MOUSE_PREFIX, StringComparison.Ordinal)
@@ -275,36 +281,75 @@ namespace Digi.PaintGun
                        || kv.Key.StartsWith(InputHandler.CONTROL_PREFIX, StringComparison.Ordinal))
                         continue;
 
+                    int prevLen = str.Length;
+
                     str.Append(kv.Key).Append(", ");
+
+                    characters += (str.Length - prevLen);
+                    if(characters >= NEWLINE_EVERY_CHARACTERS)
+                    {
+                        str.AppendLine().Append("//     ");
+                        characters = 0;
+                    }
                 }
                 str.AppendLine();
 
-                str.Append("// Mouse button names: ");
+                characters = 0;
+                str.Append("// Mouse button names: ").AppendLine().Append("//     ");
                 foreach(var kv in InputHandler.inputs)
                 {
                     if(kv.Key.StartsWith(InputHandler.MOUSE_PREFIX, StringComparison.Ordinal))
                     {
+                        int prevLen = str.Length;
+
                         str.Append(kv.Key).Append(", ");
+
+                        characters += (str.Length - prevLen);
+                        if(characters >= NEWLINE_EVERY_CHARACTERS)
+                        {
+                            str.AppendLine().Append("//     ");
+                            characters = 0;
+                        }
                     }
                 }
                 str.AppendLine();
 
-                str.Append("// Gamepad button/axes names: ");
+                characters = 0;
+                str.Append("// Gamepad button/axes names: ").AppendLine().Append("//     ");
                 foreach(var kv in InputHandler.inputs)
                 {
                     if(kv.Key.StartsWith(InputHandler.GAMEPAD_PREFIX, StringComparison.Ordinal))
                     {
+                        int prevLen = str.Length;
+
                         str.Append(kv.Key).Append(", ");
+
+                        characters += (str.Length - prevLen);
+                        if(characters >= NEWLINE_EVERY_CHARACTERS)
+                        {
+                            str.AppendLine().Append("//     ");
+                            characters = 0;
+                        }
                     }
                 }
                 str.AppendLine();
 
-                str.Append("// Control names: ");
+                characters = 0;
+                str.Append("// Control names: ").AppendLine().Append("//     ");
                 foreach(var kv in InputHandler.inputs)
                 {
                     if(kv.Key.StartsWith(InputHandler.CONTROL_PREFIX, StringComparison.Ordinal))
                     {
+                        int prevLen = str.Length;
+
                         str.Append(kv.Key).Append(", ");
+
+                        characters += (str.Length - prevLen);
+                        if(characters >= NEWLINE_EVERY_CHARACTERS)
+                        {
+                            str.AppendLine().Append("//     ");
+                            characters = 0;
+                        }
                     }
                 }
                 str.AppendLine();
