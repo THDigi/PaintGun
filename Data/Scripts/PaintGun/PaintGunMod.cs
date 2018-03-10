@@ -1113,7 +1113,7 @@ namespace Digi.PaintGun
 
                         pos += camMatrix.Right * spacingWidth;
                     }
-                    
+
                     var color = Color.White * (settings.paletteBackgroundOpacity < 0 ? gameHUDBkOpacity : settings.paletteBackgroundOpacity);
 
                     MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_BACKGROUND, color, hudPos, camMatrix.Left, camMatrix.Up, (float)(spacingWidth * BG_WIDTH_MUL), (float)(spacingHeight * BG_HEIGHT_MUL));
@@ -1172,10 +1172,15 @@ namespace Digi.PaintGun
         {
             try
             {
-                if(!init)
+                if(!init || localHeldTool == null)
                     return;
 
-                if(localHeldTool != null && InputHandler.IsInputReadable())
+                if(MyAPIGateway.Gui.IsCursorVisible && MyAPIGateway.Gui.ActiveGamePlayScreen == "ColorPick")
+                {
+                    localColorData.selectedSlot = MyAPIGateway.Session.Player.SelectedBuildColorSlot;
+                    SetToolColor(localColorData.colors[localColorData.selectedSlot]);
+                }
+                else if(InputHandler.IsInputReadable())
                 {
                     if(symmetryInput && MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.USE_SYMMETRY))
                     {
@@ -1196,7 +1201,7 @@ namespace Digi.PaintGun
                         else if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.SWITCH_RIGHT))
                             change = -1;
                         else
-                            change = MyAPIGateway.Input.DeltaMouseScrollWheelValue();
+                            change = MyAPIGateway.Input.PreviousMouseScrollWheelValue() - MyAPIGateway.Input.MouseScrollWheelValue();
 
                         if(change != 0 && localColorData != null)
                         {
@@ -1236,6 +1241,7 @@ namespace Digi.PaintGun
                                 }
                             }
 
+                            MyAPIGateway.Session.Player.SelectedBuildColorSlot = localColorData.selectedSlot;
                             SetToolColor(localColorData.colors[localColorData.selectedSlot]);
                         }
                     }
