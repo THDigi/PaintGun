@@ -1452,14 +1452,31 @@ namespace Digi.PaintGun
             toolStatus[line].Show();
         }
 
-        public static string ColorToString(Vector3 hsv)
+        public static string ColorMaskToString(Vector3 colorMask)
         {
-            return "Hue: " + Math.Round(hsv.X * 360) + "°, saturation: " + Math.Round(hsv.Y * 100) + ", value: " + Math.Round(hsv.Z * 100);
+            var hsv = ColorMaskToHSV(colorMask);
+
+            return $"Hue: {hsv.X}°, saturation: {hsv.Y}%, value: {hsv.Z}%";
         }
 
-        public static string ColorToStringShort(Vector3 hsv)
+        public static string ColorMaskToStringShort(Vector3 colorMask)
         {
-            return "HSV: " + Math.Round(hsv.X * 360) + "°, " + Math.Round(hsv.Y * 100) + ", " + Math.Round(hsv.Z * 100);
+            var hsv = ColorMaskToHSV(colorMask);
+
+            return $"HSV: {hsv.X}°, {hsv.Y}%, {hsv.Z}%";
+        }
+
+        // Thanks to Whiplash141 for this conversion method
+        public static Vector3I ColorMaskToHSV(Vector3 colorMask)
+        {
+            float saturationProportion = colorMask.Y + 0.8f;
+            float valueProportion = colorMask.Z + 0.55f - 0.1f;
+
+            float hue = colorMask.X * 360f;
+            float saturation = saturationProportion * 100f;
+            float value = valueProportion * 100f;
+
+            return new Vector3I(MathHelper.Clamp(hue, 0f, 360), MathHelper.Clamp(saturation, 0f, 100), MathHelper.Clamp(value, 0f, 100));
         }
 
         public static void SetCrosshairColor(Color? color)
@@ -1525,7 +1542,7 @@ namespace Digi.PaintGun
                     if(SendToServer_SetColor((byte)localColorData.selectedSlot, blockColor, true))
                     {
                         PlaySound("HudMouseClick", 0.25f);
-                        MyAPIGateway.Utilities.ShowNotification("Color in slot " + localColorData.selectedSlot + " set to " + ColorToStringShort(blockColor), 2000, MyFontEnum.White);
+                        MyAPIGateway.Utilities.ShowNotification("Color in slot " + localColorData.selectedSlot + " set to " + ColorMaskToStringShort(blockColor), 2000, MyFontEnum.White);
                     }
                     else
                     {
@@ -1551,7 +1568,7 @@ namespace Digi.PaintGun
 
                     SetToolStatus(0, "Click to pick the color.", MyFontEnum.Green);
                     SetToolStatus(1, blockName, MyFontEnum.White);
-                    SetToolStatus(2, ColorToStringShort(blockColor), MyFontEnum.White);
+                    SetToolStatus(2, ColorMaskToStringShort(blockColor), MyFontEnum.White);
                 }
 
                 return false;
@@ -1585,7 +1602,7 @@ namespace Digi.PaintGun
                 else
                     SetToolStatus(0, "Click to replace this color on all blocks.", MyFontEnum.Green);
 
-                SetToolStatus(1, ColorToStringShort(blockColor), MyFontEnum.White);
+                SetToolStatus(1, ColorMaskToStringShort(blockColor), MyFontEnum.White);
                 SetToolStatus(2, (replaceGridSystem ? "Replace on all attached grids (except connectors)" : "Replaces only on the selected grid") + ", press " + InputHandler.GetFriendlyStringForControl(control) + " to toggle.", (replaceGridSystem ? MyFontEnum.Red : MyFontEnum.DarkBlue));
 
                 return (selectedInvalid ? false : true);
@@ -1795,7 +1812,7 @@ namespace Digi.PaintGun
             var rayTo = view.Translation + view.Forward * 5;
             var blockPos = g.RayCastBlocks(rayFrom, rayTo);
             return (blockPos.HasValue ? g.GetCubeBlock(blockPos.Value) : null);
-            
+
             // DEBUG testing alternate targeting, so far this isn't that good for interior lights if you sit inside their block
             //var view = MyAPIGateway.Session.ControlledObject.GetHeadMatrix(false, true);
             //var rayFrom = view.Translation + view.Forward * 1.6;
@@ -1885,7 +1902,7 @@ namespace Digi.PaintGun
                             if(SendToServer_SetColor((byte)localColorData.selectedSlot, targetColor, true))
                             {
                                 PlaySound("HudMouseClick", 0.25f);
-                                MyAPIGateway.Utilities.ShowNotification("Color in slot " + localColorData.selectedSlot + " set to " + ColorToStringShort(targetColor), 2000, MyFontEnum.White);
+                                MyAPIGateway.Utilities.ShowNotification("Color in slot " + localColorData.selectedSlot + " set to " + ColorMaskToStringShort(targetColor), 2000, MyFontEnum.White);
                             }
                             else
                             {
@@ -1912,7 +1929,7 @@ namespace Digi.PaintGun
 
                             SetToolStatus(0, "Click to pick this player's selected color.", MyFontEnum.Green);
                             SetToolStatus(1, targetName, MyFontEnum.White);
-                            SetToolStatus(2, ColorToStringShort(targetColor), MyFontEnum.White);
+                            SetToolStatus(2, ColorMaskToStringShort(targetColor), MyFontEnum.White);
                         }
 
                         return false;
@@ -2128,14 +2145,14 @@ namespace Digi.PaintGun
                         Vector3 color;
 
                         if(hsv)
-                            color = new Vector3(MathHelper.Clamp(values[0], 0, 360) / 360.0f, MathHelper.Clamp(values[1], -100, 100) / 100.0f, MathHelper.Clamp(values[2], -100, 100) / 100.0f);
+                            color = new Vector3(MathHelper.Clamp(values[0], 0, 360) / 360.0f, MathHelper.Clamp(values[1], 0, 100) / 100.0f, MathHelper.Clamp(values[2], 0, 100) / 100.0f);
                         else
                             color = new Color(MathHelper.Clamp(values[0], 0, 255), MathHelper.Clamp(values[1], 0, 255), MathHelper.Clamp(values[2], 0, 255)).ColorToHSVDX11();
 
                         if(SendToServer_SetColor((byte)localColorData.selectedSlot, color, true))
                         {
                             PlaySound("HudMouseClick", 0.25f);
-                            MyAPIGateway.Utilities.ShowMessage(MOD_NAME, "Color in slot " + localColorData.selectedSlot + " set to " + ColorToString(color));
+                            MyAPIGateway.Utilities.ShowMessage(MOD_NAME, "Color in slot " + localColorData.selectedSlot + " set to " + ColorMaskToString(color));
                         }
                         else
                         {
@@ -2157,7 +2174,7 @@ namespace Digi.PaintGun
                     help.Append('\n');
                     help.Append("/pg rgb <0~255> <0~255> <0~255>").Append('\n');
                     help.Append("/pg rgb #<00~FF><00~FF><00~FF>").Append('\n');
-                    help.Append("/pg hsv <0~360> <-100~100> <-100~100>").Append('\n');
+                    help.Append("/pg hsv <0~360> <0~100> <0~100>").Append('\n');
                     help.Append("  Set the currently selected slot's color.").Append('\n');
                     help.Append('\n');
                     help.Append("/pg reload").Append('\n');
