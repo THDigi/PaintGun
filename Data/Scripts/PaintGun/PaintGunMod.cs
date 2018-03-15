@@ -1,19 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Sandbox.ModAPI;
 using Sandbox.Game;
 using Sandbox.Game.Entities;
+using Sandbox.ModAPI;
+using VRage;
 using VRage.Game;
+using VRage.Game.Components;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.Input;
-using VRageMath;
-using VRage;
-using VRage.Game.Components;
 using VRage.ModAPI;
 using VRage.Utils;
-using Sandbox.Engine.Physics;
+using VRageMath;
+
+using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum; // HACK allows the use of BlendTypeEnum which is whitelisted but bypasses accessing MyBillboard which is not whitelisted
 
 namespace Digi.PaintGun
 {
@@ -107,13 +108,14 @@ namespace Digi.PaintGun
         public const float SAME_COLOR_RANGE = 0.001f;
 
         public static readonly Vector3 DEFAULT_COLOR = new Vector3(0, -1, 0);
+        public readonly Color BACKGROUND_COLOR = new Vector4(0.20784314f, 0.266666681f, 0.298039228f, 1f);
 
         public readonly MyStringId MATERIAL_GIZMIDRAWLINE = MyStringId.GetOrCompute("GizmoDrawLine");
         public readonly MyStringId MATERIAL_GIZMIDRAWLINERED = MyStringId.GetOrCompute("GizmoDrawLineRed");
         public readonly MyStringId MATERIAL_SQUARE = MyStringId.GetOrCompute("Square");
-        public readonly MyStringId MATERIAL_PALETTE_COLOR = MyStringId.GetOrCompute("PaintGunPaletteColor");
-        public readonly MyStringId MATERIAL_PALETTE_SELECTED = MyStringId.GetOrCompute("PaintGunPaletteSelected");
-        public readonly MyStringId MATERIAL_PALETTE_BACKGROUND = MyStringId.GetOrCompute("PaintGunPaletteBackground");
+        public readonly MyStringId MATERIAL_PALETTE_COLOR = MyStringId.GetOrCompute("PaintGunPalette_Color");
+        public readonly MyStringId MATERIAL_PALETTE_SELECTED = MyStringId.GetOrCompute("PaintGunPalette_Selected");
+        public readonly MyStringId MATERIAL_PALETTE_BACKGROUND = MyStringId.GetOrCompute("PaintGunPalette_Background");
 
         public readonly MyObjectBuilder_AmmoMagazine PAINT_MAG = new MyObjectBuilder_AmmoMagazine()
         {
@@ -1100,23 +1102,21 @@ namespace Digi.PaintGun
                     for(int i = 0; i < localColorData.colors.Count; i++)
                     {
                         var v = localColorData.colors[i];
-                        var c = HSVtoRGB(v) * 0.5f;
+                        var c = HSVtoRGB(v);
 
                         if(i == MIDDLE_INDEX)
                             pos += camMatrix.Left * (spacingWidth * MIDDLE_INDEX) + camMatrix.Down * spacingHeight;
 
-                        // color * 2 to increase its intensity
-                        MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_COLOR, c * 2, pos, camMatrix.Left, camMatrix.Up, squareWidth, squareHeight);
-
                         if(i == localColorData.selectedSlot)
-                            MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_SELECTED, Color.White, pos, camMatrix.Left, camMatrix.Up, selectedWidth, selectedHeight);
+                            MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_SELECTED, Color.White, pos, camMatrix.Left, camMatrix.Up, selectedWidth, selectedHeight, Vector2.Zero, BlendTypeEnum.SDR);
+
+                        MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_COLOR, c, pos, camMatrix.Left, camMatrix.Up, squareWidth, squareHeight, Vector2.Zero, BlendTypeEnum.SDR);
 
                         pos += camMatrix.Right * spacingWidth;
                     }
 
-                    var color = Color.White * (settings.paletteBackgroundOpacity < 0 ? gameHUDBkOpacity : settings.paletteBackgroundOpacity);
-
-                    MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_BACKGROUND, color, hudPos, camMatrix.Left, camMatrix.Up, (float)(spacingWidth * BG_WIDTH_MUL), (float)(spacingHeight * BG_HEIGHT_MUL));
+                    var color = BACKGROUND_COLOR * (settings.paletteBackgroundOpacity < 0 ? gameHUDBkOpacity : settings.paletteBackgroundOpacity);
+                    MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_BACKGROUND, color, hudPos, camMatrix.Left, camMatrix.Up, (float)(spacingWidth * BG_WIDTH_MUL), (float)(spacingHeight * BG_HEIGHT_MUL), Vector2.Zero, BlendTypeEnum.SDR);
                 }
             }
             catch(Exception e)
