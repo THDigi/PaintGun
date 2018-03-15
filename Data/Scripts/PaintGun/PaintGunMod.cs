@@ -1201,7 +1201,7 @@ namespace Digi.PaintGun
                         else if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.SWITCH_RIGHT))
                             change = -1;
                         else
-                            change = MyAPIGateway.Input.PreviousMouseScrollWheelValue() - MyAPIGateway.Input.MouseScrollWheelValue();
+                            change = MyAPIGateway.Input.DeltaMouseScrollWheelValue();
 
                         if(change != 0 && localColorData != null)
                         {
