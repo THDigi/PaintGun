@@ -2218,8 +2218,12 @@ namespace Digi.PaintGun
 
         public static Color HSVtoRGB(Vector3 hsv)
         {
-            // from the game code at Sandbox.Game.Gui.MyGuiScreenColorPicker.OnValueChange()... weird values.
-            return new Vector3(hsv.X, MathHelper.Clamp(hsv.Y + 0.8f, 0f, 1f), MathHelper.Clamp(hsv.Z + 0.55f, 0f, 1f)).HSVtoColor();
+            // HACK copied and inverted with data from MyGuiScreenColorPicker.OnValueChange()
+            return new Vector3(
+                    hsv.X,
+                    MathHelper.Clamp(hsv.Y + MyColorPickerConstants.SATURATION_DELTA, 0f, 1f),
+                    MathHelper.Clamp(hsv.Z + MyColorPickerConstants.VALUE_DELTA - MyColorPickerConstants.VALUE_COLORIZE_DELTA, 0f, 1f)
+                ).HSVtoColor();
         }
     }
 
