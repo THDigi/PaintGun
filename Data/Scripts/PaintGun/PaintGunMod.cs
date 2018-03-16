@@ -21,43 +21,6 @@ using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
 namespace Digi.PaintGun
 {
-    public class PlayerColorData
-    {
-        public ulong steamId;
-        public List<Vector3> colors;
-        public int selectedSlot = 0;
-
-        public PlayerColorData(ulong steamId, List<Vector3> colors)
-        {
-            this.steamId = steamId;
-            this.colors = colors;
-        }
-    }
-
-    public enum PacketAction
-    {
-        AMMO_REMOVE = 0,
-        AMMO_ADD,
-        COLOR_PICK_ON,
-        COLOR_PICK_OFF,
-        PAINT_BLOCK,
-        BLOCK_REPLACE_COLOR,
-        SELECTED_COLOR_SLOT,
-        SET_COLOR,
-        UPDATE_COLOR,
-        UPDATE_COLOR_LIST,
-        REQUEST_COLOR_LIST,
-    }
-
-    [Flags]
-    public enum OddAxis
-    {
-        NONE = 0,
-        X = 1,
-        Y = 2,
-        Z = 4
-    }
-
     [MySessionComponentDescriptor(MyUpdateOrder.AfterSimulation)]
     public class PaintGunMod : MySessionComponentBase
     {
@@ -82,25 +45,23 @@ namespace Digi.PaintGun
         public bool symmetryInput = false;
         public string symmetryStatus = null;
         public MyCubeGrid selectedGrid = null;
-        // currently selected grid by the local paint gun
         public IMySlimBlock selectedSlimBlock = null;
         public IMyCharacter selectedCharacter = null;
         public bool selectedInvalid = false;
         public Vector3 prevColorPreview;
-        public Vector3 prevCustomColor = DEFAULT_COLOR;
+        public Vector3 prevCustomColor;
+        public MyEntity3DSoundEmitter emitter;
         public IMyHudNotification[] toolStatus = new IMyHudNotification[4];
 
         private int prevSelectedColorSlot = 0;
         private byte skipColorUpdate = 0;
 
-        public readonly Dictionary<ulong, PlayerColorData> playerColorData = new Dictionary<ulong, PlayerColorData>();
+        public PaintGunItem localHeldTool = null;
         public PlayerColorData localColorData = null;
-
-        public PaintGun localHeldTool = null;
-
-        public HashSet<ulong> playersColorPickMode = new HashSet<ulong>();
-
-        private Dictionary<long, MyObjectBuilder_Character> entObjCache = new Dictionary<long, MyObjectBuilder_Character>();
+        public readonly Dictionary<ulong, PlayerColorData> playerColorData = new Dictionary<ulong, PlayerColorData>();
+        public readonly HashSet<ulong> playersColorPickMode = new HashSet<ulong>();
+        public readonly List<IMyPlayer> players = new List<IMyPlayer>(0);
+        private readonly Dictionary<long, MyObjectBuilder_Character> entObjCache = new Dictionary<long, MyObjectBuilder_Character>();
 
         public const string MOD_NAME = "PaintGun";
         public const string PAINT_GUN_ID = "PaintGun";
@@ -109,9 +70,16 @@ namespace Digi.PaintGun
         public const float DEPAINT_SPEED = 6f;
         public const int SKIP_UPDATES = 10;
         public const float SAME_COLOR_RANGE = 0.001f;
+        public const ushort PACKET = 9319; // network packet ID used for this mod; must be unique from other mods
 
-        public static readonly Vector3 DEFAULT_COLOR = new Vector3(0, -1, 0);
+        public readonly Vector3 DEFAULT_COLOR = new Vector3(0, -1, 0);
         public readonly Color BACKGROUND_COLOR = new Vector4(0.20784314f, 0.266666681f, 0.298039228f, 1f);
+
+        public readonly MySoundPair SOUND_HUD_UNABLE = new MySoundPair("HudUnable");
+        public readonly MySoundPair SOUND_HUD_CLICK = new MySoundPair("HudClick");
+        public readonly MySoundPair SOUND_HUD_MOUSE_CLICK = new MySoundPair("HudMouseClick");
+        public readonly MySoundPair SOUND_HUD_COLOR = new MySoundPair("HudColorBlock");
+        public readonly MySoundPair SOUND_HUD_ITEM = new MySoundPair("HudItem");
 
         public readonly MyStringId MATERIAL_GIZMIDRAWLINE = MyStringId.GetOrCompute("GizmoDrawLine");
         public readonly MyStringId MATERIAL_GIZMIDRAWLINERED = MyStringId.GetOrCompute("GizmoDrawLineRed");
@@ -120,23 +88,24 @@ namespace Digi.PaintGun
         public readonly MyStringId MATERIAL_PALETTE_SELECTED = MyStringId.GetOrCompute("PaintGunPalette_Selected");
         public readonly MyStringId MATERIAL_PALETTE_BACKGROUND = MyStringId.GetOrCompute("PaintGunPalette_Background");
 
+        public readonly MySoundPair SPRAY_SOUND = new MySoundPair("PaintGunSpray");
+        public readonly MyStringId MATERIAL_SPRAY = MyStringId.GetOrCompute("Smoke");
+
         public readonly MyObjectBuilder_AmmoMagazine PAINT_MAG = new MyObjectBuilder_AmmoMagazine()
         {
             SubtypeName = PAINT_MAG_ID,
             ProjectilesCount = 1
         };
 
-        public const ushort PACKET = 9319;
-
         public const int TOOLSTATUS_TIMEOUT = 200;
 
         public const int COLOR_PALETTE_SIZE = 14;
 
-        public static readonly Color CROSSHAIR_NO_TARGET = new Color(255, 0, 0);
-        public static readonly Color CROSSHAIR_BAD_TARGET = new Color(255, 200, 0);
-        public static readonly Color CROSSHAIR_TARGET = new Color(0, 255, 0);
-        public static readonly Color CROSSHAIR_PAINTING = new Color(0, 255, 155);
-        public static readonly MyStringId CROSSHAIR_SPRITEID = MyStringId.GetOrCompute("Default");
+        public readonly Color CROSSHAIR_NO_TARGET = new Color(255, 0, 0);
+        public readonly Color CROSSHAIR_BAD_TARGET = new Color(255, 200, 0);
+        public readonly Color CROSSHAIR_TARGET = new Color(0, 255, 0);
+        public readonly Color CROSSHAIR_PAINTING = new Color(0, 255, 155);
+        public readonly MyStringId CROSSHAIR_SPRITEID = MyStringId.GetOrCompute("Default");
 
         private readonly List<IHitInfo> hits = new List<IHitInfo>();
         private readonly Dictionary<long, DetectionInfo> entitiesInRange = new Dictionary<long, DetectionInfo>();
@@ -164,6 +133,8 @@ namespace Digi.PaintGun
             instance = this;
             isThisHostDedicated = (MyAPIGateway.Utilities.IsDedicated && MyAPIGateway.Multiplayer.IsServer);
 
+            prevCustomColor = DEFAULT_COLOR;
+
             Log.Init();
 
             MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET, ReceivedPacket);
@@ -184,6 +155,7 @@ namespace Digi.PaintGun
 
         protected override void UnloadData()
         {
+            instance = null;
             try
             {
                 if(init)
@@ -200,6 +172,8 @@ namespace Digi.PaintGun
                         settings = null;
                     }
                 }
+
+                emitter?.Cleanup();
             }
             catch(Exception e)
             {
@@ -313,6 +287,7 @@ namespace Digi.PaintGun
                 MirrorPaint(grid, 0, mirrorPlane, oddX, mirrorYZ.Value, color);
         }
 
+        #region Network sync
         public void ReceivedPacket(byte[] bytes)
         {
             try
@@ -946,7 +921,9 @@ namespace Digi.PaintGun
                 Log.Error(e);
             }
         }
+        #endregion
 
+        #region Symmetry mirror-paint
         private Vector3I? MirrorPaint(MyCubeGrid g, int axis, Vector3I mirror, bool odd, Vector3I originalPosition, Vector3 color)
         {
             switch(axis)
@@ -1080,111 +1057,7 @@ namespace Digi.PaintGun
 
             return null;
         }
-
-        public override void Draw()
-        {
-            try
-            {
-                if(!init)
-                    return;
-
-                if(localHeldTool != null && localColorData != null)
-                {
-                    if(MyAPIGateway.Gui.IsCursorVisible)
-                        return;
-
-                    if(settings.hidePaletteWithHUD && !gameHUD)
-                        return;
-
-                    var cam = MyAPIGateway.Session.Camera;
-                    var camMatrix = cam.WorldMatrix;
-                    var viewProjectionMatrixInv = MatrixD.Invert(cam.ViewMatrix * cam.ProjectionMatrix);
-                    var localPos = new Vector3D(settings.paletteScreenPos.X, settings.paletteScreenPos.Y, 0);
-                    var hudPos = Vector3D.Transform(localPos, viewProjectionMatrixInv);
-                    var scaleFOV = (float)Math.Tan(MyAPIGateway.Session.Camera.FovWithZoom / 2);
-                    scaleFOV *= settings.paletteScale;
-
-                    float squareWidth = 0.0014f * scaleFOV;
-                    float squareHeight = 0.0011f * scaleFOV;
-                    float selectedWidth = (squareWidth + (squareWidth / 7f));
-                    float selectedHeight = (squareHeight + (squareHeight / 7f));
-                    double spacingAdd = 0.0006 * scaleFOV;
-                    double spacingWidth = (squareWidth * 2) + spacingAdd;
-                    double spacingHeight = (squareHeight * 2) + spacingAdd;
-                    const int MIDDLE_INDEX = 7;
-                    const float BG_WIDTH_MUL = 3.85f;
-                    const float BG_HEIGHT_MUL = 1.3f;
-
-                    var pos = hudPos + camMatrix.Left * (spacingWidth * (MIDDLE_INDEX / 2)) + camMatrix.Up * (spacingHeight / 2);
-
-                    for(int i = 0; i < localColorData.colors.Count; i++)
-                    {
-                        var v = localColorData.colors[i];
-                        var c = HSVtoRGB(v);
-
-                        if(i == MIDDLE_INDEX)
-                            pos += camMatrix.Left * (spacingWidth * MIDDLE_INDEX) + camMatrix.Down * spacingHeight;
-
-                        if(i == localColorData.selectedSlot)
-                            MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_SELECTED, Color.White, pos, camMatrix.Left, camMatrix.Up, selectedWidth, selectedHeight, Vector2.Zero, BlendTypeEnum.SDR);
-
-                        MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_COLOR, c, pos, camMatrix.Left, camMatrix.Up, squareWidth, squareHeight, Vector2.Zero, BlendTypeEnum.SDR);
-
-                        pos += camMatrix.Right * spacingWidth;
-                    }
-
-                    var color = BACKGROUND_COLOR * (settings.paletteBackgroundOpacity < 0 ? gameHUDBkOpacity : settings.paletteBackgroundOpacity);
-                    MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_BACKGROUND, color, hudPos, camMatrix.Left, camMatrix.Up, (float)(spacingWidth * BG_WIDTH_MUL), (float)(spacingHeight * BG_HEIGHT_MUL), Vector2.Zero, BlendTypeEnum.SDR);
-                }
-            }
-            catch(Exception e)
-            {
-                Log.Error(e);
-            }
-        }
-
-        private void SetToolColor(Vector3 color)
-        {
-            if(localHeldTool != null)
-            {
-                localHeldTool.SetToolColor(color);
-            }
-        }
-
-        private bool CheckColorList(ulong steamId, List<Vector3> oldList, List<Vector3> newList)
-        {
-            bool changed = false;
-
-            for(byte i = 0; i < oldList.Count; i++)
-            {
-                if(!oldList[i].EqualsToHSV(newList[i]))
-                {
-                    SendToAllPlayers_UpdateColor(steamId, i, newList[i]);
-                    changed = true;
-                }
-            }
-
-            return changed;
-        }
-
-        public string GetPlayerName(ulong steamId)
-        {
-            var list = new List<IMyPlayer>();
-            MyAPIGateway.Players.GetPlayers(list, (p) => p.SteamUserId == steamId);
-            return (list.Count > 0 ? list[0].DisplayName : "(not found)");
-        }
-
-        public bool IsPlayerOnline(ulong steamId)
-        {
-            var list = new List<IMyPlayer>();
-            MyAPIGateway.Players.GetPlayers(list, (p) => p.SteamUserId == steamId);
-            return list.Count > 0;
-        }
-
-        private ulong GetSteamId(string playerIdstring)
-        {
-            return ulong.Parse(playerIdstring.Substring(0, playerIdstring.IndexOf(':')));
-        }
+        #endregion
 
         public override void HandleInput()
         {
@@ -1224,7 +1097,7 @@ namespace Digi.PaintGun
                         if(change != 0 && localColorData != null)
                         {
                             if(settings.extraSounds)
-                                PlaySound("HudClick", 0.1f);
+                                PlaySound(SOUND_HUD_CLICK, 0.1f);
 
                             if(change < 0)
                             {
@@ -1465,6 +1338,111 @@ namespace Digi.PaintGun
             }
         }
 
+        public override void Draw()
+        {
+            try
+            {
+                if(!init)
+                    return;
+
+                if(localHeldTool != null && localColorData != null)
+                {
+                    if(MyAPIGateway.Gui.IsCursorVisible)
+                        return;
+
+                    if(settings.hidePaletteWithHUD && !gameHUD)
+                        return;
+
+                    var cam = MyAPIGateway.Session.Camera;
+                    var camMatrix = cam.WorldMatrix;
+                    var viewProjectionMatrixInv = MatrixD.Invert(cam.ViewMatrix * cam.ProjectionMatrix);
+                    var localPos = new Vector3D(settings.paletteScreenPos.X, settings.paletteScreenPos.Y, 0);
+                    var hudPos = Vector3D.Transform(localPos, viewProjectionMatrixInv);
+                    var scaleFOV = (float)Math.Tan(MyAPIGateway.Session.Camera.FovWithZoom / 2);
+                    scaleFOV *= settings.paletteScale;
+
+                    float squareWidth = 0.0014f * scaleFOV;
+                    float squareHeight = 0.0011f * scaleFOV;
+                    float selectedWidth = (squareWidth + (squareWidth / 7f));
+                    float selectedHeight = (squareHeight + (squareHeight / 7f));
+                    double spacingAdd = 0.0006 * scaleFOV;
+                    double spacingWidth = (squareWidth * 2) + spacingAdd;
+                    double spacingHeight = (squareHeight * 2) + spacingAdd;
+                    const int MIDDLE_INDEX = 7;
+                    const float BG_WIDTH_MUL = 3.85f;
+                    const float BG_HEIGHT_MUL = 1.3f;
+
+                    var pos = hudPos + camMatrix.Left * (spacingWidth * (MIDDLE_INDEX / 2)) + camMatrix.Up * (spacingHeight / 2);
+
+                    for(int i = 0; i < localColorData.colors.Count; i++)
+                    {
+                        var v = localColorData.colors[i];
+                        var c = HSVtoRGB(v);
+
+                        if(i == MIDDLE_INDEX)
+                            pos += camMatrix.Left * (spacingWidth * MIDDLE_INDEX) + camMatrix.Down * spacingHeight;
+
+                        if(i == localColorData.selectedSlot)
+                            MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_SELECTED, Color.White, pos, camMatrix.Left, camMatrix.Up, selectedWidth, selectedHeight, Vector2.Zero, BlendTypeEnum.SDR);
+
+                        MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_COLOR, c, pos, camMatrix.Left, camMatrix.Up, squareWidth, squareHeight, Vector2.Zero, BlendTypeEnum.SDR);
+
+                        pos += camMatrix.Right * spacingWidth;
+                    }
+
+                    var color = BACKGROUND_COLOR * (settings.paletteBackgroundOpacity < 0 ? gameHUDBkOpacity : settings.paletteBackgroundOpacity);
+                    MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_BACKGROUND, color, hudPos, camMatrix.Left, camMatrix.Up, (float)(spacingWidth * BG_WIDTH_MUL), (float)(spacingHeight * BG_HEIGHT_MUL), Vector2.Zero, BlendTypeEnum.SDR);
+                }
+            }
+            catch(Exception e)
+            {
+                Log.Error(e);
+            }
+        }
+
+        private void SetToolColor(Vector3 color)
+        {
+            if(localHeldTool != null)
+            {
+                localHeldTool.SetToolColor(color);
+            }
+        }
+
+        private bool CheckColorList(ulong steamId, List<Vector3> oldList, List<Vector3> newList)
+        {
+            bool changed = false;
+
+            for(byte i = 0; i < oldList.Count; i++)
+            {
+                if(!oldList[i].EqualsToHSV(newList[i]))
+                {
+                    SendToAllPlayers_UpdateColor(steamId, i, newList[i]);
+                    changed = true;
+                }
+            }
+
+            return changed;
+        }
+
+        public string GetPlayerName(ulong steamId)
+        {
+            var list = new List<IMyPlayer>();
+            MyAPIGateway.Players.GetPlayers(list, (p) => p.SteamUserId == steamId);
+            return (list.Count > 0 ? list[0].DisplayName : "(not found)");
+        }
+
+        public bool IsPlayerOnline(ulong steamId)
+        {
+            var list = new List<IMyPlayer>();
+            MyAPIGateway.Players.GetPlayers(list, (p) => p.SteamUserId == steamId);
+            return list.Count > 0;
+        }
+
+        private ulong GetSteamId(string playerIdstring)
+        {
+            return ulong.Parse(playerIdstring.Substring(0, playerIdstring.IndexOf(':')));
+        }
+
         public void SetToolStatus(int line, string text, string font = MyFontEnum.White, int aliveTime = TOOLSTATUS_TIMEOUT)
         {
             if(text == null)
@@ -1511,6 +1489,16 @@ namespace Digi.PaintGun
             return new Vector3I(MathHelper.Clamp(hue, 0f, 360), MathHelper.Clamp(saturation, 0f, 100), MathHelper.Clamp(value, 0f, 100));
         }
 
+        public static Color HSVtoRGB(Vector3 hsv)
+        {
+            // HACK copied and inverted with data from MyGuiScreenColorPicker.OnValueChange()
+            return new Vector3(
+                    hsv.X,
+                    MathHelper.Clamp(hsv.Y + MyColorPickerConstants.SATURATION_DELTA, 0f, 1f),
+                    MathHelper.Clamp(hsv.Z + MyColorPickerConstants.VALUE_DELTA - MyColorPickerConstants.VALUE_COLORIZE_DELTA, 0f, 1f)
+                ).HSVtoColor();
+        }
+
         public static void SetCrosshairColor(Color? color)
         {
             // FIXME whitelist broke this
@@ -1525,11 +1513,14 @@ namespace Digi.PaintGun
             return (localColorData != null ? localColorData.colors[localColorData.selectedSlot] : DEFAULT_COLOR);
         }
 
-        public static void PlaySound(string name, float volume)
+        public void PlaySound(MySoundPair soundPair, float volume)
         {
-            var emitter = new MyEntity3DSoundEmitter(MyAPIGateway.Session.ControlledObject.Entity as MyEntity);
+            if(emitter == null)
+                emitter = new MyEntity3DSoundEmitter(null);
+
+            emitter.SetPosition(MyAPIGateway.Session.Camera.WorldMatrix.Translation);
             emitter.CustomVolume = volume;
-            emitter.PlaySingleSound(new MySoundPair(name));
+            emitter.PlaySingleSound(soundPair);
         }
 
         private bool IsBlockValid(IMySlimBlock block, Vector3 color, bool trigger, out string blockName, out Vector3 blockColor)
@@ -1573,12 +1564,12 @@ namespace Digi.PaintGun
 
                     if(SendToServer_SetColor((byte)localColorData.selectedSlot, blockColor, true))
                     {
-                        PlaySound("HudMouseClick", 0.25f);
+                        PlaySound(SOUND_HUD_MOUSE_CLICK, 0.25f);
                         MyAPIGateway.Utilities.ShowNotification("Color in slot " + localColorData.selectedSlot + " set to " + ColorMaskToStringShort(blockColor), 2000, MyFontEnum.White);
                     }
                     else
                     {
-                        PlaySound("HudUnable", 0.25f);
+                        PlaySound(SOUND_HUD_UNABLE, 0.25f);
                     }
 
                     SetToolStatus(0, null);
@@ -1595,7 +1586,7 @@ namespace Digi.PaintGun
                         SetToolColor(blockColor);
 
                         if(settings.extraSounds)
-                            PlaySound("HudItem", 0.75f);
+                            PlaySound(SOUND_HUD_ITEM, 0.75f);
                     }
 
                     SetToolStatus(0, "Click to pick the color.", MyFontEnum.Green);
@@ -1613,7 +1604,7 @@ namespace Digi.PaintGun
                 SetToolStatus(2, null);
 
                 if(trigger)
-                    PlaySound("HudUnable", 0.25f);
+                    PlaySound(SOUND_HUD_UNABLE, 0.25f);
 
                 return false;
             }
@@ -1643,7 +1634,7 @@ namespace Digi.PaintGun
             if(!MyAPIGateway.Session.CreativeMode && block.CurrentDamage > (block.MaxIntegrity / 10.0f) || (block.FatBlock != null && !block.FatBlock.IsFunctional))
             {
                 if(trigger)
-                    PlaySound("HudUnable", 0.5f);
+                    PlaySound(SOUND_HUD_UNABLE, 0.5f);
 
                 SetCrosshairColor(CROSSHAIR_BAD_TARGET);
                 selectedInvalid = true;
@@ -1779,7 +1770,7 @@ namespace Digi.PaintGun
                     SetToolStatus(2, null);
 
                     if(settings.extraSounds)
-                        PlaySound("HudColorBlock", 0.8f);
+                        PlaySound(SOUND_HUD_COLOR, 0.8f);
                 }
                 else
                 {
@@ -1836,15 +1827,6 @@ namespace Digi.PaintGun
             blockSize = (blockSize * 2);
             return (blockSize.X * blockSize.Y) + (blockSize.Y * blockSize.Z) + (blockSize.Z * blockSize.X) / 6;
         }
-
-        //private IMySlimBlock GetTargetBlock(IMyCubeGrid g, IMyEntity player)
-        //{
-        //    var view = MyAPIGateway.Session.ControlledObject.GetHeadMatrix(false, true);
-        //    var rayFrom = view.Translation + view.Forward * 1.6;
-        //    var rayTo = view.Translation + view.Forward * 5;
-        //    var blockPos = g.RayCastBlocks(rayFrom, rayTo);
-        //    return (blockPos.HasValue ? g.GetCubeBlock(blockPos.Value) : null);
-        //}
 
         private void GetTarget(IMyCharacter character, out IMyCubeGrid targetGrid, out IMySlimBlock targetBlock, out IMyCharacter targetCharacter)
         {
@@ -2038,12 +2020,12 @@ namespace Digi.PaintGun
 
                         if(SendToServer_SetColor((byte)localColorData.selectedSlot, targetColor, true))
                         {
-                            PlaySound("HudMouseClick", 0.25f);
+                            PlaySound(SOUND_HUD_MOUSE_CLICK, 0.25f);
                             MyAPIGateway.Utilities.ShowNotification("Color in slot " + localColorData.selectedSlot + " set to " + ColorMaskToStringShort(targetColor), 2000, MyFontEnum.White);
                         }
                         else
                         {
-                            PlaySound("HudUnable", 0.25f);
+                            PlaySound(SOUND_HUD_UNABLE, 0.25f);
                         }
 
                         SetToolStatus(0, null);
@@ -2061,7 +2043,7 @@ namespace Digi.PaintGun
                             SetToolColor(targetColor);
 
                             if(settings.extraSounds)
-                                PlaySound("HudItem", 0.75f);
+                                PlaySound(SOUND_HUD_ITEM, 0.75f);
                         }
 
                         SetToolStatus(0, "Click to pick this player's selected color.", MyFontEnum.Green);
@@ -2072,129 +2054,19 @@ namespace Digi.PaintGun
                     return false;
                 }
 
-#if false
-                if(pickColorMode && MyAPIGateway.Players.Count > 1)
-                {
-                    var view = MyAPIGateway.Session.ControlledObject.GetHeadMatrix(false, true);
-                    var ray = new RayD(view.Translation, view.Forward);
-                    IMyCharacter targetCharacter = null;
-                    ulong targetSteamId = 0;
-                    double targetDist = 3;
-                    Vector3 targetColor = DEFAULT_COLOR;
-                    string targetName = null;
-                    long myEntId = character.EntityId;
-
-                    MyAPIGateway.Entities.GetEntities(ents, delegate (IMyEntity e)
-                                                      {
-                                                          var c = e as IMyCharacter;
-
-                                                          if(c != null && c.IsPlayer && c.EntityId != myEntId && c.Visible && c.Physics != null)
-                                                          {
-                                                              var check = ray.Intersects(c.WorldAABB);
-
-                                                              if(check.HasValue && check.Value <= targetDist)
-                                                              {
-                                                                  MyObjectBuilder_Character obj = null;
-
-                                                                  // DEBUG TODO iterate players list and compare character instances instead?
-
-                                                                  if(!entObjCache.ContainsKey(c.EntityId))
-                                                                  {
-                                                                      obj = (MyObjectBuilder_Character)c.GetObjectBuilder(false); // FIXME use a better method once one surfaces
-                                                                      entObjCache.Add(c.EntityId, obj); // cache the object to avoid regenerating it
-                                                                  }
-                                                                  else
-                                                                  {
-                                                                      obj = entObjCache[c.EntityId];
-                                                                  }
-
-                                                                  if(playerColorData.ContainsKey(obj.PlayerSteamId))
-                                                                  {
-                                                                      var cd = playerColorData[obj.PlayerSteamId];
-                                                                      targetCharacter = c;
-                                                                      targetSteamId = obj.PlayerSteamId;
-                                                                      targetDist = check.Value;
-                                                                      targetColor = cd.colors[cd.selectedSlot];
-                                                                      targetName = obj.Name;
-                                                                  }
-                                                              }
-                                                          }
-
-                                                          return false;
-                                                      });
-
-                    if(targetCharacter != null)
-                    {
-                        selectedCharacter = targetCharacter;
-
-                        if(trigger)
-                        {
-                            SendToServer_ColorPickMode(false);
-
-                            if(SendToServer_SetColor((byte)localColorData.selectedSlot, targetColor, true))
-                            {
-                                PlaySound("HudMouseClick", 0.25f);
-                                MyAPIGateway.Utilities.ShowNotification("Color in slot " + localColorData.selectedSlot + " set to " + ColorMaskToStringShort(targetColor), 2000, MyFontEnum.White);
-                            }
-                            else
-                            {
-                                PlaySound("HudUnable", 0.25f);
-                            }
-
-                            SetToolStatus(0, null);
-                            SetToolStatus(1, null);
-                            SetToolStatus(2, null);
-                        }
-                        else
-                        {
-                            SetCrosshairColor(HSVtoRGB(targetColor));
-
-                            if(!targetColor.EqualsToHSV(prevColorPreview))
-                            {
-                                prevColorPreview = targetColor;
-
-                                SetToolColor(targetColor);
-
-                                if(settings.extraSounds)
-                                    PlaySound("HudItem", 0.75f);
-                            }
-
-                            SetToolStatus(0, "Click to pick this player's selected color.", MyFontEnum.Green);
-                            SetToolStatus(1, targetName, MyFontEnum.White);
-                            SetToolStatus(2, ColorMaskToStringShort(targetColor), MyFontEnum.White);
-                        }
-
-                        return false;
-                    }
-                }
-#endif
-
                 SetCrosshairColor(CROSSHAIR_NO_TARGET);
-
-                if(targetGrid == null || targetBlock == null)
-                {
-                    if(pickColorMode)
-                    {
-                        SetToolStatus(0, "Aim at a block or player and click to pick its color.", MyFontEnum.Blue);
-                        SetToolStatus(1, null);
-                        SetToolStatus(2, null);
-                    }
-                    else if(trigger)
-                    {
-                        SetToolStatus(0, "Aim at a block to paint it.", MyFontEnum.Red);
-                        SetToolStatus(1, null);
-                        SetToolStatus(2, null);
-                    }
-
-                    return false;
-                }
-
-                selectedGrid = (MyCubeGrid)targetGrid;
-                selectedSlimBlock = targetBlock;
 
                 var color = GetBuildColor();
                 Vector3 blockColor;
                 string blockName;
+
+                if(!IsBlockValid(targetBlock, color, trigger, out blockName, out blockColor))
+                    return false;
+
+                selectedSlimBlock = targetBlock;
+                selectedGrid = (MyCubeGrid)targetGrid;
+
+                #region Symmetry toggle input
                 symmetryStatus = null;
 
                 if(!replaceAllMode && MyAPIGateway.Session.CreativeMode)
@@ -2237,9 +2109,7 @@ namespace Digi.PaintGun
                         symmetryStatus = "No symmetry on this ship.";
                     }
                 }
-
-                if(!IsBlockValid(selectedSlimBlock, color, trigger, out blockName, out blockColor))
-                    return false;
+                #endregion
 
                 if(selectedSlimBlock != null)
                 {
@@ -2382,12 +2252,12 @@ namespace Digi.PaintGun
 
                         if(SendToServer_SetColor((byte)localColorData.selectedSlot, color, true))
                         {
-                            PlaySound("HudMouseClick", 0.25f);
+                            PlaySound(SOUND_HUD_MOUSE_CLICK, 0.25f);
                             MyAPIGateway.Utilities.ShowMessage(MOD_NAME, "Color in slot " + localColorData.selectedSlot + " set to " + ColorMaskToString(color));
                         }
                         else
                         {
-                            PlaySound("HudUnable", 0.25f);
+                            PlaySound(SOUND_HUD_UNABLE, 0.25f);
                         }
 
                         return;
@@ -2431,16 +2301,6 @@ namespace Digi.PaintGun
             {
                 Log.Error(e);
             }
-        }
-
-        public static Color HSVtoRGB(Vector3 hsv)
-        {
-            // HACK copied and inverted with data from MyGuiScreenColorPicker.OnValueChange()
-            return new Vector3(
-                    hsv.X,
-                    MathHelper.Clamp(hsv.Y + MyColorPickerConstants.SATURATION_DELTA, 0f, 1f),
-                    MathHelper.Clamp(hsv.Z + MyColorPickerConstants.VALUE_DELTA - MyColorPickerConstants.VALUE_COLORIZE_DELTA, 0f, 1f)
-                ).HSVtoColor();
         }
     }
 

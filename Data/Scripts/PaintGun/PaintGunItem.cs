@@ -16,26 +16,13 @@ using VRage.Utils;
 
 namespace Digi.PaintGun
 {
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_AutomaticRifle), true, PaintGunMod.PAINT_GUN_ID)]
-    public class PaintGun : MyGameLogicComponent
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_AutomaticRifle), false, PaintGunMod.PAINT_GUN_ID)]
+    public class PaintGunItem : MyGameLogicComponent
     {
-        public class Particle
-        {
-            public Color color;
-            public Vector3 relativePosition;
-            public Vector3 velocity;
-            public Vector3 playerVelocity;
-            public short life;
-            public float radius;
-            public float angle;
-
-            public Particle() { }
-        }
-
         public ulong heldById = 0;
         public bool heldByLocalPlayer = false;
         public long cooldown = 0;
-        private Vector3 color = PaintGunMod.DEFAULT_COLOR;
+        private Vector3 color;
 
         private bool first = true;
         private byte skip = 0;
@@ -43,21 +30,16 @@ namespace Digi.PaintGun
         private MyEntity3DSoundEmitter soundEmitter;
         public List<Particle> particles = new List<Particle>(20);
 
-        public static Random rand = new Random();
-
+        private const int PARTICLE_MAX_DISTANCE_SQ = 1000 * 1000;
         private const int SKIP_UPDATES = 10;
         private const long DELAY_SHOOT = (TimeSpan.TicksPerMillisecond * 200);
         private const long DELAY_ACTION_SHOOT_COOLDOWN = (TimeSpan.TicksPerMillisecond * 600);
-        private readonly MySoundPair soundPair = new MySoundPair("PaintGunSpray");
-        private static List<IMyPlayer> players = new List<IMyPlayer>(0);
-        private const int PARTICLE_MAX_DISTANCE_SQ = 1000 * 1000;
-        private static readonly MyStringId MATERIAL_SMOKE = MyStringId.GetOrCompute("Smoke");
 
         private PaintGunMod mod = null;
 
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
-            Entity.NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+            NeedsUpdate = MyEntityUpdateEnum.EACH_FRAME;
         }
 
         public void FirstUpdate()
@@ -65,6 +47,7 @@ namespace Digi.PaintGun
             var tool = (IMyAutomaticRifleGun)Entity;
             lastShotTime = tool.GunBase.LastShootTime.Ticks;
             var owner = tool.Owner as IMyCharacter;
+            var color = mod.DEFAULT_COLOR;
 
             if(owner == null)
             {
@@ -83,7 +66,7 @@ namespace Digi.PaintGun
 
             if(heldById == 0) // then find the owner through the player list
             {
-                MyAPIGateway.Players.GetPlayers(players, delegate (IMyPlayer p)
+                MyAPIGateway.Players.GetPlayers(mod.players, delegate (IMyPlayer p)
                 {
                     if(heldById == 0 && p.Controller != null && p.Controller.ControlledEntity is IMyCharacter)
                     {
@@ -141,10 +124,7 @@ namespace Digi.PaintGun
                 if(first)
                 {
                     if(mod == null)
-                    {
                         mod = PaintGunMod.instance;
-                        return;
-                    }
 
                     if(!mod.init || mod.settings == null)
                         return;
@@ -236,7 +216,7 @@ namespace Digi.PaintGun
                                 p.life = 30;
                                 p.color = PaintGunMod.HSVtoRGB(color);
                                 p.radius = 0.01f;
-                                p.angle = (float)(rand.Next(2) == 0 ? -rand.NextDouble() : rand.NextDouble()) * 45;
+                                p.angle = MyUtils.GetRandomFloat(-1, 1) * 45;
                                 particles.Add(p);
                             }
 
@@ -252,7 +232,7 @@ namespace Digi.PaintGun
                                         continue;
                                     }
 
-                                    MyTransparentGeometry.AddPointBillboard(MATERIAL_SMOKE, p.color, pos + p.relativePosition, p.radius, p.angle);
+                                    MyTransparentGeometry.AddPointBillboard(mod.MATERIAL_SPRAY, p.color, pos + p.relativePosition, p.radius, p.angle);
 
                                     if(p.angle > 0)
                                         p.angle += (p.life * 0.001f);
@@ -289,7 +269,7 @@ namespace Digi.PaintGun
                     if(trigger && !colorPickMode && soundEmitter != null && !soundEmitter.IsPlaying)
                     {
                         soundEmitter.CustomVolume = mod.settings.spraySoundVolume;
-                        soundEmitter.PlaySound(soundPair, true);
+                        soundEmitter.PlaySound(mod.SPRAY_SOUND, true);
                     }
 
                     if((!trigger || colorPickMode) && soundEmitter != null && soundEmitter.IsPlaying)
@@ -365,7 +345,7 @@ namespace Digi.PaintGun
 
                         mod.SetToolStatus(0, "Color picking cancelled.", MyFontEnum.Red, 1000);
 
-                        PaintGunMod.PlaySound("HudUnable", 0.5f);
+                        mod.PlaySound(mod.SOUND_HUD_UNABLE, 0.5f);
                     }
                     else if(mod.replaceAllMode)
                     {
