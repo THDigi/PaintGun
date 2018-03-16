@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Sandbox.Definitions;
 using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
@@ -14,7 +15,9 @@ using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
 
-using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum; // HACK allows the use of BlendTypeEnum which is whitelisted but bypasses accessing MyBillboard which is not whitelisted
+// HACK allows the use of these whitelisted enums without triggering prohibited issues with accessing their parent classes
+using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
+using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
 namespace Digi.PaintGun
 {
@@ -135,10 +138,25 @@ namespace Digi.PaintGun
         public static readonly Color CROSSHAIR_PAINTING = new Color(0, 255, 155);
         public static readonly MyStringId CROSSHAIR_SPRITEID = MyStringId.GetOrCompute("Default");
 
+        private readonly List<IHitInfo> hits = new List<IHitInfo>();
+        private readonly Dictionary<long, DetectionInfo> entitiesInRange = new Dictionary<long, DetectionInfo>();
+        private readonly List<MyLineSegmentOverlapResult<MyEntity>> raycastResults = new List<MyLineSegmentOverlapResult<MyEntity>>();
         private readonly HashSet<IMyEntity> ents = new HashSet<IMyEntity>();
         private readonly StringBuilder assigned = new StringBuilder();
         private readonly HashSet<MyCubeGrid> gridsInSystemCache = new HashSet<MyCubeGrid>();
         private readonly List<IMyPlayer> playersCache = new List<IMyPlayer>(0); // always empty
+
+        public struct DetectionInfo
+        {
+            public readonly IMyEntity Entity;
+            public readonly Vector3D DetectionPoint;
+
+            public DetectionInfo(IMyEntity entity, Vector3D detectionPoint)
+            {
+                Entity = entity;
+                DetectionPoint = detectionPoint;
+            }
+        }
 
         public void Init()
         {
@@ -1819,42 +1837,242 @@ namespace Digi.PaintGun
             return (blockSize.X * blockSize.Y) + (blockSize.Y * blockSize.Z) + (blockSize.Z * blockSize.X) / 6;
         }
 
-        private IMySlimBlock GetTargetBlock(IMyCubeGrid g, IMyEntity player)
-        {
-            var view = MyAPIGateway.Session.ControlledObject.GetHeadMatrix(false, true);
-            var rayFrom = view.Translation + view.Forward * 1.6;
-            var rayTo = view.Translation + view.Forward * 5;
-            var blockPos = g.RayCastBlocks(rayFrom, rayTo);
-            return (blockPos.HasValue ? g.GetCubeBlock(blockPos.Value) : null);
+        //private IMySlimBlock GetTargetBlock(IMyCubeGrid g, IMyEntity player)
+        //{
+        //    var view = MyAPIGateway.Session.ControlledObject.GetHeadMatrix(false, true);
+        //    var rayFrom = view.Translation + view.Forward * 1.6;
+        //    var rayTo = view.Translation + view.Forward * 5;
+        //    var blockPos = g.RayCastBlocks(rayFrom, rayTo);
+        //    return (blockPos.HasValue ? g.GetCubeBlock(blockPos.Value) : null);
+        //}
 
-            // DEBUG testing alternate targeting, so far this isn't that good for interior lights if you sit inside their block
-            //var view = MyAPIGateway.Session.ControlledObject.GetHeadMatrix(false, true);
-            //var rayFrom = view.Translation + view.Forward * 1.6;
-            //var rayTo = view.Translation + view.Forward * 5;
-            //
-            //Vector3I pos;
-            //var hits = new List<IHitInfo>();
-            //MyAPIGateway.Physics.CastRay(rayFrom, rayTo, hits, 9); // 9 = MyPhysics.CollisionLayers.NoVoxelCollisionLayer
-            //
-            //foreach(var hit in hits)
-            //{
-            //    if(hit.HitEntity == g)
-            //    {
-            //        g.FixTargetCube(out pos, Vector3D.Transform(hit.Position + view.Forward * 0.06, g.WorldMatrixNormalizedInv) * (1d / g.GridSize));
-            //        return g.GetCubeBlock(pos);
-            //    }
-            //}
-            //
-            //g.FixTargetCube(out pos, Vector3D.Transform(rayFrom, g.WorldMatrixNormalizedInv) * (1d / g.GridSize));
-            //return g.GetCubeBlock(pos);
+        private void GetTarget(IMyCharacter character, out IMyCubeGrid targetGrid, out IMySlimBlock targetBlock, out IMyCharacter targetCharacter)
+        {
+            // HACK copied functionality from MyCasterComponent (what welders/grinders use)
+            // TODO optimize?
+
+            targetGrid = null;
+            targetBlock = null;
+            targetCharacter = null;
+
+            hits.Clear();
+            entitiesInRange.Clear();
+            raycastResults.Clear();
+
+            const float MAX_DISTANCE = 5;
+            var view = character.GetHeadMatrix(false, true);
+            var rayDir = view.Forward;
+            var rayFrom = view.Translation;
+            var rayTo = view.Translation + rayDir * MAX_DISTANCE;
+
+            MyAPIGateway.Physics.CastRay(rayFrom, rayTo, hits, CollisionLayers.ObjectDetectionCollisionLayer);
+
+            foreach(var hit in hits)
+            {
+                var ent = hit.HitEntity;
+
+                if(ent == null)
+                    continue;
+
+                IMyEntity parent = ent.GetTopMostParent(null);
+                MyCubeGrid grid = parent as MyCubeGrid;
+                Vector3D hitPos = hit.Position;
+
+                if(grid != null)
+                {
+                    if(grid.GridSizeEnum == MyCubeSize.Large)
+                        hitPos += hit.Normal * -0.08f;
+                    else
+                        hitPos += hit.Normal * -0.02f;
+                }
+
+                DetectionInfo info;
+                if(entitiesInRange.TryGetValue(parent.EntityId, out info))
+                {
+                    float num = Vector3.DistanceSquared(info.DetectionPoint, rayFrom);
+                    float num2 = Vector3.DistanceSquared(hitPos, rayFrom);
+                    if(num > num2)
+                    {
+                        entitiesInRange[parent.EntityId] = new DetectionInfo(parent, hitPos);
+                    }
+                }
+                else
+                {
+                    entitiesInRange[parent.EntityId] = new DetectionInfo(parent, hitPos);
+                }
+            }
+
+            // also look for blocks that have physics disabled... which currently are only lights
+            LineD lineD = new LineD(rayFrom, rayTo);
+            using(raycastResults.GetClearToken<MyLineSegmentOverlapResult<MyEntity>>())
+            {
+                MyGamePruningStructure.GetAllEntitiesInRay(ref lineD, raycastResults, MyEntityQueryType.Both);
+
+                foreach(MyLineSegmentOverlapResult<MyEntity> res in raycastResults)
+                {
+                    if(res.Element == null)
+                        continue;
+
+                    var parent = res.Element.GetTopMostParent(null);
+                    var block = res.Element as IMyCubeBlock;
+
+                    if(block != null)
+                    {
+                        // HACK shortcut for !block.SlimBlock.HasPhysics
+                        var lightBlockDef = block.SlimBlock.BlockDefinition as MyLightingBlockDefinition;
+
+                        if(lightBlockDef == null)
+                            continue;
+
+                        MatrixD wmInv = block.PositionComp.WorldMatrixNormalizedInv;
+                        Vector3D localFrom = Vector3D.Transform(rayFrom, ref wmInv);
+                        Vector3D localTo = Vector3D.Transform(rayTo, ref wmInv);
+
+                        Ray ray = new Ray(localFrom, Vector3.Normalize(localTo - localFrom));
+                        float? num3 = ray.Intersects(block.PositionComp.LocalAABB);
+                        float? num4 = num3;
+                        num3 = (num4.HasValue ? new float?(num4.GetValueOrDefault() + 0.01f) : null);
+
+                        if(num3.HasValue)
+                        {
+                            if(num3.GetValueOrDefault() <= MAX_DISTANCE && num3.HasValue)
+                            {
+                                var detectionPoint = rayFrom + rayDir * num3.Value;
+
+                                DetectionInfo info;
+                                if(entitiesInRange.TryGetValue(parent.EntityId, out info))
+                                {
+                                    if(Vector3.DistanceSquared(info.DetectionPoint, rayFrom) > Vector3.DistanceSquared(detectionPoint, rayFrom))
+                                    {
+                                        entitiesInRange[parent.EntityId] = new DetectionInfo(parent, detectionPoint);
+                                    }
+                                }
+                                else
+                                {
+                                    entitiesInRange[parent.EntityId] = new DetectionInfo(parent, detectionPoint);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if(entitiesInRange.Count > 0)
+            {
+                float prevDistSq = 3.40282347E+38f;
+                IMyEntity lastDetectedEntity = null;
+                Vector3D hitPosition = Vector3D.Zero;
+
+                foreach(var info in entitiesInRange.Values)
+                {
+                    float distSq = (float)Vector3D.DistanceSquared(info.DetectionPoint, rayFrom);
+
+                    if(info.Entity.Physics != null && info.Entity.Physics.Enabled && distSq < prevDistSq)
+                    {
+                        lastDetectedEntity = info.Entity;
+                        hitPosition = info.DetectionPoint;
+                        prevDistSq = distSq;
+                    }
+                }
+
+                targetGrid = lastDetectedEntity as MyCubeGrid;
+
+                if(targetGrid != null)
+                {
+                    MatrixD gridWMInv = targetGrid.PositionComp.WorldMatrixNormalizedInv;
+                    Vector3D value = Vector3D.Transform(hitPosition, gridWMInv);
+                    Vector3I pos;
+                    targetGrid.FixTargetCube(out pos, value / (double)targetGrid.GridSize);
+                    targetBlock = targetGrid.GetCubeBlock(pos);
+                }
+                else
+                {
+                    targetCharacter = lastDetectedEntity as IMyCharacter;
+                }
+            }
+
+            hits.Clear();
+            entitiesInRange.Clear();
+            raycastResults.Clear();
         }
 
         public bool HoldingTool(bool trigger)
         {
             try
             {
-                var character = MyAPIGateway.Session.Player.Controller.ControlledEntity.Entity;
+                var character = MyAPIGateway.Session.Player.Character;
 
+                selectedGrid = null;
+                selectedCharacter = null;
+                selectedSlimBlock = null;
+                selectedInvalid = false;
+                symmetryInput = false;
+
+                IMyCharacter targetCharacter;
+                IMyCubeGrid targetGrid;
+                IMySlimBlock targetBlock;
+
+                GetTarget(character, out targetGrid, out targetBlock, out targetCharacter);
+
+                if(pickColorMode && targetCharacter != null)
+                {
+                    selectedCharacter = targetCharacter;
+
+                    playersCache.Clear();
+                    MyAPIGateway.Players.GetPlayers(playersCache, p => p.Character == selectedCharacter);
+
+                    if(playersCache.Count == 0)
+                        return false;
+
+                    var targetPlayer = playersCache[0];
+
+                    if(!playerColorData.ContainsKey(targetPlayer.SteamUserId))
+                        return false;
+
+                    var cd = playerColorData[targetPlayer.SteamUserId];
+                    var targetColor = cd.colors[cd.selectedSlot];
+
+                    if(trigger)
+                    {
+                        SendToServer_ColorPickMode(false);
+
+                        if(SendToServer_SetColor((byte)localColorData.selectedSlot, targetColor, true))
+                        {
+                            PlaySound("HudMouseClick", 0.25f);
+                            MyAPIGateway.Utilities.ShowNotification("Color in slot " + localColorData.selectedSlot + " set to " + ColorMaskToStringShort(targetColor), 2000, MyFontEnum.White);
+                        }
+                        else
+                        {
+                            PlaySound("HudUnable", 0.25f);
+                        }
+
+                        SetToolStatus(0, null);
+                        SetToolStatus(1, null);
+                        SetToolStatus(2, null);
+                    }
+                    else
+                    {
+                        SetCrosshairColor(HSVtoRGB(targetColor));
+
+                        if(!targetColor.EqualsToHSV(prevColorPreview))
+                        {
+                            prevColorPreview = targetColor;
+
+                            SetToolColor(targetColor);
+
+                            if(settings.extraSounds)
+                                PlaySound("HudItem", 0.75f);
+                        }
+
+                        SetToolStatus(0, "Click to pick this player's selected color.", MyFontEnum.Green);
+                        SetToolStatus(1, targetPlayer.DisplayName, MyFontEnum.White);
+                        SetToolStatus(2, ColorMaskToStringShort(targetColor), MyFontEnum.White);
+                    }
+
+                    return false;
+                }
+
+#if false
                 if(pickColorMode && MyAPIGateway.Players.Count > 1)
                 {
                     var view = MyAPIGateway.Session.ControlledObject.GetHeadMatrix(false, true);
@@ -1949,14 +2167,11 @@ namespace Digi.PaintGun
                         return false;
                     }
                 }
-
-                // finds the closest grid you're aiming at by doing a physical ray cast
-                var grid = MyAPIGateway.CubeBuilder.FindClosestGrid() as MyCubeGrid;
-                selectedGrid = grid;
+#endif
 
                 SetCrosshairColor(CROSSHAIR_NO_TARGET);
 
-                if(grid == null)
+                if(targetGrid == null || targetBlock == null)
                 {
                     if(pickColorMode)
                     {
@@ -1973,100 +2188,102 @@ namespace Digi.PaintGun
 
                     return false;
                 }
-                else
+
+                selectedGrid = (MyCubeGrid)targetGrid;
+                selectedSlimBlock = targetBlock;
+
+                var color = GetBuildColor();
+                Vector3 blockColor;
+                string blockName;
+                symmetryStatus = null;
+
+                if(!replaceAllMode && MyAPIGateway.Session.CreativeMode)
                 {
-                    var block = GetTargetBlock(grid, character);
-                    var color = GetBuildColor();
-                    Vector3 blockColor;
-                    string blockName;
-                    symmetryStatus = null;
-
-                    if(!replaceAllMode && MyAPIGateway.Session.CreativeMode)
+                    if(selectedGrid.XSymmetryPlane.HasValue || selectedGrid.YSymmetryPlane.HasValue || selectedGrid.ZSymmetryPlane.HasValue)
                     {
-                        if(grid.XSymmetryPlane.HasValue || grid.YSymmetryPlane.HasValue || grid.ZSymmetryPlane.HasValue)
+                        var controlSymmetry = MyAPIGateway.Input.GetGameControl(MyControlsSpace.USE_SYMMETRY);
+                        assigned.Clear();
+
+                        if(controlSymmetry.GetKeyboardControl() != MyKeys.None)
+                            assigned.Append(MyAPIGateway.Input.GetKeyName(controlSymmetry.GetKeyboardControl()));
+
+                        if(controlSymmetry.GetSecondKeyboardControl() != MyKeys.None)
                         {
-                            var controlSymmetry = MyAPIGateway.Input.GetGameControl(MyControlsSpace.USE_SYMMETRY);
-                            assigned.Clear();
+                            if(assigned.Length > 0)
+                                assigned.Append(" or ");
 
-                            if(controlSymmetry.GetKeyboardControl() != MyKeys.None)
-                                assigned.Append(MyAPIGateway.Input.GetKeyName(controlSymmetry.GetKeyboardControl()));
+                            assigned.Append(MyAPIGateway.Input.GetKeyName(controlSymmetry.GetSecondKeyboardControl()));
+                        }
 
-                            if(controlSymmetry.GetSecondKeyboardControl() != MyKeys.None)
-                            {
-                                if(assigned.Length > 0)
-                                    assigned.Append(" or ");
+                        if(InputHandler.IsInputReadable())
+                        {
+                            symmetryInput = true;
 
-                                assigned.Append(MyAPIGateway.Input.GetKeyName(controlSymmetry.GetSecondKeyboardControl()));
-                            }
-
-                            if(InputHandler.IsInputReadable())
-                            {
-                                symmetryInput = true;
-
-                                if(MyAPIGateway.CubeBuilder.UseSymmetry)
-                                    symmetryStatus = "Symmetry enabled. Press " + assigned + " to turn off.";
-                                else
-                                    symmetryStatus = "Symmetry is off. Press " + assigned + " to enable.";
-                            }
+                            if(MyAPIGateway.CubeBuilder.UseSymmetry)
+                                symmetryStatus = "Symmetry enabled. Press " + assigned + " to turn off.";
                             else
-                            {
-                                if(MyAPIGateway.CubeBuilder.UseSymmetry)
-                                    symmetryStatus = "Symmetry enabled.";
-                                else
-                                    symmetryStatus = "Symmetry is off.";
-                            }
+                                symmetryStatus = "Symmetry is off. Press " + assigned + " to enable.";
                         }
                         else
                         {
-                            symmetryStatus = "No symmetry on this ship.";
+                            if(MyAPIGateway.CubeBuilder.UseSymmetry)
+                                symmetryStatus = "Symmetry enabled.";
+                            else
+                                symmetryStatus = "Symmetry is off.";
                         }
                     }
-
-                    if(!IsBlockValid(block, color, trigger, out blockName, out blockColor))
-                        return false;
-
-                    if(block != null)
+                    else
                     {
-                        if(trigger)
-                        {
-                            float paintSpeed = (1.0f / GetBlockSurface(block));
-                            PaintProcess(ref blockColor, color, paintSpeed, blockName);
-                            SetCrosshairColor(CROSSHAIR_PAINTING);
+                        symmetryStatus = "No symmetry on this ship.";
+                    }
+                }
 
-                            if(replaceAllMode && MyAPIGateway.Session.CreativeMode)
+                if(!IsBlockValid(selectedSlimBlock, color, trigger, out blockName, out blockColor))
+                    return false;
+
+                if(selectedSlimBlock != null)
+                {
+                    var grid = selectedGrid;
+
+                    if(trigger)
+                    {
+                        float paintSpeed = (1.0f / GetBlockSurface(selectedSlimBlock));
+                        PaintProcess(ref blockColor, color, paintSpeed, blockName);
+                        SetCrosshairColor(CROSSHAIR_PAINTING);
+
+                        if(replaceAllMode && MyAPIGateway.Session.CreativeMode)
+                        {
+                            SendToServer_ReplaceColor(grid.EntityId, grid, selectedSlimBlock.GetColorMask(), blockColor, replaceGridSystem);
+                        }
+                        else
+                        {
+                            if(MyAPIGateway.Session.CreativeMode && MyAPIGateway.CubeBuilder.UseSymmetry && (grid.XSymmetryPlane.HasValue || grid.YSymmetryPlane.HasValue || grid.ZSymmetryPlane.HasValue))
                             {
-                                SendToServer_ReplaceColor(grid.EntityId, grid, block.GetColorMask(), blockColor, replaceGridSystem);
+                                var mirrorPlane = new Vector3I(
+                                    (grid.XSymmetryPlane.HasValue ? grid.XSymmetryPlane.Value.X : int.MinValue),
+                                    (grid.YSymmetryPlane.HasValue ? grid.YSymmetryPlane.Value.Y : int.MinValue),
+                                    (grid.ZSymmetryPlane.HasValue ? grid.ZSymmetryPlane.Value.Z : int.MinValue));
+
+                                OddAxis odd = OddAxis.NONE;
+
+                                if(grid.XSymmetryOdd)
+                                    odd |= OddAxis.X;
+
+                                if(grid.YSymmetryOdd)
+                                    odd |= OddAxis.Y;
+
+                                if(grid.ZSymmetryOdd)
+                                    odd |= OddAxis.Z;
+
+                                SendToServer_PaintBlock(grid.EntityId, grid, selectedSlimBlock.Position, blockColor, true, mirrorPlane, odd);
                             }
                             else
                             {
-                                if(MyAPIGateway.Session.CreativeMode && MyAPIGateway.CubeBuilder.UseSymmetry && (grid.XSymmetryPlane.HasValue || grid.YSymmetryPlane.HasValue || grid.ZSymmetryPlane.HasValue))
-                                {
-                                    var mirrorPlane = new Vector3I(
-                                        (grid.XSymmetryPlane.HasValue ? grid.XSymmetryPlane.Value.X : int.MinValue),
-                                        (grid.YSymmetryPlane.HasValue ? grid.YSymmetryPlane.Value.Y : int.MinValue),
-                                        (grid.ZSymmetryPlane.HasValue ? grid.ZSymmetryPlane.Value.Z : int.MinValue));
-
-                                    OddAxis odd = OddAxis.NONE;
-
-                                    if(grid.XSymmetryOdd)
-                                        odd |= OddAxis.X;
-
-                                    if(grid.YSymmetryOdd)
-                                        odd |= OddAxis.Y;
-
-                                    if(grid.ZSymmetryOdd)
-                                        odd |= OddAxis.Z;
-
-                                    SendToServer_PaintBlock(grid.EntityId, grid, block.Position, blockColor, true, mirrorPlane, odd);
-                                }
-                                else
-                                {
-                                    SendToServer_PaintBlock(grid.EntityId, grid, block.Position, blockColor, false);
-                                }
+                                SendToServer_PaintBlock(grid.EntityId, grid, selectedSlimBlock.Position, blockColor, false);
                             }
-
-                            return true;
                         }
+
+                        return true;
                     }
                 }
             }

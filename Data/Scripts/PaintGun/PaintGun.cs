@@ -299,10 +299,6 @@ namespace Digi.PaintGun
 
                     if(heldByLocalPlayer)
                     {
-                        mod.symmetryInput = false;
-                        mod.selectedSlimBlock = null;
-                        mod.selectedCharacter = null;
-                        mod.selectedInvalid = false;
                         bool painted = mod.HoldingTool(trigger);
 
                         if(!mod.pickColorMode && painted && !MyAPIGateway.Session.CreativeMode) // expend the ammo manually when painting
