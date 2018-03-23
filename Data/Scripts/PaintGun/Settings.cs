@@ -25,18 +25,40 @@ namespace Digi.PaintGun
         public static readonly Vector2D paletteScreenPosDefault = new Vector2D(0.4345, -0.691);
         public static readonly float paletteScaleDefault = 0.5f;
 
-        public ControlCombination pickColor1 = ControlCombination.CreateFrom("shift c.landinggear");
-        public ControlCombination pickColor2 = ControlCombination.CreateFrom("g.lb g.rb");
+        public ControlCombination colorPickMode1;
+        public ControlCombination colorPickMode2;
 
-        public ControlCombination replaceMode1 = ControlCombination.CreateFrom("shift c.cubesizemode");
-        public ControlCombination replaceMode2 = null;
+        public ControlCombination instantColorPick1;
+        public ControlCombination instantColorPick2;
 
-        private static char[] CHARS = new char[] { '=' };
+        public ControlCombination replaceColorMode1;
+        public ControlCombination replaceColorMode2;
+
+        public ControlCombination default_colorPickMode1;
+        public ControlCombination default_colorPickMode2;
+
+        public ControlCombination default_instantColorPick1;
+        public ControlCombination default_instantColorPick2;
+
+        public ControlCombination default_replaceColorMode1;
+        public ControlCombination default_replaceColorMode2;
+
+        private char[] CHARS = new char[] { '=' };
 
         public bool firstLoad = false;
 
         public Settings()
         {
+            // assign defaults
+            default_colorPickMode1 = ControlCombination.CreateFrom("shift c.landinggear", true);
+            default_colorPickMode2 = ControlCombination.CreateFrom("g.lb g.rb", true);
+
+            default_instantColorPick1 = ControlCombination.CreateFrom("shift c.secondaryaction", true);
+            default_instantColorPick2 = null;
+
+            default_replaceColorMode1 = ControlCombination.CreateFrom("shift c.cubesizemode", true);
+            default_replaceColorMode2 = null;
+
             // load the settings if they exist
             if(!Load())
             {
@@ -48,6 +70,8 @@ namespace Digi.PaintGun
 
         public bool Load()
         {
+            ResetToDefaults();
+
             try
             {
                 if(MyAPIGateway.Utilities.FileExistsInLocalStorage(FILE, typeof(Settings)))
@@ -64,6 +88,18 @@ namespace Digi.PaintGun
             }
 
             return false;
+        }
+
+        private void ResetToDefaults()
+        {
+            colorPickMode1 = default_colorPickMode1;
+            colorPickMode2 = default_colorPickMode2;
+
+            instantColorPick1 = default_instantColorPick1;
+            instantColorPick2 = default_instantColorPick2;
+
+            replaceColorMode1 = default_replaceColorMode1;
+            replaceColorMode2 = default_replaceColorMode2;
         }
 
         private void ReadSettings(TextReader file)
@@ -98,51 +134,51 @@ namespace Digi.PaintGun
                         continue;
                     }
 
-                    args[0] = args[0].Trim().ToLower();
-                    args[1] = args[1].Trim().ToLower();
+                    var key = args[0].Trim().ToLower();
+                    var value = args[1];
 
-                    switch(args[0])
+                    switch(key)
                     {
                         case "configversion":
-                            if(int.TryParse(args[1], out i))
+                            if(int.TryParse(value, out i))
                                 prevConfigVersion = i;
                             else
-                                Log.Error("Invalid " + args[0] + " value: " + args[1]);
+                                Log.Error("Invalid " + key + " value: " + value);
                             continue;
                         case "extrasounds":
-                            if(bool.TryParse(args[1], out b))
+                            if(bool.TryParse(value, out b))
                                 extraSounds = b;
                             else
-                                Log.Error("Invalid " + args[0] + " value: " + args[1]);
+                                Log.Error("Invalid " + key + " value: " + value);
                             continue;
                         case "sprayparticles":
-                            if(bool.TryParse(args[1], out b))
+                            if(bool.TryParse(value, out b))
                                 sprayParticles = b;
                             else
-                                Log.Error("Invalid " + args[0] + " value: " + args[1]);
+                                Log.Error("Invalid " + key + " value: " + value);
                             continue;
                         case "spraysoundvolume":
-                            if(float.TryParse(args[1], out f))
+                            if(float.TryParse(value, out f))
                                 spraySoundVolume = MathHelper.Clamp(f, 0, 1);
                             else
-                                Log.Error("Invalid " + args[0] + " value: " + args[1]);
+                                Log.Error("Invalid " + key + " value: " + value);
                             continue;
                         case "selectcolorzigzag":
-                            if(bool.TryParse(args[1], out b))
+                            if(bool.TryParse(value, out b))
                                 selectColorZigZag = b;
                             else
-                                Log.Error("Invalid " + args[0] + " value: " + args[1]);
+                                Log.Error("Invalid " + key + " value: " + value);
                             continue;
                         case "hidepalettewithhud":
-                            if(bool.TryParse(args[1], out b))
+                            if(bool.TryParse(value, out b))
                                 hidePaletteWithHUD = b;
                             else
-                                Log.Error("Invalid " + args[0] + " value: " + args[1]);
+                                Log.Error("Invalid " + key + " value: " + value);
                             continue;
                         case "palettescreenpos":
-                            var vars = args[1].Split(',');
+                            var vars = value.Split(',');
                             double x, y;
-                            if(vars.Length == 2 && double.TryParse(vars[0].Trim(), out x) && double.TryParse(vars[1].Trim(), out y))
+                            if(vars.Length == 2 && double.TryParse(vars[0], out x) && double.TryParse(vars[1], out y))
                             {
                                 if(prevConfigVersion < CFG_VERSION_NEWHUDDEFAULTS && x == 0.29d && y == -0.73d) // reset to default if config is older and had default setting
                                     paletteScreenPos = paletteScreenPosDefault;
@@ -150,10 +186,10 @@ namespace Digi.PaintGun
                                     paletteScreenPos = new Vector2D(x, y);
                             }
                             else
-                                Log.Error("Invalid " + args[0] + " value: " + args[1]);
+                                Log.Error("Invalid " + key + " value: " + value);
                             continue;
                         case "palettescale":
-                            if(float.TryParse(args[1], out f))
+                            if(float.TryParse(value, out f))
                             {
                                 if(prevConfigVersion < CFG_VERSION_NEWHUDDEFAULTS && f == 1f) // reset to default if config is older and had default setting
                                     paletteScale = paletteScaleDefault;
@@ -161,43 +197,65 @@ namespace Digi.PaintGun
                                     paletteScale = MathHelper.Clamp(f, -100, 100);
                             }
                             else
-                                Log.Error("Invalid " + args[0] + " value: " + args[1]);
+                                Log.Error("Invalid " + key + " value: " + value);
                             continue;
                         case "palettebackgroundopacity":
-                            if(prevConfigVersion < CFG_VERSION_HUDBKOPACITYDEFAULTS || args[1].Equals("hud"))
+                            if(prevConfigVersion < CFG_VERSION_HUDBKOPACITYDEFAULTS || value.Trim().Equals("hud", StringComparison.CurrentCultureIgnoreCase))
                                 paletteBackgroundOpacity = -1;
-                            else if(float.TryParse(args[1], out f))
+                            else if(float.TryParse(value, out f))
                                 paletteBackgroundOpacity = MathHelper.Clamp(f, 0, 1);
                             else
-                                Log.Error("Invalid " + args[0] + " value: " + args[1]);
+                                Log.Error("Invalid " + key + " value: " + value);
                             continue;
-                        case "pickcolorinput1":
-                        case "pickcolorinput2":
-                        case "replacemodeinput1":
-                        case "replacemodeinput2":
-                            if(args[1].Length == 0)
-                                continue;
-                            var obj = ControlCombination.CreateFrom(args[1]);
-                            if(obj != null)
+                        case "pickcolorinput1": // backwards compatibility
+                        case "pickcolorinput2": // backwards compatibility
+                        case "pickcolormode-input1":
+                        case "pickcolormode-input2":
                             {
-                                if(args[0].StartsWith("pick", StringComparison.Ordinal))
+                                var obj = ControlCombination.CreateFrom(value, true);
+                                if(value.Length == 0 || obj != null)
                                 {
-                                    if(args[0].EndsWith("1", StringComparison.Ordinal))
-                                        pickColor1 = obj;
+                                    if(key.EndsWith("1"))
+                                        colorPickMode1 = obj;
                                     else
-                                        pickColor2 = obj;
+                                        colorPickMode2 = obj;
                                 }
                                 else
-                                {
-                                    if(args[0].EndsWith("1", StringComparison.Ordinal))
-                                        replaceMode1 = obj;
-                                    else
-                                        replaceMode2 = obj;
-                                }
+                                    Log.Error("Invalid " + key + " value: " + value);
+                                continue;
                             }
-                            else
-                                Log.Error("Invalid " + args[0] + " value: " + args[1]);
-                            continue;
+                        case "instantpickcolor-input1":
+                        case "instantpickcolor-input2":
+                            {
+                                var obj = ControlCombination.CreateFrom(value, true);
+                                if(value.Length == 0 || obj != null)
+                                {
+                                    if(key.EndsWith("1"))
+                                        instantColorPick1 = obj;
+                                    else
+                                        instantColorPick2 = obj;
+                                }
+                                else
+                                    Log.Error("Invalid " + key + " value: " + value);
+                                continue;
+                            }
+                        case "replacecolormode-input1":
+                        case "replacecolormode-input2":
+                        case "replacemodeinput1": // backwards compatibility
+                        case "replacemodeinput2": // backwards compatibility
+                            {
+                                var obj = ControlCombination.CreateFrom(value, true);
+                                if(value.Length == 0 || obj != null)
+                                {
+                                    if(key.EndsWith("1"))
+                                        replaceColorMode1 = obj;
+                                    else
+                                        replaceColorMode2 = obj;
+                                }
+                                else
+                                    Log.Error("Invalid " + key + " value: " + value);
+                                continue;
+                            }
                     }
                 }
 
@@ -241,7 +299,7 @@ namespace Digi.PaintGun
             str.Append("SprayParticles=").Append(sprayParticles).AppendLine(comments ? " // toggles the spray particles. Default: true" : "");
             str.Append("SpraySoundVolume=").Append(spraySoundVolume).AppendLine(comments ? " // paint gun spraying sound volume. Default: 0.8" : "");
             str.Append("SelectColorZigZag=").Append(selectColorZigZag).AppendLine(comments ? " // type of scrolling through colors in the palette, false is each row at a time, true is in zig-zag. Default: false" : "");
-            str.Append("HidePaletteWithHUD=").Append(hidePaletteWithHUD).AppendLine(comments ? " // wether to hide the color palette along with the HUD. Set to false to always show the color palette regardless if HUD is visible or not. Default: true" : "");
+            str.Append("HidePaletteWithHUD=").Append(hidePaletteWithHUD).AppendLine(comments ? " // wether to hide the color palette and aim info along with the HUD. Set to false to always show regardless of the HUD being visible or not. Default: true" : "");
             str.Append("PaletteScreenPos=").Append(Math.Round(paletteScreenPos.X, 5)).Append(", ").Append(Math.Round(paletteScreenPos.Y, 5)).AppendLine(comments ? " // color palette screen position in X and Y coordinates where 0,0 is the screen center. Positive values are right and up and negative ones are opposite of that. Default: 0.4345, -0.691" : "");
             str.Append("PaletteScale=").Append(Math.Round(paletteScale, 5)).AppendLine(comments ? " // color palette overall scale. Default: 0.5" : "");
             str.Append("PaletteBackgroundOpacity=").Append(paletteBackgroundOpacity < 0 ? "HUD" : Math.Round(paletteBackgroundOpacity, 5).ToString()).AppendLine(comments ? " // Palette's background opacity percent scale (0 to 1 value) or set to HUD to use the game's HUD opacity. Default: HUD" : "");
@@ -253,8 +311,17 @@ namespace Digi.PaintGun
                 str.AppendLine("// Separate multiple keys/buttons/controls with spaces. For gamepad add " + InputHandler.GAMEPAD_PREFIX + " prefix, for mouse add " + InputHandler.MOUSE_PREFIX + " prefix and for game controls add " + InputHandler.CONTROL_PREFIX + " prefix.");
                 str.AppendLine("// All keys, mouse buttons, gamepad buttons/axes and control names are at the bottom of this file.");
             }
-            str.Append("PickColorInput1=").Append(pickColor1 == null ? "" : pickColor1.GetStringCombination()).AppendLine(comments ? " // Default: shift c.landinggear" : "");
-            str.Append("PickColorInput2=").Append(pickColor2 == null ? "" : pickColor2.GetStringCombination()).AppendLine(comments ? " // Default: g.lb g.rb" : "");
+            str.Append("PickColorMode-input1=").Append(colorPickMode1?.GetStringCombination() ?? "").AppendLine(comments ? " // Default: " + (default_colorPickMode1?.GetStringCombination() ?? "") : "");
+            str.Append("PickColorMode-input2=").Append(colorPickMode2?.GetStringCombination() ?? "").AppendLine(comments ? " // Default: " + (default_colorPickMode2?.GetStringCombination() ?? "") : "");
+
+            if(comments)
+            {
+                str.AppendLine();
+                str.AppendLine("// Key/mouse/gamepad combination to instantly get the aimed block/player's color into the selected slot.");
+                str.AppendLine("// Same input rules as above.");
+            }
+            str.Append("InstantPickColor-input1=").Append(instantColorPick1?.GetStringCombination() ?? "").AppendLine(comments ? " // Default: " + (default_instantColorPick1?.GetStringCombination() ?? "") : "");
+            str.Append("InstantPickColor-input2=").Append(instantColorPick2?.GetStringCombination() ?? "").AppendLine(comments ? " // Default: " + (default_instantColorPick2?.GetStringCombination() ?? "") : "");
 
             if(comments)
             {
@@ -262,8 +329,8 @@ namespace Digi.PaintGun
                 str.AppendLine("// Key/mouse/gamepad combination to toggle the replace color mode, which only works in creative.");
                 str.AppendLine("// Same input rules as above.");
             }
-            str.Append("ReplaceModeInput1=").Append(replaceMode1 == null ? "" : replaceMode1.GetStringCombination()).AppendLine(comments ? " // Default: shift c.cubesizemode" : "");
-            str.Append("ReplaceModeInput2=").Append(replaceMode2 == null ? "" : replaceMode2.GetStringCombination()).AppendLine(comments ? " // Default: " : "");
+            str.Append("ReplaceColorMode-input1=").Append(replaceColorMode1?.GetStringCombination() ?? "").AppendLine(comments ? " // Default: " + (default_replaceColorMode1?.GetStringCombination() ?? "") : "");
+            str.Append("ReplaceColorMode-input2=").Append(replaceColorMode2?.GetStringCombination() ?? "").AppendLine(comments ? " // Default: " + (default_replaceColorMode2?.GetStringCombination() ?? "") : "");
 
             if(comments)
             {

@@ -1,42 +1,32 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using Sandbox.Definitions;
-using Sandbox.Game;
-using Sandbox.Game.Entities;
-using Sandbox.ModAPI;
-using VRage;
-using VRage.Game;
-using VRage.Game.Components;
-using VRage.Game.Entity;
-using VRage.Game.ModAPI;
-using VRage.Input;
+using ProtoBuf;
 using VRage.ModAPI;
-using VRage.Utils;
 using VRageMath;
 
 namespace Digi.PaintGun
 {
     public class PlayerColorData
     {
-        public ulong steamId;
-        public List<Vector3> colors;
-        public int selectedSlot = 0;
+        public ulong SteamId;
+        public List<Vector3> Colors;
+        public int SelectedSlot = 0;
 
         public PlayerColorData(ulong steamId, List<Vector3> colors)
         {
-            this.steamId = steamId;
-            this.colors = colors;
+            this.SteamId = steamId;
+            this.Colors = colors;
         }
     }
 
     public enum PacketAction
     {
-        AMMO_REMOVE = 0,
-        AMMO_ADD,
+        PAINT_BLOCK = 0,
+        CONSUME_AMMO,
+        GUN_FIRING_ON,
+        GUN_FIRING_OFF,
         COLOR_PICK_ON,
         COLOR_PICK_OFF,
-        PAINT_BLOCK,
         BLOCK_REPLACE_COLOR,
         SELECTED_COLOR_SLOT,
         SET_COLOR,
@@ -54,16 +44,79 @@ namespace Digi.PaintGun
         Z = 4
     }
 
+    [ProtoContract(UseProtoMembersOnly = true)]
+    public class PacketData
+    {
+        [ProtoMember]
+        public PacketAction Type = PacketAction.PAINT_BLOCK;
+
+        [ProtoMember]
+        public ulong SteamId = 0;
+
+        [ProtoMember]
+        public long EntityId = 0;
+
+        [ProtoMember]
+        public uint PackedColor = 0;
+
+        [ProtoMember]
+        public uint PackedColor2 = 0;
+
+        [ProtoMember]
+        public byte Slot = 0;
+
+        [ProtoMember]
+        public OddAxis OddAxis = OddAxis.NONE;
+
+        [ProtoMember]
+        public bool UseGridSystem = false;
+
+        [ProtoMember]
+        public Vector3I? GridPosition = null;
+
+        [ProtoMember]
+        public Vector3I? MirrorPlanes = null;
+
+        [ProtoMember]
+        public uint[] PackedColors = null;
+
+        public PacketData() { } // empty ctor is required for deserialization
+
+        public override string ToString()
+        {
+            return $"Type={Type}\n" +
+                $"SteamId={SteamId}\n" +
+                $"EntityId={EntityId}\n" +
+                $"PackedColor={PackedColor}\n" +
+                $"Slot={Slot}\n" +
+                $"OddAxis={OddAxis}\n" +
+                $"GridPosition={(GridPosition.HasValue ? GridPosition.Value.ToString() : "NULL")}\n" +
+                $"MirrorPlanes={(MirrorPlanes.HasValue ? MirrorPlanes.Value.ToString() : "NULL")}\n" +
+                $"PackedColors={(PackedColors != null ? string.Join(",", PackedColors) : "NULL")}";
+        }
+    }
+
     public class Particle
     {
-        public Color color;
-        public Vector3 relativePosition;
-        public Vector3 velocity;
-        public Vector3 playerVelocity;
-        public short life;
-        public float radius;
-        public float angle;
+        public Color Color;
+        public Vector3 RelativePosition;
+        public Vector3 VelocityPerTick;
+        public short Life;
+        public float Radius;
+        public float Angle;
 
         public Particle() { }
+    }
+
+    public struct DetectionInfo
+    {
+        public readonly IMyEntity Entity;
+        public readonly Vector3D DetectionPoint;
+
+        public DetectionInfo(IMyEntity entity, Vector3D detectionPoint)
+        {
+            Entity = entity;
+            DetectionPoint = detectionPoint;
+        }
     }
 }

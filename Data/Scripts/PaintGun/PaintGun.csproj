@@ -105,11 +105,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DataObjects.cs" />
+    <Compile Include="Extensions.cs" />
     <Compile Include="InputHandler.cs" />
     <Compile Include="Log.cs" />
+    <Compile Include="PaintGunMod-Fields.cs" />
+    <Compile Include="PaintGunMod-Sync.cs" />
+    <Compile Include="PaintGunMod-Utils.cs" />
     <Compile Include="PaintGunMod.cs" />
     <Compile Include="PaintGunItem.cs" />
     <Compile Include="Settings.cs" />
+    <Compile Include="TextAPIv2.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
