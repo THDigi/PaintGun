@@ -340,13 +340,13 @@ namespace Digi.PaintGun
 
         public override void HandleInput()
         {
-            if(!init || MyParticlesManager.Paused)
+            if(!isPlayer || MyParticlesManager.Paused)
                 return;
 
             try
             {
                 // check selected slot and send updates to server
-                if(isPlayer && tick % 10 == 0)
+                if(tick % 10 == 0)
                 {
                     if(localColorData == null && !playerColorData.TryGetValue(MyAPIGateway.Multiplayer.MyId, out localColorData))
                     {
@@ -360,17 +360,18 @@ namespace Digi.PaintGun
                     }
                 }
 
+                // sync selected slot when inside the color picker menu
+                if(MyAPIGateway.Gui.IsCursorVisible && MyAPIGateway.Gui.ActiveGamePlayScreen == "ColorPick")
+                {
+                    localColorData.SelectedSlot = MyAPIGateway.Session.Player.SelectedBuildColorSlot;
+                    SetToolColor(localColorData.Colors[localColorData.SelectedSlot]);
+                }
+
                 if(localHeldTool != null)
                 {
                     bool inputReadable = InputHandler.IsInputReadable();
 
-                    // sync selected slot when inside the color picker menu
-                    if(MyAPIGateway.Gui.IsCursorVisible && MyAPIGateway.Gui.ActiveGamePlayScreen == "ColorPick")
-                    {
-                        localColorData.SelectedSlot = MyAPIGateway.Session.Player.SelectedBuildColorSlot;
-                        SetToolColor(localColorData.Colors[localColorData.SelectedSlot]);
-                    }
-                    else if(inputReadable)
+                    if(inputReadable)
                     {
                         if(symmetryInputAvailable && MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.USE_SYMMETRY))
                         {
