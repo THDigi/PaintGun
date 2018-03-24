@@ -932,27 +932,16 @@ namespace Digi.PaintGun
                             line.Icons[0] = (targetCharacter ? @"Textures\GUI\Icons\buttons\Character.dds" : @"Textures\GUI\Icons\Fake.dds");
                             blockInfoLines[i] = line;
 
-                            //blockInfoLines[--i].ComponentName = "  " + ColorMaskToString(targetColor);
-
                             line = blockInfoLines[--i];
                             line.ComponentName = "Paint: " + ammo + "\n  " + ColorMaskToString(paintColor);
                             line.Icons = line.Icons ?? new string[1];
                             line.Icons[0] = ModContext.ModPath + @"\Textures\Icons\PaintGunMag.dds";
                             blockInfoLines[i] = line;
 
-                            //blockInfoLines[--i].ComponentName = "  " + ColorMaskToString(paintColor);
-
                             if(blockInfoStatus[1] != null)
-                            {
                                 blockInfoLines[--i].ComponentName = blockInfoStatus[1];
-                                blockInfoLines[i].TotalCount = 1;
-                                blockInfoLines[i].MountedCount = 1;
-                            }
                             else
-                            {
                                 blockInfoLines[--i].ComponentName = "\nKeys & commands: /pg help";
-                                blockInfoLines[i].TotalCount = 1;
-                            }
                         }
                     }
                     #endregion
