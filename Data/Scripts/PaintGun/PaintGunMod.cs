@@ -651,24 +651,6 @@ namespace Digi.PaintGun
                             }
                         }
                     }
-
-                    if(selectedCharacter != null)
-                    {
-                        if(selectedCharacter.MarkedForClose || selectedCharacter.Closed)
-                        {
-                            selectedCharacter = null;
-                            selectedPlayer = null;
-                        }
-                        else if(selectedCharacter.Visible)
-                        {
-                            var matrix = selectedCharacter.WorldMatrix;
-                            var box = (BoundingBoxD)selectedCharacter.LocalAABB;
-                            var color = Color.Green;
-                            var worldToLocal = selectedCharacter.WorldMatrixInvScaled;
-
-                            MySimpleObjectDraw.DrawAttachedTransparentBox(ref matrix, ref box, ref color, selectedCharacter.Render.GetRenderObjectID(), ref worldToLocal, MySimpleObjectRasterizer.Wireframe, 1, 0.05f, null, MATERIAL_GIZMIDRAWLINE, false);
-                        }
-                    }
                 }
             }
             catch(Exception e)
@@ -772,6 +754,25 @@ namespace Digi.PaintGun
                     for(int i = 0; i < toolDrawCount; ++i)
                     {
                         ToolDraw[i].Draw();
+                    }
+                }
+
+                if(selectedPlayer != null)
+                {
+                    var selectedCharacter = selectedPlayer.Character;
+
+                    if(selectedCharacter == null || selectedCharacter.MarkedForClose || selectedCharacter.Closed)
+                    {
+                        selectedPlayer = null;
+                    }
+                    else if(selectedCharacter.Visible)
+                    {
+                        var color = Color.Green;
+                        var matrix = selectedCharacter.WorldMatrix;
+                        var box = (BoundingBoxD)selectedCharacter.LocalAABB;
+                        var worldToLocal = selectedCharacter.WorldMatrixInvScaled;
+
+                        MySimpleObjectDraw.DrawAttachedTransparentBox(ref matrix, ref box, ref color, selectedCharacter.Render.GetRenderObjectID(), ref worldToLocal, MySimpleObjectRasterizer.Wireframe, 1, 0.05f, null, MATERIAL_GIZMIDRAWLINE, false);
                     }
                 }
 
@@ -905,7 +906,7 @@ namespace Digi.PaintGun
                                 if(prevSlimBlock != selectedSlimBlock)
                                 {
                                     prevSlimBlock = selectedSlimBlock;
-                                    selectedBlockBuiltBy = selectedSlimBlock.GetObjectBuilder().BuiltBy;
+                                    selectedBlockBuiltBy = selectedSlimBlock.GetObjectBuilder().BuiltBy; // HACK using objectbuilder for built by because there's no other way to get it.
                                 }
 
                                 info.BlockBuiltBy = selectedBlockBuiltBy;
@@ -1045,95 +1046,56 @@ namespace Digi.PaintGun
                 var character = MyAPIGateway.Session.Player.Character;
 
                 selectedGrid = null;
-                selectedCharacter = null;
                 selectedPlayer = null;
                 selectedSlimBlock = null;
                 selectedInvalid = false;
                 symmetryInputAvailable = false;
 
-                IMyCharacter targetCharacter;
+                IMyPlayer targetPlayer;
                 IMyCubeGrid targetGrid;
                 IMySlimBlock targetBlock;
 
-                GetTarget(character, out targetGrid, out targetBlock, out targetCharacter);
+                GetTarget(character, out targetGrid, out targetBlock, out targetPlayer);
 
-                // DEBUG TESTING aim to paint subpart
-                //{
-                //    if(MyAPIGateway.Input.IsGameControlPressed(MyControlsSpace.SECONDARY_TOOL_ACTION))
-                //    {
-                //        MyEntitySubpart targetSubpart = null;
-                //
-                //        // TODO find non-physical subparts as well as physical ones
-                //
-                //        if(targetSubpart != null)
-                //        {
-                //            MyAPIGateway.Utilities.ShowNotification($"targetSubpart={targetSubpart}", 160);
-                //
-                //            if(MyAPIGateway.Input.IsGameControlPressed(MyControlsSpace.PRIMARY_TOOL_ACTION))
-                //            {
-                //                targetSubpart.Render.ColorMaskHsv = GetBuildColorMask();
-                //                MyAPIGateway.Utilities.ShowNotification("Painted!", 1000);
-                //            }
-                //        }
-                //
-                //        return false;
-                //    }
-                //}
-
-                if(targetCharacter != null)
+                if(colorPickMode && targetPlayer != null)
                 {
-                    players.Clear();
-                    selectedCharacter = targetCharacter; // temporarily assigning to use in lambda
-                    MyAPIGateway.Players.GetPlayers(players, p => p.Character == selectedCharacter); // this is not allocating because selectedCharacter is a field
-                    selectedCharacter = null; // will assign later if valid
-
-                    if(players.Count == 0)
-                        return false;
-
-                    var targetPlayer = players[0];
-                    players.Clear();
-
                     if(!playerColorData.ContainsKey(targetPlayer.SteamUserId))
                         return false;
 
-                    var cd = playerColorData[selectedPlayer.SteamUserId];
+                    var cd = playerColorData[targetPlayer.SteamUserId];
                     var targetColorMask = cd.Colors[cd.SelectedSlot];
                     selectedPlayerColorMask = targetColorMask;
-                    selectedCharacter = targetCharacter;
                     selectedPlayer = targetPlayer;
 
-                    if(colorPickMode)
+                    if(trigger)
                     {
-                        if(trigger)
+                        SendToServer_ColorPickMode(false);
+
+                        if(SendToServer_SetColor((byte)localColorData.SelectedSlot, targetColorMask, true))
                         {
-                            SendToServer_ColorPickMode(false);
+                            PlaySound(SOUND_HUD_MOUSE_CLICK, 0.25f);
 
-                            if(SendToServer_SetColor((byte)localColorData.SelectedSlot, targetColorMask, true))
-                            {
-                                PlaySound(SOUND_HUD_MOUSE_CLICK, 0.25f);
-
-                                ShowNotification(0, $"Slot {localColorData.SelectedSlot + 1} set to {ColorMaskToString(targetColorMask)}", MyFontEnum.White, 3000);
-                            }
-                            else
-                            {
-                                PlaySound(SOUND_HUD_UNABLE, 0.25f);
-                            }
+                            ShowNotification(0, $"Slot {localColorData.SelectedSlot + 1} set to {ColorMaskToString(targetColorMask)}", MyFontEnum.White, 3000);
                         }
                         else
                         {
-                            if(!ColorMaskEquals(targetColorMask, prevColorMaskPreview))
-                            {
-                                prevColorMaskPreview = targetColorMask;
-
-                                SetToolColor(targetColorMask);
-
-                                if(settings.extraSounds)
-                                    PlaySound(SOUND_HUD_ITEM, 0.75f);
-                            }
-
-                            SetGUIToolStatus(0, "Click to get color from player.");
-                            SetGUIToolStatus(1, null);
+                            PlaySound(SOUND_HUD_UNABLE, 0.25f);
                         }
+                    }
+                    else
+                    {
+                        if(!ColorMaskEquals(targetColorMask, prevColorMaskPreview))
+                        {
+                            prevColorMaskPreview = targetColorMask;
+
+                            SetToolColor(targetColorMask);
+
+                            if(settings.extraSounds)
+                                PlaySound(SOUND_HUD_ITEM, 0.75f);
+                        }
+
+                        SetGUIToolStatus(0, "Click to get color from player.");
+                        SetGUIToolStatus(1, null);
                     }
 
                     return false;
@@ -1206,154 +1168,56 @@ namespace Digi.PaintGun
             return false;
         }
 
-        private void GetTarget(IMyCharacter character, out IMyCubeGrid targetGrid, out IMySlimBlock targetBlock, out IMyCharacter targetCharacter)
+        private void GetTarget(IMyCharacter character, out IMyCubeGrid targetGrid, out IMySlimBlock targetBlock, out IMyPlayer targetPlayer)
         {
-            // HACK copied functionality from MyCasterComponent (what welders/grinders use)
-            // TODO optimize?
-
             targetGrid = null;
             targetBlock = null;
-            targetCharacter = null;
+            targetPlayer = null;
 
-            hits.Clear();
-            entitiesInRange.Clear();
-            raycastResults.Clear();
+            const double RAY_START = 1.6; // a forward offset to allow penetrating blocks by getting closer
+            const double RAY_LENGTH = 5;
 
-            const float MAX_DISTANCE = 5;
-            var view = character.GetHeadMatrix(false, true);
-            var rayDir = view.Forward;
-            var rayFrom = view.Translation;
-            var rayTo = view.Translation + rayDir * MAX_DISTANCE;
+            var head = character.GetHeadMatrix(false, true);
+            var rayFrom = head.Translation + head.Forward * RAY_START;
+            var rayTo = head.Translation + head.Forward * (RAY_START + RAY_LENGTH);
 
-            MyAPIGateway.Physics.CastRay(rayFrom, rayTo, hits, CollisionLayers.ObjectDetectionCollisionLayer);
-
-            foreach(var hit in hits)
+            if(colorPickMode)
             {
-                var ent = hit.HitEntity;
+                players.Clear();
+                MyAPIGateway.Players.GetPlayers(players);
 
-                if(ent == null)
-                    continue;
+                var ray = new RayD(rayFrom, head.Forward);
 
-                Vector3D hitPos = hit.Position;
-                ent = ent.GetTopMostParent(null);
-                var grid = ent as MyCubeGrid;
-
-                if(grid != null)
+                foreach(var p in players)
                 {
-                    if(grid.GridSizeEnum == MyCubeSize.Large)
-                        hitPos += hit.Normal * -0.08f;
-                    else
-                        hitPos += hit.Normal * -0.02f;
-                }
-
-                DetectionInfo info;
-                if(entitiesInRange.TryGetValue(ent.EntityId, out info))
-                {
-                    float num = Vector3.DistanceSquared(info.DetectionPoint, rayFrom);
-                    float num2 = Vector3.DistanceSquared(hitPos, rayFrom);
-                    if(num > num2)
-                    {
-                        entitiesInRange[ent.EntityId] = new DetectionInfo(ent, hitPos);
-                    }
-                }
-                else
-                {
-                    entitiesInRange[ent.EntityId] = new DetectionInfo(ent, hitPos);
-                }
-            }
-
-            // also look for blocks that have physics disabled... which currently are only lights
-            LineD lineD = new LineD(rayFrom, rayTo);
-            using(raycastResults.GetClearToken<MyLineSegmentOverlapResult<MyEntity>>())
-            {
-                MyGamePruningStructure.GetAllEntitiesInRay(ref lineD, raycastResults, MyEntityQueryType.Both);
-
-                foreach(MyLineSegmentOverlapResult<MyEntity> res in raycastResults)
-                {
-                    if(res.Element == null)
+                    if(p.Character == null)
                         continue;
 
-                    var parent = res.Element.GetTopMostParent(null);
-                    var block = res.Element as IMyCubeBlock;
+                    double? dist;
+                    p.Character.WorldAABB.Intersects(ref ray, out dist);
 
-                    if(block != null)
-                    {
-                        // HACK shortcut for !block.SlimBlock.HasPhysics
-                        var lightBlockDef = block.SlimBlock.BlockDefinition as MyLightingBlockDefinition;
+                    if(!dist.HasValue || dist.Value > RAY_LENGTH)
+                        continue;
 
-                        if(lightBlockDef == null)
-                            continue;
-
-                        MatrixD wmInv = block.PositionComp.WorldMatrixNormalizedInv;
-                        Vector3D localFrom = Vector3D.Transform(rayFrom, ref wmInv);
-                        Vector3D localTo = Vector3D.Transform(rayTo, ref wmInv);
-
-                        Ray ray = new Ray(localFrom, Vector3.Normalize(localTo - localFrom));
-                        float? num3 = ray.Intersects(block.PositionComp.LocalAABB);
-                        float? num4 = num3;
-                        num3 = (num4.HasValue ? new float?(num4.GetValueOrDefault() + 0.01f) : null);
-
-                        if(num3.HasValue)
-                        {
-                            if(num3.GetValueOrDefault() <= MAX_DISTANCE && num3.HasValue)
-                            {
-                                var detectionPoint = rayFrom + rayDir * num3.Value;
-
-                                DetectionInfo info;
-                                if(entitiesInRange.TryGetValue(parent.EntityId, out info))
-                                {
-                                    if(Vector3.DistanceSquared(info.DetectionPoint, rayFrom) > Vector3.DistanceSquared(detectionPoint, rayFrom))
-                                    {
-                                        entitiesInRange[parent.EntityId] = new DetectionInfo(parent, detectionPoint);
-                                    }
-                                }
-                                else
-                                {
-                                    entitiesInRange[parent.EntityId] = new DetectionInfo(parent, detectionPoint);
-                                }
-                            }
-                        }
-                    }
+                    targetPlayer = p;
+                    break;
                 }
+
+                players.Clear();
+
+                if(targetPlayer != null)
+                    return;
             }
 
-            if(entitiesInRange.Count > 0)
+            targetGrid = MyAPIGateway.CubeBuilder.FindClosestGrid();
+
+            if(targetGrid != null)
             {
-                float prevDistSq = 3.40282347E+38f;
-                IMyEntity lastDetectedEntity = null;
-                Vector3D hitPosition = Vector3D.Zero;
+                var blockPos = targetGrid.RayCastBlocks(rayFrom, rayTo);
 
-                foreach(var info in entitiesInRange.Values)
-                {
-                    float distSq = (float)Vector3D.DistanceSquared(info.DetectionPoint, rayFrom);
-
-                    if(info.Entity.Physics != null && info.Entity.Physics.Enabled && distSq < prevDistSq)
-                    {
-                        lastDetectedEntity = info.Entity;
-                        hitPosition = info.DetectionPoint;
-                        prevDistSq = distSq;
-                    }
-                }
-
-                targetGrid = lastDetectedEntity as MyCubeGrid;
-
-                if(targetGrid != null)
-                {
-                    MatrixD gridWMInv = targetGrid.PositionComp.WorldMatrixNormalizedInv;
-                    Vector3D value = Vector3D.Transform(hitPosition, gridWMInv);
-                    Vector3I pos;
-                    targetGrid.FixTargetCube(out pos, value / (double)targetGrid.GridSize);
-                    targetBlock = targetGrid.GetCubeBlock(pos);
-                }
-                else
-                {
-                    targetCharacter = lastDetectedEntity as IMyCharacter;
-                }
+                if(blockPos.HasValue)
+                    targetBlock = targetGrid.GetCubeBlock(blockPos.Value);
             }
-
-            hits.Clear();
-            entitiesInRange.Clear();
-            raycastResults.Clear();
         }
 
         private bool IsBlockValid(IMySlimBlock block, Vector3 colorMask, bool trigger, out string blockName, out Vector3 blockColor)
@@ -1673,7 +1537,6 @@ namespace Digi.PaintGun
             localHeldTool = null;
             symmetryInputAvailable = false;
             selectedSlimBlock = null;
-            selectedCharacter = null;
             selectedPlayer = null;
             selectedInvalid = false;
 

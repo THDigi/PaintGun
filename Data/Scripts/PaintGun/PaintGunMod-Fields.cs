@@ -57,7 +57,6 @@ namespace Digi.PaintGun
         public string symmetryStatus = null;
         public MyCubeGrid selectedGrid = null;
         public IMySlimBlock selectedSlimBlock = null;
-        public IMyCharacter selectedCharacter = null;
         public IMyPlayer selectedPlayer = null;
         public Vector3 selectedPlayerColorMask;
         public bool selectedInvalid = false;
@@ -143,10 +142,6 @@ namespace Digi.PaintGun
         private const BlendTypeEnum BLOCKINFO_BLEND_TYPE = BlendTypeEnum.SDR;
 
         public readonly List<IMyPlayer> players = new List<IMyPlayer>();
-        private readonly List<IHitInfo> hits = new List<IHitInfo>();
-        private readonly Dictionary<long, DetectionInfo> entitiesInRange = new Dictionary<long, DetectionInfo>();
-        private readonly List<MyLineSegmentOverlapResult<MyEntity>> raycastResults = new List<MyLineSegmentOverlapResult<MyEntity>>();
-        private readonly HashSet<IMyEntity> ents = new HashSet<IMyEntity>();
         private readonly StringBuilder assigned = new StringBuilder();
         private readonly HashSet<MyCubeGrid> gridsInSystemCache = new HashSet<MyCubeGrid>();
     }
