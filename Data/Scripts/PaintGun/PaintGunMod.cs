@@ -1190,7 +1190,7 @@ namespace Digi.PaintGun
 
                 foreach(var p in players)
                 {
-                    if(p.Character == null)
+                    if(p.Character == null || p.Character == character)
                         continue;
 
                     double? dist;
