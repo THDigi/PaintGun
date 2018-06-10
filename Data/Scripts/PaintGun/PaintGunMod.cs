@@ -747,6 +747,8 @@ namespace Digi.PaintGun
                 if(!init || !isPlayer)
                     return;
 
+                viewProjInvCompute = true;
+
                 int toolDrawCount = ToolDraw.Count;
 
                 if(toolDrawCount > 0)
@@ -784,9 +786,7 @@ namespace Digi.PaintGun
 
                     var cam = MyAPIGateway.Session.Camera;
                     var camMatrix = cam.WorldMatrix;
-                    UpdateCameraViewProjInvMatrix();
-
-                    var scaleFOV = (float)Math.Tan(cam.FovWithZoom / 2);
+                    var scaleFOV = (float)Math.Tan(cam.FovWithZoom * 0.5);
                     scaleFOV *= settings.paletteScale;
 
                     #region Draw HUD palette
@@ -1056,6 +1056,184 @@ namespace Digi.PaintGun
                 IMySlimBlock targetBlock;
 
                 GetTarget(character, out targetGrid, out targetBlock, out targetPlayer);
+
+                // DEBUG TESTING aim to paint subpart
+#if false
+                {
+                    if(MyAPIGateway.Input.IsGameControlPressed(MyControlsSpace.SECONDARY_TOOL_ACTION))
+                    {
+                        MyEntitySubpart targetSubpart = null;
+
+
+                        const float MAX_DISTANCE = 5;
+                        var view = character.GetHeadMatrix(false, true);
+                        var rayDir = view.Forward;
+                        var rayFrom = view.Translation;
+                        var rayTo = view.Translation + rayDir * MAX_DISTANCE;
+
+                        entitiesInRange.Clear();
+
+                        LineD lineD = new LineD(rayFrom, rayTo);
+                        using(raycastResults.GetClearToken<MyLineSegmentOverlapResult<MyEntity>>())
+                        {
+                            MyGamePruningStructure.GetAllEntitiesInRay(ref lineD, raycastResults, MyEntityQueryType.Both);
+
+                            foreach(MyLineSegmentOverlapResult<MyEntity> res in raycastResults)
+                            {
+                                if(res.Element == null)
+                                    continue;
+
+                                var parent = res.Element.GetTopMostParent(null);
+                                var block = res.Element as IMyCubeBlock;
+
+                                if(block != null)
+                                {
+                                    MatrixD wmInv = block.PositionComp.WorldMatrixNormalizedInv;
+                                    Vector3D localFrom = Vector3D.Transform(rayFrom, ref wmInv);
+                                    Vector3D localTo = Vector3D.Transform(rayTo, ref wmInv);
+
+                                    Ray ray = new Ray(localFrom, Vector3.Normalize(localTo - localFrom));
+                                    float? num3 = ray.Intersects(block.PositionComp.LocalAABB);
+                                    float? num4 = num3;
+                                    num3 = (num4.HasValue ? new float?(num4.GetValueOrDefault() + 0.01f) : null);
+
+                                    if(num3.HasValue)
+                                    {
+                                        if(num3.GetValueOrDefault() <= MAX_DISTANCE && num3.HasValue)
+                                        {
+                                            var detectionPoint = rayFrom + rayDir * num3.Value;
+
+                                            DetectionInfo info;
+                                            if(entitiesInRange.TryGetValue(parent.EntityId, out info))
+                                            {
+                                                if(Vector3.DistanceSquared(info.DetectionPoint, rayFrom) > Vector3.DistanceSquared(detectionPoint, rayFrom))
+                                                {
+                                                    entitiesInRange[parent.EntityId] = new DetectionInfo(parent, detectionPoint);
+                                                }
+                                            }
+                                            else
+                                            {
+                                                entitiesInRange[parent.EntityId] = new DetectionInfo(parent, detectionPoint);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            raycastResults.Clear();
+                        }
+
+
+                        if(entitiesInRange.Count > 0)
+                        {
+                            float prevDistSq = 3.40282347E+38f;
+                            IMyEntity lastDetectedEntity = null;
+                            Vector3D hitPosition = Vector3D.Zero;
+
+                            foreach(var info in entitiesInRange.Values)
+                            {
+                                float distSq = (float)Vector3D.DistanceSquared(info.DetectionPoint, rayFrom);
+
+                                if(info.Entity.Physics != null && info.Entity.Physics.Enabled && distSq < prevDistSq)
+                                {
+                                    lastDetectedEntity = info.Entity;
+                                    hitPosition = info.DetectionPoint;
+                                    prevDistSq = distSq;
+                                }
+                            }
+
+                            entitiesInRange.Clear();
+
+                            targetGrid = lastDetectedEntity as MyCubeGrid;
+
+                            if(targetGrid != null)
+                            {
+                                MatrixD gridWMInv = targetGrid.PositionComp.WorldMatrixNormalizedInv;
+                                Vector3D value = Vector3D.Transform(hitPosition, gridWMInv);
+                                Vector3I pos;
+                                targetGrid.FixTargetCube(out pos, value / (double)targetGrid.GridSize);
+                                targetBlock = targetGrid.GetCubeBlock(pos);
+
+                                if(targetBlock?.FatBlock != null)
+                                {
+                                    var subparts = ((MyCubeBlock)targetBlock.FatBlock).Subparts;
+
+                                    foreach(var subpart in subparts.Values)
+                                    {
+                                        MatrixD wmInv = subpart.PositionComp.WorldMatrixNormalizedInv;
+                                        Vector3D localFrom = Vector3D.Transform(rayFrom, ref wmInv);
+                                        Vector3D localTo = Vector3D.Transform(rayTo, ref wmInv);
+
+                                        Ray ray = new Ray(localFrom, Vector3.Normalize(localTo - localFrom));
+                                        float? num3 = ray.Intersects(subpart.PositionComp.LocalAABB);
+                                        float? num4 = num3;
+                                        num3 = (num4.HasValue ? new float?(num4.GetValueOrDefault() + 0.01f) : null);
+
+                                        if(num3.HasValue)
+                                        {
+                                            if(num3.GetValueOrDefault() <= MAX_DISTANCE && num3.HasValue)
+                                            {
+                                                var detectionPoint = rayFrom + rayDir * num3.Value;
+
+                                                DetectionInfo info;
+                                                if(entitiesInRange.TryGetValue(subpart.EntityId, out info))
+                                                {
+                                                    if(Vector3.DistanceSquared(info.DetectionPoint, rayFrom) > Vector3.DistanceSquared(detectionPoint, rayFrom))
+                                                    {
+                                                        entitiesInRange[subpart.EntityId] = new DetectionInfo(subpart, detectionPoint);
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    entitiesInRange[subpart.EntityId] = new DetectionInfo(subpart, detectionPoint);
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    if(entitiesInRange.Count > 0)
+                                    {
+                                        prevDistSq = 3.40282347E+38f;
+                                        lastDetectedEntity = null;
+                                        hitPosition = Vector3D.Zero;
+
+                                        foreach(var info in entitiesInRange.Values)
+                                        {
+                                            float distSq = (float)Vector3D.DistanceSquared(info.DetectionPoint, rayFrom);
+
+                                            if(info.Entity.Physics != null && info.Entity.Physics.Enabled && distSq < prevDistSq)
+                                            {
+                                                lastDetectedEntity = info.Entity;
+                                                hitPosition = info.DetectionPoint;
+                                                prevDistSq = distSq;
+                                            }
+                                        }
+
+                                        entitiesInRange.Clear();
+
+                                        targetSubpart = lastDetectedEntity as MyEntitySubpart;
+                                    }
+                                }
+                            }
+                        }
+
+
+
+                        if(targetSubpart != null)
+                        {
+                            MyAPIGateway.Utilities.ShowNotification($"targetSubpart={targetSubpart}", 160);
+
+                            if(MyAPIGateway.Input.IsGameControlPressed(MyControlsSpace.PRIMARY_TOOL_ACTION))
+                            {
+                                targetSubpart.Render.ColorMaskHsv = GetBuildColorMask();
+                                MyAPIGateway.Utilities.ShowNotification("Painted!", 1000);
+                            }
+                        }
+
+                        return false;
+                    }
+                }
+#endif
 
                 if(colorPickMode && targetPlayer != null)
                 {

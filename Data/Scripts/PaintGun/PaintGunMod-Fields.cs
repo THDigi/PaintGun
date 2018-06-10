@@ -35,7 +35,8 @@ namespace Digi.PaintGun
         private HudAPIv2 textAPI;
         private HudAPIv2.HUDMessage titleObject;
         private HudAPIv2.HUDMessage textObject;
-        private MatrixD viewProjInv;
+        private bool viewProjInvCompute = true;
+        private MatrixD viewProjInvCache;
         private double aspectRatio;
         private bool textAPIvisible = false;
 

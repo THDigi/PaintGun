@@ -245,17 +245,36 @@ namespace Digi.PaintGun
             MySimpleObjectDraw.DrawTransparentBox(ref wm, ref localBB, ref color, MySimpleObjectRasterizer.Wireframe, 1, lineWidth, null, lineMaterial);
         }
 
-        void UpdateCameraViewProjInvMatrix()
+        MatrixD ViewProjectionInv
         {
-            var cam = MyAPIGateway.Session.Camera;
-            viewProjInv = MatrixD.Invert(cam.ViewMatrix * cam.ProjectionMatrix);
+            get
+            {
+                if(viewProjInvCompute)
+                {
+                    var cam = MyAPIGateway.Session.Camera;
+
+                    // HACK ProjectionMatrix needs recomputing because camera's m_fovSpring is set after ProjectionMatrix is computed, MyCamera.Update(float updateStepTime) and MyCamera.FovWithZoom
+                    var aspectRatio = cam.ViewportSize.X / cam.ViewportSize.Y;
+                    var safeNear = Math.Min(4f, cam.NearPlaneDistance); // MyCamera.GetSafeNear()
+                    var projectionMatrix = MatrixD.CreatePerspectiveFieldOfView(cam.FovWithZoom, aspectRatio, safeNear, cam.FarPlaneDistance);
+                    viewProjInvCache = MatrixD.Invert(cam.ViewMatrix * projectionMatrix);
+                    viewProjInvCompute = false;
+                }
+
+                return viewProjInvCache;
+            }
         }
 
         Vector3D HUDtoWorld(Vector2 hud)
         {
-            var vec4 = new Vector4D(hud.X, hud.Y, 0d, 1d);
-            Vector4D.Transform(ref vec4, ref viewProjInv, out vec4);
-            return new Vector3D((vec4.X / vec4.W), (vec4.Y / vec4.W), (vec4.Z / vec4.W));
+            // Vector4D.Transform(new Vector4D(hud.X, hud.Y, 0d, 1d), ref ViewProjectionInv, out ...) 
+
+            var matrix = ViewProjectionInv;
+            var x = hud.X * matrix.M11 + hud.Y * matrix.M21 + /* 0 * matrix.M31 + 1 * */ matrix.M41;
+            var y = hud.X * matrix.M12 + hud.Y * matrix.M22 + /* 0 * matrix.M32 + 1 * */ matrix.M42;
+            var z = hud.X * matrix.M13 + hud.Y * matrix.M23 + /* 0 * matrix.M33 + 1 * */ matrix.M43;
+            var w = hud.X * matrix.M14 + hud.Y * matrix.M24 + /* 0 * matrix.M34 + 1 * */ matrix.M44;
+            return new Vector3D(x / w, y / w, z / w);
         }
     }
 }
