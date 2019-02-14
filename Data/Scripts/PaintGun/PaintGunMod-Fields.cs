@@ -140,7 +140,8 @@ namespace Digi.PaintGun
         private readonly Color BLOCKINFO_LOWER_BG_COLOR = new Vector4(0.13333334f, 0.180392161f, 0.203921571f, 1f) * 0.9f;
         private readonly Color BLOCKINFO_BAR_BG_COLOR = new Vector4(0.266666681f, 0.3019608f, 0.3372549f, 0.9f);
         private readonly Color BLOCKINFO_BAR_COLOR = new Vector4(0.478431374f, 0.549019635f, 0.6039216f, 1f);
-        private const BlendTypeEnum BLOCKINFO_BLEND_TYPE = BlendTypeEnum.SDR;
+        private const BlendTypeEnum FOREGROUND_BLEND_TYPE = BlendTypeEnum.SDR;
+        private const BlendTypeEnum BACKGROUND_BLEND_TYPE = BlendTypeEnum.Standard;
 
         public readonly List<IMyPlayer> players = new List<IMyPlayer>();
         private readonly StringBuilder assigned = new StringBuilder();

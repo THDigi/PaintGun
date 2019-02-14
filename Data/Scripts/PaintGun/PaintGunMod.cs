@@ -367,7 +367,8 @@ namespace Digi.PaintGun
                     SetToolColor(localColorData.Colors[localColorData.SelectedSlot]);
                 }
 
-                if(localHeldTool != null)
+                // DEBUG TODO added controlled check but needs to get rid of the fake block UI if you're already selecting something...
+                if(localHeldTool != null && MyAPIGateway.Session.ControlledObject == MyAPIGateway.Session.Player.Character)
                 {
                     bool inputReadable = InputHandler.IsInputReadable();
 
@@ -794,7 +795,7 @@ namespace Digi.PaintGun
                         var worldPos = HUDtoWorld(new Vector2((float)settings.paletteScreenPos.X, (float)settings.paletteScreenPos.Y));
 
                         float squareWidth = 0.0014f * scaleFOV;
-                        float squareHeight = 0.0011f * scaleFOV;
+                        float squareHeight = 0.0012f * scaleFOV;
                         float selectedWidth = (squareWidth + (squareWidth / 7f));
                         float selectedHeight = (squareHeight + (squareHeight / 7f));
                         double spacingAdd = 0.0006 * scaleFOV;
@@ -815,15 +816,15 @@ namespace Digi.PaintGun
                                 pos += camMatrix.Left * (spacingWidth * MIDDLE_INDEX) + camMatrix.Down * spacingHeight;
 
                             if(i == localColorData.SelectedSlot)
-                                MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_SELECTED, Color.White, pos, camMatrix.Left, camMatrix.Up, selectedWidth, selectedHeight, Vector2.Zero, BLOCKINFO_BLEND_TYPE);
+                                MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_SELECTED, Color.White, pos, camMatrix.Left, camMatrix.Up, selectedWidth, selectedHeight, Vector2.Zero, FOREGROUND_BLEND_TYPE);
 
-                            MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_COLOR, c, pos, camMatrix.Left, camMatrix.Up, squareWidth, squareHeight, Vector2.Zero, BLOCKINFO_BLEND_TYPE);
+                            MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_COLOR, c, pos, camMatrix.Left, camMatrix.Up, squareWidth, squareHeight, Vector2.Zero, FOREGROUND_BLEND_TYPE);
 
                             pos += camMatrix.Right * spacingWidth;
                         }
 
                         var color = BLOCKINFO_TITLE_BG_COLOR * (settings.paletteBackgroundOpacity < 0 ? gameHUDBkOpacity : settings.paletteBackgroundOpacity);
-                        MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_BACKGROUND, color, worldPos, camMatrix.Left, camMatrix.Up, (float)(spacingWidth * BG_WIDTH_MUL), (float)(spacingHeight * BG_HEIGHT_MUL), Vector2.Zero, BLOCKINFO_BLEND_TYPE);
+                        MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_BACKGROUND, color, worldPos, camMatrix.Left, camMatrix.Up, (float)(spacingWidth * BG_WIDTH_MUL), (float)(spacingHeight * BG_HEIGHT_MUL), Vector2.Zero, BACKGROUND_BLEND_TYPE);
                     }
                     #endregion
 
@@ -853,8 +854,8 @@ namespace Digi.PaintGun
                             var titleBgPos = topPos + camMatrix.Down * titleBgHeight;
                             var lowerBgPos = topPos + camMatrix.Down * (titleBgHeight * 2 + lowerBgHeight);
 
-                            MyTransparentGeometry.AddBillboardOriented(MATERIAL_VANILLA_SQUARE, BLOCKINFO_TITLE_BG_COLOR, titleBgPos, camMatrix.Left, camMatrix.Up, worldSize.X, titleBgHeight, Vector2.Zero, BLOCKINFO_BLEND_TYPE);
-                            MyTransparentGeometry.AddBillboardOriented(MATERIAL_VANILLA_SQUARE, BLOCKINFO_LOWER_BG_COLOR, lowerBgPos, camMatrix.Left, camMatrix.Up, worldSize.X, lowerBgHeight, Vector2.Zero, BLOCKINFO_BLEND_TYPE);
+                            MyTransparentGeometry.AddBillboardOriented(MATERIAL_VANILLA_SQUARE, BLOCKINFO_TITLE_BG_COLOR, titleBgPos, camMatrix.Left, camMatrix.Up, worldSize.X, titleBgHeight, Vector2.Zero, BACKGROUND_BLEND_TYPE);
+                            MyTransparentGeometry.AddBillboardOriented(MATERIAL_VANILLA_SQUARE, BLOCKINFO_LOWER_BG_COLOR, lowerBgPos, camMatrix.Left, camMatrix.Up, worldSize.X, lowerBgHeight, Vector2.Zero, BACKGROUND_BLEND_TYPE);
 
                             var topLeft = topPos + camMatrix.Left * worldSize.X;
                             var blockIconPos = topLeft + camMatrix.Down * (BLOCKINFO_ICONS_OFFSET.Y * scaleFOV) + camMatrix.Left * (BLOCKINFO_ICONS_OFFSET.X * scaleFOV);
@@ -862,27 +863,28 @@ namespace Digi.PaintGun
                             var iconSize = BLOCKINFO_ICON_SIZE * scaleFOV;
 
                             if(targetCharacter)
-                                MyTransparentGeometry.AddBillboardOriented(MATERIAL_ICON_GENERIC_CHARACTER, ColorMaskToRGB(targetColor), blockIconPos, camMatrix.Left, camMatrix.Up, iconSize, iconSize, Vector2.Zero, BLOCKINFO_BLEND_TYPE);
+                                MyTransparentGeometry.AddBillboardOriented(MATERIAL_ICON_GENERIC_CHARACTER, ColorMaskToRGB(targetColor), blockIconPos, camMatrix.Left, camMatrix.Up, iconSize, iconSize, Vector2.Zero, FOREGROUND_BLEND_TYPE);
                             else
-                                MyTransparentGeometry.AddBillboardOriented(MATERIAL_ICON_GENERIC_BLOCK, ColorMaskToRGB(targetColor), blockIconPos, camMatrix.Left, camMatrix.Up, iconSize, iconSize, Vector2.Zero, BLOCKINFO_BLEND_TYPE);
+                                MyTransparentGeometry.AddBillboardOriented(MATERIAL_ICON_GENERIC_BLOCK, ColorMaskToRGB(targetColor), blockIconPos, camMatrix.Left, camMatrix.Up, iconSize, iconSize, Vector2.Zero, FOREGROUND_BLEND_TYPE);
 
-                            MyTransparentGeometry.AddBillboardOriented(MATERIAL_ICON_PAINT_AMMO, ColorMaskToRGB(paintColor), paintIconPos, camMatrix.Left, camMatrix.Up, iconSize, iconSize, Vector2.Zero, BLOCKINFO_BLEND_TYPE);
+                            MyTransparentGeometry.AddBillboardOriented(MATERIAL_ICON_PAINT_AMMO, ColorMaskToRGB(paintColor), paintIconPos, camMatrix.Left, camMatrix.Up, iconSize, iconSize, Vector2.Zero, FOREGROUND_BLEND_TYPE);
 
                             var progressBarPos = topLeft + camMatrix.Left * (BLOCKINFO_BAR_OFFSET_X * scaleFOV) + camMatrix.Down * (titleBgHeight * 2 + lowerBgHeight);
                             var progressBarWidth = BLOCKINFO_BAR_WIDTH * scaleFOV;
                             var progressBarHeight = lowerBgHeight * BLOCKINFO_BAR_HEIGHT_SCALE;
 
-                            MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_BACKGROUND, BLOCKINFO_BAR_BG_COLOR, progressBarPos, camMatrix.Left, camMatrix.Up, progressBarWidth, progressBarHeight, Vector2.Zero, BLOCKINFO_BLEND_TYPE);
+                            MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_BACKGROUND, BLOCKINFO_BAR_BG_COLOR, progressBarPos, camMatrix.Left, camMatrix.Up, progressBarWidth, progressBarHeight, Vector2.Zero, BACKGROUND_BLEND_TYPE);
 
                             var progress = ColorPercentFull(targetColor, paintColor);
 
                             progressBarPos += camMatrix.Down * (progressBarHeight * (1 - progress));
                             progressBarHeight *= progress;
 
-                            MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_COLOR, BLOCKINFO_BAR_COLOR, progressBarPos, camMatrix.Left, camMatrix.Up, progressBarWidth, progressBarHeight, Vector2.Zero, BLOCKINFO_BLEND_TYPE);
+                            MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_COLOR, BLOCKINFO_BAR_COLOR, progressBarPos, camMatrix.Left, camMatrix.Up, progressBarWidth, progressBarHeight, Vector2.Zero, FOREGROUND_BLEND_TYPE);
                         }
                         else // otherwise, use the game's block info, but it's limited, can't show the color
                         {
+                            // TODO this entire thing is broken due to recently added tool hints overwriting it
                             var targetColor = selectedSlimBlock.ColorMaskHSV;
                             var paintColor = localColorData.Colors[localColorData.SelectedSlot];
                             var info = Sandbox.Game.Gui.MyHud.BlockInfo;
@@ -968,10 +970,10 @@ namespace Digi.PaintGun
                 return;
 
             if(titleObject == null)
-                titleObject = new HudAPIv2.HUDMessage(new StringBuilder(), Vector2D.Zero, Scale: BLOCKINFO_TITLE_SCALE, HideHud: settings.hidePaletteWithHUD, Blend: BLOCKINFO_BLEND_TYPE);
+                titleObject = new HudAPIv2.HUDMessage(new StringBuilder(), Vector2D.Zero, Scale: BLOCKINFO_TITLE_SCALE, HideHud: settings.hidePaletteWithHUD, Blend: FOREGROUND_BLEND_TYPE);
 
             if(textObject == null)
-                textObject = new HudAPIv2.HUDMessage(new StringBuilder(), Vector2D.Zero, Scale: BLOCKINFO_TEXT_SCALE, HideHud: settings.hidePaletteWithHUD, Blend: BLOCKINFO_BLEND_TYPE);
+                textObject = new HudAPIv2.HUDMessage(new StringBuilder(), Vector2D.Zero, Scale: BLOCKINFO_TEXT_SCALE, HideHud: settings.hidePaletteWithHUD, Blend: FOREGROUND_BLEND_TYPE);
 
             bool targetCharacter = (colorPickMode && selectedPlayer != null);
             bool visible = (!MyAPIGateway.Gui.IsCursorVisible && localColorData != null && (targetCharacter || selectedSlimBlock != null));

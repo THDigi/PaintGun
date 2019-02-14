@@ -162,6 +162,17 @@
       <LightGlareSize>0</LightGlareSize>
       <LightIntensityLower>0</LightIntensityLower>
       <LightIntensityUpper>0</LightIntensityUpper>
+      
+      <!--
+      <ItemPositioning>TransformFromAnim</ItemPositioning>
+			<ItemPositioning3rd>TransformFromAnim</ItemPositioning3rd>
+			<ItemPositioningWalk>TransformFromAnim</ItemPositioningWalk>
+			<ItemPositioningWalk3rd>TransformFromAnim</ItemPositioningWalk3rd>
+			<ItemPositioningShoot>TransformFromAnim</ItemPositioningShoot>
+			<ItemPositioningShoot3rd>TransformFromAnim</ItemPositioningShoot3rd>
+			<ItemPositioningIronsight>TransformFromData</ItemPositioningIronsight>
+			<ItemPositioningIronsight3rd>TransformFromAnim</ItemPositioningIronsight3rd>
+      -->
     </HandItem>
   </HandItems>
 </Definitions>
