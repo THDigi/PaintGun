@@ -265,6 +265,10 @@ namespace Digi.PaintGun
             }
         }
 
+        /// <summary>
+        /// 2D HUD to 3D World transformation using the camera view projection inverted matrix.
+        /// <para>-1,-1 is bottom-left, 0,0 is center, 1,1 is top-right.</para>
+        /// </summary>
         Vector3D HUDtoWorld(Vector2 hud)
         {
             // Vector4D.Transform(new Vector4D(hud.X, hud.Y, 0d, 1d), ref ViewProjectionInv, out ...) 

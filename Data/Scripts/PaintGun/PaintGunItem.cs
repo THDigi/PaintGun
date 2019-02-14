@@ -99,9 +99,11 @@ namespace Digi.PaintGun
 
                 if(soundEmitter == null)
                 {
-                    soundEmitter = new MyEntity3DSoundEmitter((MyEntity)Entity);
-                    soundEmitter.CustomMaxDistance = 30f;
-                    soundEmitter.CustomVolume = mod.settings.spraySoundVolume;
+                    soundEmitter = new MyEntity3DSoundEmitter((MyEntity)Entity)
+                    {
+                        CustomMaxDistance = 30f,
+                        CustomVolume = mod.settings.spraySoundVolume
+                    };
                 }
             }
         }

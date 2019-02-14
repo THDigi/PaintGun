@@ -325,7 +325,6 @@ namespace Digi
                 {CONTROL_PREFIX+"lookaround", MyControlsSpace.LOOKAROUND},
                 {CONTROL_PREFIX+"cameramode", MyControlsSpace.CAMERA_MODE},
                 {CONTROL_PREFIX+"buildmenu", MyControlsSpace.BUILD_SCREEN},
-                {CONTROL_PREFIX+"cockpitbuild", MyControlsSpace.COCKPIT_BUILD_MODE},
                 {CONTROL_PREFIX+"paint", MyControlsSpace.CUBE_COLOR_CHANGE},
                 {CONTROL_PREFIX+"switchleft", MyControlsSpace.SWITCH_LEFT}, // previous color or cam
                 {CONTROL_PREFIX+"switchright", MyControlsSpace.SWITCH_RIGHT}, // next color or cam
