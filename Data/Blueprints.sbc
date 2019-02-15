@@ -24,15 +24,10 @@
       <DisplayName>Paint Chemicals</DisplayName>
       <Icon>Textures\Icons\PaintGunMag.dds</Icon>
       <Prerequisites>
-        <Item Amount="3" TypeId="Ingot" SubtypeId="Stone" />
-<!--
-        <Item Amount="0.05" TypeId="Ingot" SubtypeId="Silicon" />
-        <Item Amount="0.005" TypeId="Ingot" SubtypeId="Uranium" />
-        <Item Amount="0.01" TypeId="Ingot" SubtypeId="Silver" />
--->
+        <Item Amount="0.03" TypeId="Ingot" SubtypeId="Stone" />
       </Prerequisites>
-      <Result Amount="100" TypeId="AmmoMagazine" SubtypeId="PaintGunMag" />
-      <BaseProductionTimeInSeconds>3</BaseProductionTimeInSeconds>
+      <Result Amount="1" TypeId="AmmoMagazine" SubtypeId="PaintGunMag" />
+      <BaseProductionTimeInSeconds>0.03</BaseProductionTimeInSeconds>
     </Blueprint>
   </Blueprints>
   <BlueprintClassEntries>
