@@ -125,7 +125,7 @@ namespace Digi.PaintGun
         };
 
         private const float ASPECT_RATIO_54_FIX = 0.938f;
-        private readonly Vector2 BLOCKINFO_POSITION = new Vector2(0.98f, -0.5f); // bottom-right of the box
+        private readonly Vector2 BLOCKINFO_POSITION = new Vector2(0.98f, -0.8f); // bottom-right of the box
         private readonly Vector2 BLOCKINFO_SIZE = new Vector2(0.02f, 0.0142f);
         private readonly Vector3D BLOCKINFO_ICONS_OFFSET = new Vector3D(-0.0178, 0.03, 0.0124);
         private readonly Vector2D BLOCKINFO_TITLE_OFFSET = new Vector2D(-0.42, 0.527);
