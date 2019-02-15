@@ -170,7 +170,6 @@ For more info, type in chat: /pg help</Description>
       <LightIntensityLower>0</LightIntensityLower>
       <LightIntensityUpper>0</LightIntensityUpper>
       
-      <!--
       <ItemPositioning>TransformFromAnim</ItemPositioning>
 			<ItemPositioning3rd>TransformFromAnim</ItemPositioning3rd>
 			<ItemPositioningWalk>TransformFromAnim</ItemPositioningWalk>
@@ -179,7 +178,6 @@ For more info, type in chat: /pg help</Description>
 			<ItemPositioningShoot3rd>TransformFromAnim</ItemPositioningShoot3rd>
 			<ItemPositioningIronsight>TransformFromData</ItemPositioningIronsight>
 			<ItemPositioningIronsight3rd>TransformFromAnim</ItemPositioningIronsight3rd>
-      -->
     </HandItem>
   </HandItems>
 </Definitions>
