@@ -23,13 +23,16 @@
         <SubtypeId>PhysicalPaintGun</SubtypeId>
       </Id>
       <DisplayName>Paint Gun</DisplayName>
-      <Description>Allows painting of blocks.
+      <Description>Paints blocks.
 
-ScrollWheel = change selected color.
+{0} paint
+[Scroll] cycle color
+[Shift+]{1} get color from block/player
+[Shift+]{2} color picker mode
+[Shift+]{3} replace mode (creative/SM)
 
-Shift+RightClick = pick color from block or player.
-
-For more info, type in chat: /pg help</Description>
+[/pg help] for more info</Description>
+      <DescriptionArgs>PRIMARY_TOOL_ACTION,SECONDARY_TOOL_ACTION,LANDING_GEAR,CUBE_BUILDER_CUBESIZE_MODE</DescriptionArgs>
       <Icon>Textures\Icons\PaintGun.dds</Icon>
       <Size>
         <X>0.45</X>
@@ -71,7 +74,7 @@ For more info, type in chat: /pg help</Description>
         <Z>-0.3</Z>
       </ItemPosition>
 
-	<!-- Hand Item Animations -->
+      <!-- Hand Item Animations -->
       <ItemWalkingOrientation>
         <X>0.158379346</X>
         <Y>0.010264338</Y>
@@ -130,7 +133,7 @@ For more info, type in chat: /pg help</Description>
       </ShootScatter>
       <ScatterSpeed>0.1</ScatterSpeed>
 
-	<!-- Hand Item Animations 3rd -->
+      <!-- Hand Item Animations 3rd -->
       <ItemOrientation3rd>
         <X>0.167450413</X>
         <Y>0.0821511149</Y>
@@ -169,15 +172,15 @@ For more info, type in chat: /pg help</Description>
       <LightGlareSize>0</LightGlareSize>
       <LightIntensityLower>0</LightIntensityLower>
       <LightIntensityUpper>0</LightIntensityUpper>
-      
+
       <ItemPositioning>TransformFromAnim</ItemPositioning>
-			<ItemPositioning3rd>TransformFromAnim</ItemPositioning3rd>
-			<ItemPositioningWalk>TransformFromAnim</ItemPositioningWalk>
-			<ItemPositioningWalk3rd>TransformFromAnim</ItemPositioningWalk3rd>
-			<ItemPositioningShoot>TransformFromAnim</ItemPositioningShoot>
-			<ItemPositioningShoot3rd>TransformFromAnim</ItemPositioningShoot3rd>
-			<ItemPositioningIronsight>TransformFromData</ItemPositioningIronsight>
-			<ItemPositioningIronsight3rd>TransformFromAnim</ItemPositioningIronsight3rd>
+      <ItemPositioning3rd>TransformFromAnim</ItemPositioning3rd>
+      <ItemPositioningWalk>TransformFromAnim</ItemPositioningWalk>
+      <ItemPositioningWalk3rd>TransformFromAnim</ItemPositioningWalk3rd>
+      <ItemPositioningShoot>TransformFromAnim</ItemPositioningShoot>
+      <ItemPositioningShoot3rd>TransformFromAnim</ItemPositioningShoot3rd>
+      <ItemPositioningIronsight>TransformFromData</ItemPositioningIronsight>
+      <ItemPositioningIronsight3rd>TransformFromAnim</ItemPositioningIronsight3rd>
     </HandItem>
   </HandItems>
 </Definitions>
