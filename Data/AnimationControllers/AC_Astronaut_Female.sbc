@@ -65,8 +65,8 @@
               </EdPos>
               <Child xsi:type="MyObjectBuilder_AnimationTreeNodeTrack">
                 <EdPos>
-                  <X>220</X>
-                  <Y>-23</Y>
+                  <X>284</X>
+                  <Y>-17</Y>
                 </EdPos>
                 <Loop>true</Loop>
                 <Speed>1</Speed>
@@ -289,95 +289,6 @@
             <Variables />
           </Node>
           <Node>
-            <Name>RunForward</Name>
-            <AnimationTree>
-              <EdPos>
-                <X>-263</X>
-                <Y>-29</Y>
-              </EdPos>
-              <Child xsi:type="MyObjectBuilder_AnimationTreeNodeMix1D">
-                <EdPos>
-                  <X>119</X>
-                  <Y>21</Y>
-                </EdPos>
-                <ParameterName>shooting</ParameterName>
-                <Circular>false</Circular>
-                <Sensitivity>0.199999988</Sensitivity>
-                <MaxChange xsi:nil="true" />
-                <Child>
-                  <Param>0</Param>
-                  <Node xsi:type="MyObjectBuilder_AnimationTreeNodeTrack">
-                    <EdPos>
-                      <X>748</X>
-                      <Y>-169</Y>
-                    </EdPos>
-                    <Loop>true</Loop>
-                    <Speed>1</Speed>
-                    <Interpolate>true</Interpolate>
-                  </Node>
-                </Child>
-                <Child>
-                  <Param>1</Param>
-                  <Node xsi:type="MyObjectBuilder_AnimationTreeNodeMix1D">
-                    <EdPos>
-                      <X>699</X>
-                      <Y>280</Y>
-                    </EdPos>
-                    <ParameterName>lean</ParameterName>
-                    <Circular>false</Circular>
-                    <Sensitivity>1</Sensitivity>
-                    <MaxChange xsi:nil="true" />
-                    <Child>
-                      <Param>-36</Param>
-                      <Node xsi:type="MyObjectBuilder_AnimationTreeNodeTrack">
-                        <EdPos>
-                          <X>1242</X>
-                          <Y>74</Y>
-                        </EdPos>
-                        <PathToModel>Models\Characters\Animations\welder_aim_down.mwm</PathToModel>
-                        <Loop>true</Loop>
-                        <Speed>1</Speed>
-                        <Interpolate>true</Interpolate>
-                      </Node>
-                    </Child>
-                    <Child>
-                      <Param>0</Param>
-                      <Node xsi:type="MyObjectBuilder_AnimationTreeNodeTrack">
-                        <EdPos>
-                          <X>1255</X>
-                          <Y>337</Y>
-                        </EdPos>
-                        <PathToModel>Models\Characters\Animations\welder_aim_straight.mwm</PathToModel>
-                        <Loop>true</Loop>
-                        <Speed>1</Speed>
-                        <Interpolate>true</Interpolate>
-                      </Node>
-                    </Child>
-                    <Child>
-                      <Param>22</Param>
-                      <Node xsi:type="MyObjectBuilder_AnimationTreeNodeTrack">
-                        <EdPos>
-                          <X>1264</X>
-                          <Y>605</Y>
-                        </EdPos>
-                        <PathToModel>Models\Characters\Animations\welder_aim_up.mwm</PathToModel>
-                        <Loop>true</Loop>
-                        <Speed>1</Speed>
-                        <Interpolate>true</Interpolate>
-                      </Node>
-                    </Child>
-                  </Node>
-                </Child>
-              </Child>
-            </AnimationTree>
-            <EdPos>
-              <X>-116</X>
-              <Y>-122</Y>
-            </EdPos>
-            <Type>Normal</Type>
-            <Variables />
-          </Node>
-          <Node>
             <Name>WelderSwitch</Name>
             <AnimationTree>
               <EdPos>
@@ -390,15 +301,14 @@
                   <Y>-61</Y>
                 </EdPos>
                 <PathToModel>Models\Characters\Animations\idle_raisedhands.mwm</PathToModel>
-                <AnimationName>AnimStack::Astronaut_character_idle_v002</AnimationName>
                 <Loop>true</Loop>
                 <Speed>1</Speed>
                 <Interpolate>true</Interpolate>
               </Child>
             </AnimationTree>
             <EdPos>
-              <X>-406</X>
-              <Y>12</Y>
+              <X>-447</X>
+              <Y>10</Y>
             </EdPos>
             <Type>Any</Type>
             <Variables />
@@ -412,33 +322,62 @@
             <Type>AnyExceptTarget</Type>
             <Variables />
           </Node>
+          <Node>
+            <Name>Sprint</Name>
+            <AnimationTree>
+              <EdPos>
+                <X>915</X>
+                <Y>117</Y>
+              </EdPos>
+              <Child xsi:type="MyObjectBuilder_AnimationTreeNodeMix1D">
+                <EdPos>
+                  <X>1247</X>
+                  <Y>85</Y>
+                </EdPos>
+                <ParameterName>firstperson</ParameterName>
+                <Circular>false</Circular>
+                <Sensitivity>0.199999988</Sensitivity>
+                <MaxChange xsi:nil="true" />
+                <Child>
+                  <Param>0</Param>
+                  <Node xsi:type="MyObjectBuilder_AnimationTreeNodeTrack">
+                    <EdPos>
+                      <X>1896</X>
+                      <Y>10</Y>
+                    </EdPos>
+                    <PathToModel>Models\Characters\Animations\welder_aim_straight.mwm</PathToModel>
+                    <Loop>true</Loop>
+                    <Speed>1</Speed>
+                    <Interpolate>true</Interpolate>
+                    <SynchronizeWithLayer>Body</SynchronizeWithLayer>
+                  </Node>
+                </Child>
+                <Child>
+                  <Param>1</Param>
+                  <Node xsi:type="MyObjectBuilder_AnimationTreeNodeTrack">
+                    <EdPos>
+                      <X>1907</X>
+                      <Y>333</Y>
+                    </EdPos>
+                    <PathToModel>Models\Characters\Animations\welder_first_aim_straight.mwm</PathToModel>
+                    <Loop>true</Loop>
+                    <Speed>1</Speed>
+                    <Interpolate>true</Interpolate>
+                    <SynchronizeWithLayer>Body</SynchronizeWithLayer>
+                  </Node>
+                </Child>
+              </Child>
+            </AnimationTree>
+            <EdPos>
+              <X>67</X>
+              <Y>-7</Y>
+            </EdPos>
+            <Type>Normal</Type>
+            <Variables />
+          </Node>
         </Nodes>
         <Transitions>
-          <Transition From="RunForward" To="Idle" TimeInSec="0.2" Sync="Restart" Curve="Smooth">
-            <Conditions>
-              <Conjunction>
-                <Condition Lhs="speed" Op="Less" Rhs="4.2" />
-              </Conjunction>
-              <Conjunction>
-                <Condition Lhs="falling" Op="Equal" Rhs="1" />
-              </Conjunction>
-              <Conjunction>
-                <Condition Lhs="flying" Op="Equal" Rhs="1" />
-              </Conjunction>
-            </Conditions>
-            <Priority xsi:nil="true" />
-          </Transition>
-          <Transition From="Idle" To="RunForward" TimeInSec="0.2" Sync="Restart" Curve="Smooth">
-            <Conditions>
-              <Conjunction>
-                <Condition Lhs="flying" Op="Equal" Rhs="0" />
-                <Condition Lhs="falling" Op="Equal" Rhs="0" />
-                <Condition Lhs="speed" Op="GreaterOrEqual" Rhs="6" />
-              </Conjunction>
-            </Conditions>
-            <Priority xsi:nil="true" />
-          </Transition>
-          <Transition From="PaintGun" To="Idle" TimeInSec="0.2" Sync="Restart" Curve="Smooth">
+          <Transition From="PaintGun" To="Idle" TimeInSec="0.5" Sync="Restart" Curve="Smooth">
             <Priority xsi:nil="true" />
           </Transition>
           <Transition Name="PaintGun" From="WelderSwitch" To="PaintGun" TimeInSec="0.2" Sync="Restart" Curve="Smooth">
@@ -448,6 +387,30 @@
             <Priority xsi:nil="true" />
           </Transition>
           <Transition Name="unequip_right_tool" From="State1" To="Nothing" TimeInSec="0" Sync="Restart" Curve="Smooth">
+            <Priority xsi:nil="true" />
+          </Transition>
+          <Transition Name="" From="Idle" To="Sprint" TimeInSec="0.2" Sync="Restart" Curve="Smooth">
+            <Conditions>
+              <Conjunction>
+                <Condition Lhs="flying" Op="Equal" Rhs="0" />
+                <Condition Lhs="falling" Op="Equal" Rhs="0" />
+                <Condition Lhs="speed" Op="GreaterOrEqual" Rhs="7" />
+              </Conjunction>
+            </Conditions>
+            <Priority xsi:nil="true" />
+          </Transition>
+          <Transition From="Sprint" To="Idle" TimeInSec="0.5" Sync="Restart" Curve="Smooth">
+            <Conditions>
+              <Conjunction>
+                <Condition Lhs="speed" Op="LessOrEqual" Rhs="7" />
+              </Conjunction>
+              <Conjunction>
+                <Condition Lhs="flying" Op="Equal" Rhs="1" />
+              </Conjunction>
+              <Conjunction>
+                <Condition Lhs="falling" Op="Equal" Rhs="1" />
+              </Conjunction>
+            </Conditions>
             <Priority xsi:nil="true" />
           </Transition>
         </Transitions>
