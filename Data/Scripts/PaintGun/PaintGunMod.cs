@@ -6,17 +6,11 @@ using Sandbox.Definitions;
 using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
-using VRage;
 using VRage.Game;
 using VRage.Game.Components;
-using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.Input;
-using VRage.ModAPI;
 using VRageMath;
-
-// HACK allows the use of these whitelisted enums without triggering prohibited issues with accessing their parent classes
-using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
 namespace Digi.PaintGun
 {
@@ -581,7 +575,7 @@ namespace Digi.PaintGun
                                 quad.Point2 = center + minY + minZ;
                                 quad.Point3 = center + minY + maxZ;
 
-                                MyTransparentGeometry.AddQuad(MATERIAL_VANILLA_SQUARE, ref quad, Color.Red * alpha, ref center);
+                                MyTransparentGeometry.AddQuad(MATERIAL_VANILLA_SQUARE, ref quad, Color.Red * alpha, ref center, blendType: HELPERS_BLEND_TYPE);
                             }
 
                             if(selectedGrid.YSymmetryPlane.HasValue)
@@ -598,7 +592,7 @@ namespace Digi.PaintGun
                                 quad.Point2 = center + minZ + minX;
                                 quad.Point3 = center + minZ + maxX;
 
-                                MyTransparentGeometry.AddQuad(MATERIAL_VANILLA_SQUARE, ref quad, Color.Green * alpha, ref center);
+                                MyTransparentGeometry.AddQuad(MATERIAL_VANILLA_SQUARE, ref quad, Color.Green * alpha, ref center, blendType: HELPERS_BLEND_TYPE);
                             }
 
                             if(selectedGrid.ZSymmetryPlane.HasValue)
@@ -615,7 +609,7 @@ namespace Digi.PaintGun
                                 quad.Point2 = center + minY + minX;
                                 quad.Point3 = center + minY + maxX;
 
-                                MyTransparentGeometry.AddQuad(MATERIAL_VANILLA_SQUARE, ref quad, Color.Blue * alpha, ref center);
+                                MyTransparentGeometry.AddQuad(MATERIAL_VANILLA_SQUARE, ref quad, Color.Blue * alpha, ref center, blendType: HELPERS_BLEND_TYPE);
                             }
                         }
                     }
@@ -775,7 +769,7 @@ namespace Digi.PaintGun
                         var box = (BoundingBoxD)selectedCharacter.LocalAABB;
                         var worldToLocal = selectedCharacter.WorldMatrixInvScaled;
 
-                        MySimpleObjectDraw.DrawAttachedTransparentBox(ref matrix, ref box, ref color, selectedCharacter.Render.GetRenderObjectID(), ref worldToLocal, MySimpleObjectRasterizer.Wireframe, 1, 0.05f, null, MATERIAL_GIZMIDRAWLINE, false);
+                        MySimpleObjectDraw.DrawAttachedTransparentBox(ref matrix, ref box, ref color, selectedCharacter.Render.GetRenderObjectID(), ref worldToLocal, MySimpleObjectRasterizer.Wireframe, Vector3I.One, 0.05f, null, MATERIAL_GIZMIDRAWLINE, false, blendType: HELPERS_BLEND_TYPE);
                     }
                 }
 

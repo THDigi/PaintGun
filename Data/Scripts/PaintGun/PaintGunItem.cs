@@ -5,13 +5,13 @@ using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Weapons;
 using VRage.Game;
+using VRage.Game.Components;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
-using VRageMath;
-using VRage.ObjectBuilders;
-using VRage.Game.Components;
 using VRage.ModAPI;
+using VRage.ObjectBuilders;
 using VRage.Utils;
+using VRageMath;
 
 namespace Digi.PaintGun
 {
@@ -229,7 +229,7 @@ namespace Digi.PaintGun
                 {
                     var p = particles[i];
 
-                    MyTransparentGeometry.AddPointBillboard(material, p.Color, muzzleWorldPos + p.RelativePosition, p.Radius, p.Angle);
+                    MyTransparentGeometry.AddPointBillboard(material, p.Color, muzzleWorldPos + p.RelativePosition, p.Radius, p.Angle, blendType: PaintGunMod.SPRAY_BLEND_TYPE);
 
                     if(!paused)
                     {

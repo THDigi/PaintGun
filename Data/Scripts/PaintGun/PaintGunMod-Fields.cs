@@ -5,9 +5,7 @@ using Sandbox.Game.Entities;
 using Sandbox.Game.Gui;
 using Sandbox.ModAPI;
 using VRage.Game;
-using VRage.Game.Entity;
 using VRage.Game.ModAPI;
-using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
 
@@ -113,6 +111,9 @@ namespace Digi.PaintGun
         public readonly MyStringId MATERIAL_ICON_GENERIC_BLOCK = MyStringId.GetOrCompute("PaintGunIcon_GenericBlock");
         public readonly MyStringId MATERIAL_ICON_GENERIC_CHARACTER = MyStringId.GetOrCompute("PaintGunIcon_GenericCharacter");
         public readonly MyStringId MATERIAL_ICON_PAINT_AMMO = MyStringId.GetOrCompute("PaintGunBlockIcon_PaintAmmo");
+
+        public const BlendTypeEnum HELPERS_BLEND_TYPE = BlendTypeEnum.SDR;
+        public const BlendTypeEnum SPRAY_BLEND_TYPE = BlendTypeEnum.SDR;
 
         public readonly MySoundPair SPRAY_SOUND = new MySoundPair("PaintGunSpray");
         public readonly MyStringId MATERIAL_SPRAY = MyStringId.GetOrCompute("PaintGun_Spray");
