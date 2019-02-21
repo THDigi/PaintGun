@@ -125,8 +125,9 @@ namespace Digi.PaintGun
             ProjectilesCount = 1
         };
 
-        private const float ASPECT_RATIO_54_FIX = 0.938f;
-        private readonly Vector2 BLOCKINFO_POSITION = new Vector2(0.98f, -0.8f); // bottom-right of the box
+        private const float ASPECT_RATIO_5_4_FIX = 0.938f;
+        private const float ASPECT_RATIO_16_10_FIX = 0.938f;
+        private readonly Vector2 BLOCKINFO_POSITION = new Vector2(0.98f, -0.8f); // bottom-right position of the box
         private readonly Vector2 BLOCKINFO_SIZE = new Vector2(0.02f, 0.0142f);
         private readonly Vector3D BLOCKINFO_ICONS_OFFSET = new Vector3D(-0.0178, 0.03, 0.0124);
         private readonly Vector2D BLOCKINFO_TITLE_OFFSET = new Vector2D(-0.42, 0.527);

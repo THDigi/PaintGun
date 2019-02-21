@@ -835,10 +835,14 @@ namespace Digi.PaintGun
 
                             var worldPos = HUDtoWorld(BLOCKINFO_POSITION);
                             var worldSize = BLOCKINFO_SIZE;
+
+                            if(Math.Abs(aspectRatio - (16d / 10d)) <= 0.01) // HACK 16:10 aspect ratio manual fix
+                                worldSize.X = 0.018f;
+
                             worldSize *= 2 * scaleFOV;
 
-                            if(Math.Abs(aspectRatio - (1280.0 / 1024.0)) <= 0.0001) // HACK 5:4 aspect ratio manual fix
-                                worldSize.X *= ASPECT_RATIO_54_FIX;
+                            if(Math.Abs(aspectRatio - (5d / 4d)) <= 0.01) // HACK 5:4 aspect ratio manual fix
+                                worldSize.X *= ASPECT_RATIO_5_4_FIX;
 
                             var topPos = worldPos + camMatrix.Left * worldSize.X + camMatrix.Up * (worldSize.Y * 2); // center-top position on the box
 
