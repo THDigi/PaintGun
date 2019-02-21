@@ -114,7 +114,7 @@
                           <X>661</X>
                           <Y>-506</Y>
                         </EdPos>
-                        <PathToModel>Models\Characters\Animations\welder_aim_down.mwm</PathToModel>
+                        <PathToModel>Models\Characters\Animations\Female\welder_aim_down.mwm</PathToModel>
                         <Loop>true</Loop>
                         <Speed>1</Speed>
                         <Interpolate>true</Interpolate>
@@ -127,7 +127,7 @@
                           <X>656</X>
                           <Y>-181</Y>
                         </EdPos>
-                        <PathToModel>Models\Characters\Animations\welder_aim_straight.mwm</PathToModel>
+                        <PathToModel>Models\Characters\Animations\Female\welder_aim_straight.mwm</PathToModel>
                         <Loop>true</Loop>
                         <Speed>1</Speed>
                         <Interpolate>true</Interpolate>
@@ -140,7 +140,7 @@
                           <X>661</X>
                           <Y>183</Y>
                         </EdPos>
-                        <PathToModel>Models\Characters\Animations\welder_aim_up.mwm</PathToModel>
+                        <PathToModel>Models\Characters\Animations\Female\welder_aim_up.mwm</PathToModel>
                         <Loop>true</Loop>
                         <Speed>1</Speed>
                         <Interpolate>true</Interpolate>
@@ -177,7 +177,7 @@
                               <X>1046</X>
                               <Y>662</Y>
                             </EdPos>
-                            <PathToModel>Models\Characters\Animations\welder_first_aim_down.mwm</PathToModel>
+                            <PathToModel>Models\Characters\Animations\Female\welder_first_aim_down.mwm</PathToModel>
                             <Loop>true</Loop>
                             <Speed>1</Speed>
                             <Interpolate>true</Interpolate>
@@ -190,7 +190,7 @@
                               <X>1028</X>
                               <Y>997</Y>
                             </EdPos>
-                            <PathToModel>Models\Characters\Animations\welder_first_aim_straight.mwm</PathToModel>
+                            <PathToModel>Models\Characters\Animations\Female\welder_first_aim_straight.mwm</PathToModel>
                             <Loop>true</Loop>
                             <Speed>1</Speed>
                             <Interpolate>true</Interpolate>
@@ -203,7 +203,7 @@
                               <X>1070</X>
                               <Y>1329</Y>
                             </EdPos>
-                            <PathToModel>Models\Characters\Animations\welder_first_aim_up.mwm</PathToModel>
+                            <PathToModel>Models\Characters\Animations\Female\welder_first_aim_up.mwm</PathToModel>
                             <Loop>true</Loop>
                             <Speed>1</Speed>
                             <Interpolate>true</Interpolate>
@@ -229,7 +229,7 @@
                               <X>1116</X>
                               <Y>1805</Y>
                             </EdPos>
-                            <PathToModel>Models\Characters\Animations\welder_first_crouch_aim_down.mwm</PathToModel>
+                            <PathToModel>Models\Characters\Animations\Female\welder_first_crouch_aim_down.mwm</PathToModel>
                             <Loop>true</Loop>
                             <Speed>1</Speed>
                             <Interpolate>true</Interpolate>
@@ -242,7 +242,7 @@
                               <X>1106</X>
                               <Y>2077</Y>
                             </EdPos>
-                            <PathToModel>Models\Characters\Animations\welder_first_crouch_aim_straight.mwm</PathToModel>
+                            <PathToModel>Models\Characters\Animations\Female\welder_first_crouch_aim_straight.mwm</PathToModel>
                             <Loop>true</Loop>
                             <Speed>1</Speed>
                             <Interpolate>true</Interpolate>
@@ -255,7 +255,7 @@
                               <X>1121</X>
                               <Y>2345</Y>
                             </EdPos>
-                            <PathToModel>Models\Characters\Animations\welder_first_crouch_aim_upless.mwm</PathToModel>
+                            <PathToModel>Models\Characters\Animations\Female\welder_first_crouch_aim_upless.mwm</PathToModel>
                             <Loop>true</Loop>
                             <Speed>1</Speed>
                             <Interpolate>true</Interpolate>
@@ -268,7 +268,7 @@
                               <X>1108</X>
                               <Y>2612</Y>
                             </EdPos>
-                            <PathToModel>Models\Characters\Animations\welder_first_crouch_aim_up.mwm</PathToModel>
+                            <PathToModel>Models\Characters\Animations\Female\welder_first_crouch_aim_up.mwm</PathToModel>
                             <Loop>true</Loop>
                             <Speed>1</Speed>
                             <Interpolate>true</Interpolate>
@@ -300,7 +300,7 @@
                   <X>287</X>
                   <Y>-61</Y>
                 </EdPos>
-                <PathToModel>Models\Characters\Animations\idle_raisedhands.mwm</PathToModel>
+                <PathToModel>Models\Characters\Animations\Female\idle_raisedhands.mwm</PathToModel>
                 <Loop>true</Loop>
                 <Speed>1</Speed>
                 <Interpolate>true</Interpolate>
@@ -345,7 +345,7 @@
                       <X>1896</X>
                       <Y>10</Y>
                     </EdPos>
-                    <PathToModel>Models\Characters\Animations\welder_aim_straight.mwm</PathToModel>
+                    <PathToModel>Models\Characters\Animations\Female\welder_aim_straight.mwm</PathToModel>
                     <Loop>true</Loop>
                     <Speed>1</Speed>
                     <Interpolate>true</Interpolate>
@@ -359,7 +359,7 @@
                       <X>1907</X>
                       <Y>333</Y>
                     </EdPos>
-                    <PathToModel>Models\Characters\Animations\welder_first_aim_straight.mwm</PathToModel>
+                    <PathToModel>Models\Characters\Animations\Female\welder_first_aim_straight.mwm</PathToModel>
                     <Loop>true</Loop>
                     <Speed>1</Speed>
                     <Interpolate>true</Interpolate>
@@ -377,7 +377,7 @@
           </Node>
         </Nodes>
         <Transitions>
-          <Transition From="PaintGun" To="Idle" TimeInSec="0.5" Sync="Restart" Curve="Smooth">
+          <Transition From="PaintGun" To="Idle" TimeInSec="0.35" Sync="Restart" Curve="EaseIn">
             <Priority xsi:nil="true" />
           </Transition>
           <Transition Name="PaintGun" From="WelderSwitch" To="PaintGun" TimeInSec="0.2" Sync="Restart" Curve="Smooth">

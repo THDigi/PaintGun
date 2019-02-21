@@ -377,7 +377,7 @@
           </Node>
         </Nodes>
         <Transitions>
-          <Transition From="PaintGun" To="Idle" TimeInSec="0.5" Sync="Restart" Curve="Smooth">
+          <Transition From="PaintGun" To="Idle" TimeInSec="0.35" Sync="Restart" Curve="EaseIn">
             <Priority xsi:nil="true" />
           </Transition>
           <Transition Name="PaintGun" From="WelderSwitch" To="PaintGun" TimeInSec="0.2" Sync="Restart" Curve="Smooth">
