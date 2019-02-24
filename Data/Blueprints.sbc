@@ -31,8 +31,12 @@
     </Blueprint>
   </Blueprints>
   <BlueprintClassEntries>
+    <Entry Class="BasicTools" BlueprintSubtypeId="Blueprint_PaintGun" />
     <Entry Class="Tools" BlueprintSubtypeId="Blueprint_PaintGun" />
+    <Entry Class="EliteTools" BlueprintSubtypeId="Blueprint_PaintGun" />
+
     <Entry Class="Components" BlueprintSubtypeId="Blueprint_PaintGunMag" />
-    <Entry Class="Ammo" BlueprintSubtypeId="Blueprint_PaintGunMag" />
+    <Entry Class="SimpleComponents" BlueprintSubtypeId="Blueprint_PaintGunMag" />
+    <Entry Class="BasicComponents" BlueprintSubtypeId="Blueprint_PaintGunMag" />
   </BlueprintClassEntries>
 </Definitions>
