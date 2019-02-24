@@ -464,7 +464,7 @@ namespace Digi.PaintGun
                         {
                             localColorData.SelectedSlot = i;
                             SendToServer_SelectedColorSlot((byte)i);
-                            ShowNotification(0, $"Color already exists in slot {i + 1}.", MyFontEnum.Red, 3000);
+                            ShowNotification(0, $"Color exists in slot {i + 1}, selected.", MyFontEnum.White, 2000);
                             return false; // color exists in palette, stop sending.
                         }
                     }

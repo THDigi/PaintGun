@@ -439,7 +439,7 @@ namespace Digi.PaintGun
                                 colorPickModeInputPressed = true;
 
                                 if(colorPickMode)
-                                    ShowNotification(0, "Color pick mode turned off.", MyFontEnum.Red, 2000);
+                                    ShowNotification(0, "Color pick mode turned off.", MyFontEnum.White, 2000);
 
                                 SendToServer_ColorPickMode(!colorPickMode);
                             }
@@ -1724,7 +1724,7 @@ namespace Digi.PaintGun
             {
                 SendToServer_ColorPickMode(false);
 
-                ShowNotification(0, "Color picking cancelled.", MyFontEnum.Red, 1000);
+                ShowNotification(0, "Color picking cancelled.", MyFontEnum.White, 1000);
 
                 PlaySound(SOUND_HUD_UNABLE, 0.5f);
             }
