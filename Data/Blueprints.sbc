@@ -11,7 +11,7 @@
       <Prerequisites>
         <Item Amount="4" TypeId="Ingot" SubtypeId="Iron" />
         <Item Amount="1" TypeId="Ingot" SubtypeId="Nickel" />
-        <Item Amount="2" TypeId="Ingot" SubtypeId="Silver" />
+        <Item Amount="2" TypeId="Ingot" SubtypeId="Silicon" />
       </Prerequisites>
       <Result Amount="1" TypeId="PhysicalGunObject" SubtypeId="PhysicalPaintGun" />
       <BaseProductionTimeInSeconds>10</BaseProductionTimeInSeconds>
