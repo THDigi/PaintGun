@@ -36,7 +36,7 @@ namespace Digi.PaintGun
             {
                 UpdateConfigValues();
 
-                textAPI = new HudAPIv2();
+                textAPI = new HudAPIv2(() => TextAPIReady = true);
                 settings = new Settings();
 
                 MyAPIGateway.Utilities.MessageEntered += MessageEntered;
@@ -962,7 +962,7 @@ namespace Digi.PaintGun
         #region Aimed object info GUI
         public void GenerateAimInfo()
         {
-            if(textAPI == null || !textAPI.Heartbeat)
+            if(!TextAPIReady)
                 return;
 
             if(titleObject == null)
@@ -1460,21 +1460,21 @@ namespace Digi.PaintGun
                         symmetryInputAvailable = true;
 
                         if(MyAPIGateway.CubeBuilder.UseSymmetry)
-                            symmetryStatus = (GUIUsed ? $"<color=yellow>Symmetry enabled.\n<color=white>Press {assigned} to turn off." : $"Symmetry is ON\n({assigned} to toggle)");
+                            symmetryStatus = (TextAPIReady ? $"<color=yellow>Symmetry enabled.\n<color=white>Press {assigned} to turn off." : $"Symmetry is ON\n({assigned} to toggle)");
                         else
-                            symmetryStatus = (GUIUsed ? $"Symmetry is off.\nPress {assigned} to enable." : $"Symmetry is OFF\n({assigned} to toggle)");
+                            symmetryStatus = (TextAPIReady ? $"Symmetry is off.\nPress {assigned} to enable." : $"Symmetry is OFF\n({assigned} to toggle)");
                     }
                     else
                     {
                         if(MyAPIGateway.CubeBuilder.UseSymmetry)
-                            symmetryStatus = (GUIUsed ? "<color=yellow>Symmetry enabled." : "Symmetry ON");
+                            symmetryStatus = (TextAPIReady ? "<color=yellow>Symmetry enabled." : "Symmetry ON");
                         else
-                            symmetryStatus = (GUIUsed ? "Symmetry is off." : "Symmetry OFF");
+                            symmetryStatus = (TextAPIReady ? "Symmetry is off." : "Symmetry OFF");
                     }
                 }
                 else
                 {
-                    symmetryStatus = (GUIUsed ? "<color=red>No symmetry on this ship.\n<color=gray>Keys & commands: /pg help" : "No symmetry on this ship.");
+                    symmetryStatus = (TextAPIReady ? "<color=red>No symmetry on this ship." : "No symmetry on this ship.");
                 }
             }
             #endregion

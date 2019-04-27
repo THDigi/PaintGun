@@ -28,7 +28,7 @@ namespace Digi.PaintGun
         public bool gameHUD = true;
         public float gameHUDBkOpacity = 1f;
 
-        public bool GUIUsed => (textAPI != null && textAPI.Heartbeat);
+        public bool TextAPIReady = false;
 
         private HudAPIv2 textAPI;
         private HudAPIv2.HUDMessage titleObject;

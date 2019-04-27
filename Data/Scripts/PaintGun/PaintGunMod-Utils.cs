@@ -109,7 +109,7 @@ namespace Digi.PaintGun
 
         public void SetGUIToolStatus(int line, string text, string color = null)
         {
-            blockInfoStatus[line] = (color != null && GUIUsed ? $"<color={color}>{text}" : text);
+            blockInfoStatus[line] = (color != null && TextAPIReady ? $"<color={color}>{text}" : text);
         }
 
         public void ShowNotification(int id, string text, string font = MyFontEnum.White, int aliveTime = TOOLSTATUS_TIMEOUT)
