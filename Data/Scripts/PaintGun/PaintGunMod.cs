@@ -21,15 +21,14 @@ namespace Digi.PaintGun
         public override void LoadData()
         {
             instance = this;
-            Log.SetUp(MOD_NAME, WORKSHOP_ID);
+            Log.ModName = MOD_NAME;
+            Log.AutoClose = false;
         }
 
-        public void Init()
+        public override void BeforeStart()
         {
             init = true;
             isPlayer = !(MyAPIGateway.Utilities.IsDedicated && MyAPIGateway.Multiplayer.IsServer);
-
-            Log.Init();
 
             MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET, ReceivedPacket);
 
@@ -659,12 +658,8 @@ namespace Digi.PaintGun
             try
             {
                 if(!init)
-                {
-                    if(MyAPIGateway.Session == null || MyAPIGateway.Multiplayer == null)
-                        return;
+                    return;
 
-                    Init();
-                }
 
                 if(isPlayer && !playerObjectFound)
                 {
@@ -682,9 +677,12 @@ namespace Digi.PaintGun
                     ++tick;
                 }
 
-                // HUD toggle monitor; required here because it gets the previous value if used in HandleInput()
-                if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.TOGGLE_HUD))
-                    gameHUD = !MyAPIGateway.Session.Config.MinimalHud;
+                if(isPlayer)
+                {
+                    // HUD toggle monitor; required here because it gets the previous value if used in HandleInput()
+                    if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.TOGGLE_HUD))
+                        gameHUD = !MyAPIGateway.Session.Config.MinimalHud;
+                }
 
                 if(MyAPIGateway.Multiplayer.IsServer && tick % 10 == 0)
                 {
@@ -1911,7 +1909,7 @@ namespace Digi.PaintGun
                     help.Append("##### Config path #####").Append('\n');
                     help.Append('\n');
                     help.Append("%appdata%/SpaceEngineers/Storage").Append('\n');
-                    help.Append("    /").Append(Log.workshopId).Append(".sbm_PaintGun/paintgun.cfg").Append('\n');
+                    help.Append("    /").Append(Log.WorkshopId).Append(".sbm_PaintGun/paintgun.cfg").Append('\n');
 
                     MyAPIGateway.Utilities.ShowMissionScreen("Paint Gun help", null, null, help.ToString(), null, "Close");
                 }
