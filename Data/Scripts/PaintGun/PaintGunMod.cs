@@ -82,7 +82,7 @@ namespace Digi.PaintGun
                     settings = null;
                 }
 
-                emitter?.Cleanup();
+                hudSoundEmitter?.Cleanup();
 
                 if(textAPI != null)
                 {
@@ -392,7 +392,7 @@ namespace Digi.PaintGun
                             if(change != 0 && localColorData != null)
                             {
                                 if(settings.extraSounds)
-                                    PlaySound(SOUND_HUD_CLICK, 0.1f);
+                                    PlayHudSound(SOUND_HUD_CLICK, 0.1f);
 
                                 if(change < 0)
                                 {
@@ -464,12 +464,12 @@ namespace Digi.PaintGun
 
                                     if(SendToServer_SetColor((byte)localColorData.SelectedSlot, targetColor, true))
                                     {
-                                        PlaySound(SOUND_HUD_MOUSE_CLICK, 0.25f);
+                                        PlayHudSound(SOUND_HUD_MOUSE_CLICK, 0.25f);
                                         ShowNotification(0, $"Slot {localColorData.SelectedSlot + 1} set to {ColorMaskToString(targetColor)}", MyFontEnum.White, 2000);
                                     }
                                     else
                                     {
-                                        PlaySound(SOUND_HUD_UNABLE, 0.25f);
+                                        PlayHudSound(SOUND_HUD_UNABLE, SOUND_HUD_UNABLE_VOLUME, SOUND_HUD_UNABLE_TIMEOUT);
                                     }
                                 }
                                 else
@@ -1251,13 +1251,13 @@ namespace Digi.PaintGun
 
                         if(SendToServer_SetColor((byte)localColorData.SelectedSlot, targetColorMask, true))
                         {
-                            PlaySound(SOUND_HUD_MOUSE_CLICK, 0.25f);
+                            PlayHudSound(SOUND_HUD_MOUSE_CLICK, 0.25f);
 
                             ShowNotification(0, $"Slot {localColorData.SelectedSlot + 1} set to {ColorMaskToString(targetColorMask)}", MyFontEnum.White, 3000);
                         }
                         else
                         {
-                            PlaySound(SOUND_HUD_UNABLE, 0.25f);
+                            PlayHudSound(SOUND_HUD_UNABLE, SOUND_HUD_UNABLE_VOLUME, SOUND_HUD_UNABLE_TIMEOUT);
                         }
                     }
                     else
@@ -1269,7 +1269,7 @@ namespace Digi.PaintGun
                             SetToolColor(targetColorMask);
 
                             if(settings.extraSounds)
-                                PlaySound(SOUND_HUD_ITEM, 0.75f);
+                                PlayHudSound(SOUND_HUD_ITEM, 0.75f);
                         }
 
                         SetGUIToolStatus(0, "Click to get color from player.");
@@ -1292,6 +1292,12 @@ namespace Digi.PaintGun
 
                 if(!IgnoreAmmoConsumption && localHeldTool.Ammo == 0)
                 {
+                    if(trigger)
+                    {
+                        PlayHudSound(SOUND_HUD_UNABLE, SOUND_HUD_UNABLE_VOLUME, SOUND_HUD_UNABLE_TIMEOUT);
+                        ShowNotification(1, "No ammo.", MyFontEnum.Red);
+                    }
+
                     SetGUIToolStatus(0, "No ammo!", "red");
                     return false;
                 }
@@ -1412,6 +1418,8 @@ namespace Digi.PaintGun
                 }
                 else if(trigger)
                 {
+                    //PlayHudSound(SOUND_HUD_UNABLE, SOUND_HUD_UNABLE_VOLUME, SOUND_HUD_UNABLE_TIMEOUT);
+
                     if(!IgnoreAmmoConsumption && localHeldTool.Ammo == 0)
                         ShowNotification(1, "No ammo.", MyFontEnum.Red);
                     else
@@ -1481,12 +1489,12 @@ namespace Digi.PaintGun
 
                     if(SendToServer_SetColor((byte)localColorData.SelectedSlot, blockColor, true))
                     {
-                        PlaySound(SOUND_HUD_MOUSE_CLICK, 0.25f);
+                        PlayHudSound(SOUND_HUD_MOUSE_CLICK, 0.25f);
                         ShowNotification(0, $"Slot {localColorData.SelectedSlot + 1} set to {ColorMaskToString(blockColor)}", MyFontEnum.White, 2000);
                     }
                     else
                     {
-                        PlaySound(SOUND_HUD_UNABLE, 0.25f);
+                        PlayHudSound(SOUND_HUD_UNABLE, SOUND_HUD_UNABLE_VOLUME, SOUND_HUD_UNABLE_TIMEOUT);
                     }
                 }
                 else
@@ -1497,7 +1505,7 @@ namespace Digi.PaintGun
                         SetToolColor(blockColor);
 
                         if(settings.extraSounds)
-                            PlaySound(SOUND_HUD_ITEM, 0.75f);
+                            PlayHudSound(SOUND_HUD_ITEM, 0.75f);
                     }
 
                     SetGUIToolStatus(0, "Click to get this color.", "lime");
@@ -1509,11 +1517,15 @@ namespace Digi.PaintGun
 
             if(!block.CubeGrid.ColorGridOrBlockRequestValidation(MyAPIGateway.Session.Player.IdentityId))
             {
+                if(trigger)
+                {
+                    PlayHudSound(SOUND_HUD_UNABLE, SOUND_HUD_UNABLE_VOLUME, SOUND_HUD_UNABLE_TIMEOUT);
+
+                    ShowNotification(0, "Can't paint enemy ships!", MyFontEnum.Red);
+                }
+
                 SetGUIToolStatus(0, "Not allied ship.", "red");
                 SetGUIToolStatus(1, null);
-
-                if(trigger)
-                    PlaySound(SOUND_HUD_UNABLE, 0.25f);
 
                 return false;
             }
@@ -1542,7 +1554,11 @@ namespace Digi.PaintGun
                 if(!built || block.CurrentDamage > (block.MaxIntegrity / 10.0f))
                 {
                     if(trigger)
-                        PlaySound(SOUND_HUD_UNABLE, 0.5f);
+                    {
+                        PlayHudSound(SOUND_HUD_UNABLE, SOUND_HUD_UNABLE_VOLUME, SOUND_HUD_UNABLE_TIMEOUT);
+
+                        ShowNotification(0, "Unfinished blocks can't be painted!", MyFontEnum.Red);
+                    }
 
                     selectedInvalid = true;
 
@@ -1666,7 +1682,7 @@ namespace Digi.PaintGun
                     SetGUIToolStatus(0, "Painting done!", "lime");
 
                     if(settings.extraSounds)
-                        PlaySound(SOUND_HUD_COLOR, 0.8f);
+                        PlayHudSound(SOUND_HUD_COLOR, 0.8f);
                 }
                 else
                 {
@@ -1726,7 +1742,7 @@ namespace Digi.PaintGun
 
                 ShowNotification(0, "Color picking cancelled.", MyFontEnum.White, 1000);
 
-                PlaySound(SOUND_HUD_UNABLE, 0.5f);
+                PlayHudSound(SOUND_HUD_UNABLE, SOUND_HUD_UNABLE_VOLUME, SOUND_HUD_UNABLE_TIMEOUT);
             }
             else if(replaceAllMode)
             {
@@ -1845,12 +1861,12 @@ namespace Digi.PaintGun
 
                         if(SendToServer_SetColor((byte)localColorData.SelectedSlot, colorMask, true))
                         {
-                            PlaySound(SOUND_HUD_MOUSE_CLICK, 0.25f);
+                            PlayHudSound(SOUND_HUD_MOUSE_CLICK, 0.25f);
                             MyVisualScriptLogicProvider.SendChatMessage($"Slot {localColorData.SelectedSlot + 1} set to {ColorMaskToString(colorMask)}", MOD_NAME, 0, MyFontEnum.Green);
                         }
                         else
                         {
-                            PlaySound(SOUND_HUD_UNABLE, 0.25f);
+                            PlayHudSound(SOUND_HUD_UNABLE, SOUND_HUD_UNABLE_VOLUME, SOUND_HUD_UNABLE_TIMEOUT);
                         }
 
                         return;

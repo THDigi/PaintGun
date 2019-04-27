@@ -200,14 +200,22 @@ namespace Digi.PaintGun
             return (localColorData != null ? localColorData.Colors[localColorData.SelectedSlot] : DEFAULT_COLOR);
         }
 
-        public void PlaySound(MySoundPair soundPair, float volume)
+        public void PlayHudSound(MySoundPair soundPair, float volume, uint timeout = 0)
         {
-            if(emitter == null)
-                emitter = new MyEntity3DSoundEmitter(null);
+            if(timeout > 0)
+            {
+                if(hudSoundTimeout > tick)
+                    return;
 
-            emitter.SetPosition(MyAPIGateway.Session.Camera.WorldMatrix.Translation);
-            emitter.CustomVolume = volume;
-            emitter.PlaySingleSound(soundPair);
+                hudSoundTimeout = tick + timeout;
+            }
+
+            if(hudSoundEmitter == null)
+                hudSoundEmitter = new MyEntity3DSoundEmitter(null);
+
+            hudSoundEmitter.SetPosition(MyAPIGateway.Session.Camera.WorldMatrix.Translation);
+            hudSoundEmitter.CustomVolume = volume;
+            hudSoundEmitter.PlaySound(soundPair, stopPrevious: false, alwaysHearOnRealistic: true, force2D: true);
         }
 
         private bool EnsureColorDataEntry(ulong steamId)

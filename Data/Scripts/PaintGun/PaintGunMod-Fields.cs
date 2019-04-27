@@ -62,7 +62,8 @@ namespace Digi.PaintGun
         public Vector3 prevColorMaskPreview;
         public IMySlimBlock prevSlimBlock = null;
         public long selectedBlockBuiltBy = 0;
-        public MyEntity3DSoundEmitter emitter;
+        private MyEntity3DSoundEmitter hudSoundEmitter;
+        private uint hudSoundTimeout = 0;
         public string[] blockInfoStatus = new string[2];
         public IMyHudNotification[] toolStatus = new IMyHudNotification[3];
         public MyHudBlockInfo.ComponentInfo[] blockInfoLines = new MyHudBlockInfo.ComponentInfo[]
@@ -96,6 +97,8 @@ namespace Digi.PaintGun
 
         public Vector3 DEFAULT_COLOR = new Vector3(0, -1, 0);
 
+        public const float SOUND_HUD_UNABLE_VOLUME = 0.5f;
+        public const uint SOUND_HUD_UNABLE_TIMEOUT = 60;
         public readonly MySoundPair SOUND_HUD_UNABLE = new MySoundPair("HudUnable");
         public readonly MySoundPair SOUND_HUD_CLICK = new MySoundPair("HudClick");
         public readonly MySoundPair SOUND_HUD_MOUSE_CLICK = new MySoundPair("HudMouseClick");
