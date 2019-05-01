@@ -11,6 +11,9 @@ using VRage.Game.Components;
 using VRage.Game.ModAPI;
 using VRage.Input;
 using VRageMath;
+using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
+
+// DEBUG FIXME: color not selected in paintgun when changing color via [ or ] via cubebuilder
 
 namespace Digi.PaintGun
 {
@@ -44,6 +47,18 @@ namespace Digi.PaintGun
 
                 if(!MyAPIGateway.Multiplayer.IsServer)
                     SendToServer_RequestColorList(MyAPIGateway.Multiplayer.MyId);
+
+                if(UIEDIT && MyAPIGateway.Session.OnlineMode == MyOnlineModeEnum.OFFLINE)
+                {
+                    foreach(var mod in MyAPIGateway.Session.Mods)
+                    {
+                        if(mod.Name == "PaintGun.dev")
+                        {
+                            uiEdit = new UIEdit();
+                            break;
+                        }
+                    }
+                }
             }
 
             // make the paintgun not be able to shoot normally, to avoid needing to add ammo and the stupid hardcoded screen shake
@@ -126,6 +141,8 @@ namespace Digi.PaintGun
 
             var viewportSize = MyAPIGateway.Session.Camera.ViewportSize;
             aspectRatio = (double)viewportSize.X / (double)viewportSize.Y;
+
+            UpdateUISettings();
         }
         #endregion
 
@@ -660,6 +677,7 @@ namespace Digi.PaintGun
                 if(!init)
                     return;
 
+                uiEdit?.Update();
 
                 if(isPlayer && !playerObjectFound)
                 {
@@ -742,216 +760,9 @@ namespace Digi.PaintGun
 
                 viewProjInvCompute = true;
 
-                int toolDrawCount = ToolDraw.Count;
-
-                if(toolDrawCount > 0)
-                {
-                    for(int i = 0; i < toolDrawCount; ++i)
-                    {
-                        ToolDraw[i].Draw();
-                    }
-                }
-
-                if(selectedPlayer != null)
-                {
-                    var selectedCharacter = selectedPlayer.Character;
-
-                    if(selectedCharacter == null || selectedCharacter.MarkedForClose || selectedCharacter.Closed)
-                    {
-                        selectedPlayer = null;
-                    }
-                    else if(selectedCharacter.Visible)
-                    {
-                        var color = Color.Green;
-                        var matrix = selectedCharacter.WorldMatrix;
-                        var box = (BoundingBoxD)selectedCharacter.LocalAABB;
-                        var worldToLocal = selectedCharacter.WorldMatrixInvScaled;
-
-                        MySimpleObjectDraw.DrawAttachedTransparentBox(ref matrix, ref box, ref color, selectedCharacter.Render.GetRenderObjectID(), ref worldToLocal, MySimpleObjectRasterizer.Wireframe, Vector3I.One, 0.05f, null, MATERIAL_GIZMIDRAWLINE, false, blendType: HELPERS_BLEND_TYPE);
-                    }
-                }
-
-                bool hideTextAPI = true;
-
-                if(localHeldTool != null && localColorData != null && !MyAPIGateway.Gui.IsCursorVisible && !(settings.hidePaletteWithHUD && !gameHUD))
-                {
-                    hideTextAPI = false;
-
-                    var cam = MyAPIGateway.Session.Camera;
-                    var camMatrix = cam.WorldMatrix;
-                    var scaleFOV = (float)Math.Tan(cam.FovWithZoom * 0.5);
-                    scaleFOV *= settings.paletteScale;
-
-                    #region Draw HUD palette
-                    {
-                        var worldPos = HUDtoWorld(new Vector2((float)settings.paletteScreenPos.X, (float)settings.paletteScreenPos.Y));
-
-                        float squareWidth = 0.0014f * scaleFOV;
-                        float squareHeight = 0.0012f * scaleFOV;
-                        float selectedWidth = (squareWidth + (squareWidth / 7f));
-                        float selectedHeight = (squareHeight + (squareHeight / 7f));
-                        double spacingAdd = 0.0006 * scaleFOV;
-                        double spacingWidth = (squareWidth * 2) + spacingAdd;
-                        double spacingHeight = (squareHeight * 2) + spacingAdd;
-                        const int MIDDLE_INDEX = 7;
-                        const float BG_WIDTH_MUL = 3.85f;
-                        const float BG_HEIGHT_MUL = 1.3f;
-
-                        var pos = worldPos + camMatrix.Left * (spacingWidth * (MIDDLE_INDEX / 2)) + camMatrix.Up * (spacingHeight / 2);
-
-                        for(int i = 0; i < localColorData.Colors.Count; i++)
-                        {
-                            var v = localColorData.Colors[i];
-                            var c = ColorMaskToRGB(v);
-
-                            if(i == MIDDLE_INDEX)
-                                pos += camMatrix.Left * (spacingWidth * MIDDLE_INDEX) + camMatrix.Down * spacingHeight;
-
-                            if(i == localColorData.SelectedSlot)
-                                MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_SELECTED, Color.White, pos, camMatrix.Left, camMatrix.Up, selectedWidth, selectedHeight, Vector2.Zero, FOREGROUND_BLEND_TYPE);
-
-                            MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_COLOR, c, pos, camMatrix.Left, camMatrix.Up, squareWidth, squareHeight, Vector2.Zero, FOREGROUND_BLEND_TYPE);
-
-                            pos += camMatrix.Right * spacingWidth;
-                        }
-
-                        var color = BLOCKINFO_TITLE_BG_COLOR * (settings.paletteBackgroundOpacity < 0 ? gameHUDBkOpacity : settings.paletteBackgroundOpacity);
-                        MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_BACKGROUND, color, worldPos, camMatrix.Left, camMatrix.Up, (float)(spacingWidth * BG_WIDTH_MUL), (float)(spacingHeight * BG_HEIGHT_MUL), Vector2.Zero, BACKGROUND_BLEND_TYPE);
-                    }
-                    #endregion
-
-                    #region HUD aim info (textAPI or vanilla block info)
-                    bool targetCharacter = (colorPickMode && selectedPlayer != null);
-                    bool showAimInfo = (selectedSlimBlock != null || targetCharacter);
-
-                    if(showAimInfo)
-                    {
-                        if(textObject != null) // textAPI text with manually drawn billboards for GUI
-                        {
-                            Vector3 targetColor = (targetCharacter ? selectedPlayerColorMask : selectedSlimBlock.ColorMaskHSV);
-                            var paintColor = localColorData.Colors[localColorData.SelectedSlot];
-
-                            var worldPos = HUDtoWorld(BLOCKINFO_POSITION);
-                            var worldSize = BLOCKINFO_SIZE;
-
-                            if(Math.Abs(aspectRatio - (16d / 10d)) <= 0.01) // HACK 16:10 aspect ratio manual fix
-                                worldSize.X = 0.018f;
-
-                            worldSize *= 2 * scaleFOV;
-
-                            if(Math.Abs(aspectRatio - (5d / 4d)) <= 0.01) // HACK 5:4 aspect ratio manual fix
-                                worldSize.X *= ASPECT_RATIO_5_4_FIX;
-
-                            var topPos = worldPos + camMatrix.Left * worldSize.X + camMatrix.Up * (worldSize.Y * 2); // center-top position on the box
-
-                            var titleBgHeight = (0.0065f * scaleFOV);
-                            var lowerBgHeight = (worldSize.Y - titleBgHeight);
-
-                            var titleBgPos = topPos + camMatrix.Down * titleBgHeight;
-                            var lowerBgPos = topPos + camMatrix.Down * (titleBgHeight * 2 + lowerBgHeight);
-
-                            MyTransparentGeometry.AddBillboardOriented(MATERIAL_VANILLA_SQUARE, BLOCKINFO_TITLE_BG_COLOR, titleBgPos, camMatrix.Left, camMatrix.Up, worldSize.X, titleBgHeight, Vector2.Zero, BACKGROUND_BLEND_TYPE);
-                            MyTransparentGeometry.AddBillboardOriented(MATERIAL_VANILLA_SQUARE, BLOCKINFO_LOWER_BG_COLOR, lowerBgPos, camMatrix.Left, camMatrix.Up, worldSize.X, lowerBgHeight, Vector2.Zero, BACKGROUND_BLEND_TYPE);
-
-                            var topLeft = topPos + camMatrix.Left * worldSize.X;
-                            var blockIconPos = topLeft + camMatrix.Down * (BLOCKINFO_ICONS_OFFSET.Y * scaleFOV) + camMatrix.Left * (BLOCKINFO_ICONS_OFFSET.X * scaleFOV);
-                            var paintIconPos = blockIconPos + camMatrix.Down * (BLOCKINFO_ICONS_OFFSET.Z * scaleFOV);
-                            var iconSize = BLOCKINFO_ICON_SIZE * scaleFOV;
-
-                            if(targetCharacter)
-                                MyTransparentGeometry.AddBillboardOriented(MATERIAL_ICON_GENERIC_CHARACTER, ColorMaskToRGB(targetColor), blockIconPos, camMatrix.Left, camMatrix.Up, iconSize, iconSize, Vector2.Zero, FOREGROUND_BLEND_TYPE);
-                            else
-                                MyTransparentGeometry.AddBillboardOriented(MATERIAL_ICON_GENERIC_BLOCK, ColorMaskToRGB(targetColor), blockIconPos, camMatrix.Left, camMatrix.Up, iconSize, iconSize, Vector2.Zero, FOREGROUND_BLEND_TYPE);
-
-                            MyTransparentGeometry.AddBillboardOriented(MATERIAL_ICON_PAINT_AMMO, ColorMaskToRGB(paintColor), paintIconPos, camMatrix.Left, camMatrix.Up, iconSize, iconSize, Vector2.Zero, FOREGROUND_BLEND_TYPE);
-
-                            var progressBarPos = topLeft + camMatrix.Left * (BLOCKINFO_BAR_OFFSET_X * scaleFOV) + camMatrix.Down * (titleBgHeight * 2 + lowerBgHeight);
-                            var progressBarWidth = BLOCKINFO_BAR_WIDTH * scaleFOV;
-                            var progressBarHeight = lowerBgHeight * BLOCKINFO_BAR_HEIGHT_SCALE;
-
-                            MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_BACKGROUND, BLOCKINFO_BAR_BG_COLOR, progressBarPos, camMatrix.Left, camMatrix.Up, progressBarWidth, progressBarHeight, Vector2.Zero, BACKGROUND_BLEND_TYPE);
-
-                            var progress = ColorPercentFull(targetColor, paintColor);
-
-                            progressBarPos += camMatrix.Down * (progressBarHeight * (1 - progress));
-                            progressBarHeight *= progress;
-
-                            MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_COLOR, BLOCKINFO_BAR_COLOR, progressBarPos, camMatrix.Left, camMatrix.Up, progressBarWidth, progressBarHeight, Vector2.Zero, FOREGROUND_BLEND_TYPE);
-                        }
-                        else // otherwise, use the game's block info, but it's limited, can't show the color
-                        {
-                            // TODO this entire thing is broken due to recently added tool hints overwriting it
-                            var targetColor = selectedSlimBlock.ColorMaskHSV;
-                            var paintColor = localColorData.Colors[localColorData.SelectedSlot];
-                            var info = Sandbox.Game.Gui.MyHud.BlockInfo;
-
-                            info.Visible = true;
-
-                            if(targetCharacter)
-                            {
-                                info.BlockName = selectedPlayer.DisplayName;
-                                info.BlockIcons = new string[] { @"Textures\GUI\Icons\buttons\Character.dds" };
-                                info.GridSize = MyCubeSize.Small;
-                                info.BlockBuiltBy = 0;
-                            }
-                            else
-                            {
-                                var def = (MyCubeBlockDefinition)selectedSlimBlock.BlockDefinition;
-                                info.BlockName = def.DisplayNameText;
-                                info.BlockIcons = def.Icons;
-                                info.GridSize = selectedSlimBlock.CubeGrid.GridSizeEnum;
-
-                                if(prevSlimBlock != selectedSlimBlock)
-                                {
-                                    prevSlimBlock = selectedSlimBlock;
-                                    selectedBlockBuiltBy = selectedSlimBlock.GetObjectBuilder().BuiltBy; // HACK using objectbuilder for built by because there's no other way to get it.
-                                }
-
-                                info.BlockBuiltBy = selectedBlockBuiltBy;
-                            }
-
-                            info.ShowDetails = false;
-                            info.ShowAvailable = true;
-                            info.MissingComponentIndex = -1;
-                            info.CriticalComponentIndex = 0;
-                            info.OwnershipIntegrity = 0f;
-                            info.CriticalIntegrity = 0.999f;
-                            info.BlockIntegrity = ColorPercentFull(targetColor, paintColor);
-
-                            int ammo = (localHeldTool != null ? localHeldTool.Ammo : 0);
-
-                            info.Components.Clear();
-                            info.Components.AddArray(blockInfoLines);
-
-                            int i = blockInfoLines.Length;
-                            blockInfoLines[--i].ComponentName = blockInfoStatus[0];
-
-                            var line = blockInfoLines[--i];
-                            line.ComponentName = "Target's color:\n  " + ColorMaskToString(targetColor);
-                            line.Icons = line.Icons ?? new string[1];
-                            line.Icons[0] = (targetCharacter ? @"Textures\GUI\Icons\buttons\Character.dds" : @"Textures\GUI\Icons\Fake.dds");
-                            blockInfoLines[i] = line;
-
-                            line = blockInfoLines[--i];
-                            line.ComponentName = "Paint: " + ammo + "\n  " + ColorMaskToString(paintColor);
-                            line.Icons = line.Icons ?? new string[1];
-                            line.Icons[0] = ModContext.ModPath + @"\Textures\Icons\PaintGunMag.dds";
-                            blockInfoLines[i] = line;
-
-                            if(blockInfoStatus[1] != null)
-                                blockInfoLines[--i].ComponentName = blockInfoStatus[1];
-                            else
-                                blockInfoLines[--i].ComponentName = "\nKeys & commands: /pg help";
-                        }
-                    }
-                    #endregion
-                }
-
-                if(textAPIvisible && hideTextAPI && titleObject != null && titleObject.Visible)
-                {
-                    titleObject.Visible = false;
-                    textObject.Visible = false;
-                }
+                DrawToolParticles();
+                DrawCharacterSelection();
+                DrawHUDPalette();
             }
             catch(Exception e)
             {
@@ -959,23 +770,294 @@ namespace Digi.PaintGun
             }
         }
 
-        #region Aimed object info GUI
+        private void DrawToolParticles()
+        {
+            int toolDrawCount = ToolDraw.Count;
+
+            if(toolDrawCount > 0)
+            {
+                for(int i = 0; i < toolDrawCount; ++i)
+                {
+                    ToolDraw[i].Draw();
+                }
+            }
+        }
+
+        private void DrawCharacterSelection()
+        {
+            if(selectedPlayer == null)
+                return;
+
+            var selectedCharacter = selectedPlayer.Character;
+
+            if(selectedCharacter == null || selectedCharacter.MarkedForClose || selectedCharacter.Closed)
+            {
+                selectedPlayer = null;
+            }
+            else if(selectedCharacter.Visible)
+            {
+                var color = Color.Green;
+                var matrix = selectedCharacter.WorldMatrix;
+                var box = (BoundingBoxD)selectedCharacter.LocalAABB;
+                var worldToLocal = selectedCharacter.WorldMatrixInvScaled;
+
+                MySimpleObjectDraw.DrawAttachedTransparentBox(ref matrix, ref box, ref color, selectedCharacter.Render.GetRenderObjectID(), ref worldToLocal, MySimpleObjectRasterizer.Wireframe, Vector3I.One, 0.05f, null, MATERIAL_GIZMIDRAWLINE, false, blendType: HELPERS_BLEND_TYPE);
+            }
+        }
+
+        private readonly Color PALETTE_COLOR_BG = new Color(41, 54, 62);
+
+        private void DrawHUDPalette()
+        {
+            bool hideTextAPI = true;
+
+            if(localHeldTool != null && localColorData != null && !MyAPIGateway.Gui.IsCursorVisible && !(settings.hidePaletteWithHUD && !gameHUD))
+            {
+                hideTextAPI = false;
+
+                var cam = MyAPIGateway.Session.Camera;
+                var camMatrix = cam.WorldMatrix;
+                var scaleFOV = (float)Math.Tan(cam.FovWithZoom * 0.5);
+                scaleFOV *= settings.paletteScale;
+
+                var worldPos = HUDtoWorld(new Vector2((float)settings.paletteScreenPos.X, (float)settings.paletteScreenPos.Y));
+
+                float squareWidth = 0.0014f * scaleFOV;
+                float squareHeight = 0.0010f * scaleFOV;
+                float selectedWidth = (squareWidth + (squareWidth / 3f));
+                float selectedHeight = (squareHeight + (squareHeight / 3f));
+                double spacingAdd = 0.0006 * scaleFOV;
+                double spacingWidth = (squareWidth * 2) + spacingAdd;
+                double spacingHeight = (squareHeight * 2) + spacingAdd;
+                const int MIDDLE_INDEX = 7;
+                const float BG_WIDTH_MUL = 3.85f;
+                const float BG_HEIGHT_MUL = 1.3f;
+
+                var alpha = (settings.paletteBackgroundOpacity < 0 ? gameHUDBkOpacity : settings.paletteBackgroundOpacity);
+                MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_BACKGROUND, PALETTE_COLOR_BG * alpha, worldPos, camMatrix.Left, camMatrix.Up, (float)(spacingWidth * BG_WIDTH_MUL), (float)(spacingHeight * BG_HEIGHT_MUL), Vector2.Zero, UI_BG_BLENDTYPE);
+
+                var pos = worldPos + camMatrix.Left * (spacingWidth * (MIDDLE_INDEX / 2)) + camMatrix.Up * (spacingHeight / 2);
+
+                for(int i = 0; i < localColorData.Colors.Count; i++)
+                {
+                    var keenHSV = localColorData.Colors[i];
+                    var rgb = ColorMaskToRGB(keenHSV);
+
+                    if(i == MIDDLE_INDEX)
+                        pos += camMatrix.Left * (spacingWidth * MIDDLE_INDEX) + camMatrix.Down * spacingHeight;
+
+                    if(i == localColorData.SelectedSlot)
+                        MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_COLOR, Color.White, pos, camMatrix.Left, camMatrix.Up, selectedWidth, selectedHeight, Vector2.Zero, UI_FG_BLENDTYPE);
+
+                    MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_COLOR, rgb, pos, camMatrix.Left, camMatrix.Up, squareWidth, squareHeight, Vector2.Zero, UI_FG_BLENDTYPE);
+
+                    pos += camMatrix.Right * spacingWidth;
+                }
+
+                // DEBUG TODO: needs more color testing - vanilla title bg doesn't match my bg even though they're copied colors...
+                //{
+                //    worldPos = HUDtoWorld(new Vector2((float)settings.aimInfoScreenPos.X, (float)settings.aimInfoScreenPos.Y));
+                //
+                //    worldPos += camMatrix.Down * (0.02f * scaleFOV);
+                //
+                //    var posA = worldPos + camMatrix.Left * (0.05f * scaleFOV);
+                //    var posB = worldPos + camMatrix.Up * (0.2f * scaleFOV);
+                //    var posC = worldPos;
+                //    var dir = camMatrix.Forward;
+                //
+                //    MyTransparentGeometry.AddTriangleBillboard(posA, posB, posC, dir, dir, dir,
+                //        Vector2.Zero, Vector2.Zero, Vector2.Zero, MATERIAL_PALETTE_COLOR, 0, posA, UI_TITLE_BG_COLOR.ToVector4().ToLinearRGB(), UI_BG_BLENDTYPE);
+                //}
+            }
+
+            if(hideTextAPI)
+                SetUIVisibility(false);
+        }
+
+        #region Aimed object UI
+        internal Vector2D uiPosition => settings.aimInfoScreenPos;
+        internal Vector2D uiTextBgPosition = new Vector2D(0, -0.071);
+        internal Vector2D uiProgressBarPosition = new Vector2D(0.005, -0.079);
+
+        internal const float UI_BOX_WIDTH = 0.337f * (16f / 9f);
+
+        internal const float UI_TITLE_SCALE = 1f;
+        internal const float UI_TITLE_BG_HEIGHT = 0.071f;
+        internal readonly Color UI_TITLE_BG_COLOR = new Vector4(53f / 255f, 4f / 15f, 76f / 255f, 0.9f); // from MyGuiScreenHudSpace.RecreateControls() @ MyGuiControlBlockInfo
+
+        internal const float UI_TEXT_SCALE = 0.8f;
+        internal const float UI_TEXT_BG_HEIGHT = 0.4f;
+        internal readonly Color UI_TEXT_BG_COLOR = new Vector4(13f / 85f, 52f / 255f, 59f / 255f, 0.9f);
+
+        internal const BlendTypeEnum UI_FG_BLENDTYPE = BlendTypeEnum.PostPP;
+        internal const BlendTypeEnum UI_BG_BLENDTYPE = BlendTypeEnum.PostPP;
+
+        internal const float UI_COLORBOX_WIDTH = 0.07f;
+        internal const float UI_COLORBOX_HEIGHT = 0.07f;
+
+        internal readonly Color UI_PROGRESSBAR_COLOR = new Vector4(0.478431374f, 0.549019635f, 0.6039216f, 1f);
+        internal readonly Color UI_PROGRESSBAR_BG_COLOR = new Vector4(0.266666681f, 0.3019608f, 0.3372549f, 0.9f);
+        internal const float UI_PROGRESSBAR_WIDTH = 0.02f * (16f / 9f);
+        internal const float UI_PROGRESSBAR_HEIGHT = 0.384f;
+
+        internal HudAPIv2.HUDMessage uiTitle;
+        internal HudAPIv2.BillBoardHUDMessage uiTitleBg;
+        internal HudAPIv2.HUDMessage uiText;
+        internal HudAPIv2.BillBoardHUDMessage uiTextBg;
+        internal HudAPIv2.BillBoardHUDMessage uiTargetColor;
+        internal HudAPIv2.BillBoardHUDMessage uiPaintColor;
+        internal HudAPIv2.BillBoardHUDMessage uiProgressBar;
+        internal HudAPIv2.BillBoardHUDMessage uiProgressBarBg;
+        internal readonly HudAPIv2.MessageBase[] ui = new HudAPIv2.MessageBase[8];
+
+        private void SetUIVisibility(bool set)
+        {
+            if(uiTitle == null)
+                return;
+
+            if(set == textAPIvisible)
+                return;
+
+            textAPIvisible = set;
+
+            for(int i = 0; i < ui.Length; ++i)
+            {
+                ui[i].Visible = set;
+            }
+        }
+
+        private void SetUIOption(HudAPIv2.Options flag, bool set)
+        {
+            if(uiTitle == null)
+                return;
+
+            for(int i = 0; i < ui.Length; ++i)
+            {
+                var msgBase = ui[i];
+
+                var hudMessage = msgBase as HudAPIv2.HUDMessage;
+                if(hudMessage != null)
+                {
+                    if(set)
+                        hudMessage.Options |= flag;
+                    else
+                        hudMessage.Options &= ~flag;
+                    continue;
+                }
+
+                var hudBillboard = msgBase as HudAPIv2.BillBoardHUDMessage;
+                if(hudBillboard != null)
+                {
+                    if(set)
+                        hudBillboard.Options |= flag;
+                    else
+                        hudBillboard.Options &= ~flag;
+                    continue;
+                }
+            }
+        }
+
+        internal void UpdateUISettings()
+        {
+            if(uiTitle == null)
+                return;
+
+            SetUIOption(HudAPIv2.Options.HideHud, settings.hidePaletteWithHUD);
+
+            var alpha = (settings.aimInfoBackgroundOpacity < 0 ? gameHUDBkOpacity : settings.aimInfoBackgroundOpacity);
+
+            uiTitleBg.BillBoardColor = UI_TITLE_BG_COLOR * alpha;
+            uiTextBg.BillBoardColor = UI_TEXT_BG_COLOR * alpha;
+            uiProgressBarBg.BillBoardColor = UI_PROGRESSBAR_BG_COLOR * MathHelper.Clamp(alpha * 2, 0.1f, 0.9f);
+
+            float aspectRatioMod = (float)(1d / aspectRatio);
+            float boxBgWidth = UI_BOX_WIDTH * aspectRatioMod;
+            float colorWidth = UI_COLORBOX_WIDTH * aspectRatioMod;
+            float progressBarWidth = UI_PROGRESSBAR_WIDTH * aspectRatioMod;
+
+            for(int i = 0; i < ui.Length; ++i)
+            {
+                var msgBase = ui[i];
+
+                if(msgBase is HudAPIv2.HUDMessage)
+                {
+                    var obj = (HudAPIv2.HUDMessage)msgBase;
+
+                    obj.Origin = uiPosition;
+                }
+                else if(msgBase is HudAPIv2.BillBoardHUDMessage)
+                {
+                    var obj = (HudAPIv2.BillBoardHUDMessage)msgBase;
+
+                    obj.Origin = uiPosition;
+                }
+            }
+
+            //float scale = settings.aimInfoScale;
+            const float scale = 1f; // DEBUG TODO: make it scaleable?
+
+            uiTitleBg.Width = boxBgWidth * scale;
+            uiTextBg.Width = boxBgWidth * scale;
+            uiPaintColor.Width = colorWidth * scale;
+            uiTargetColor.Width = colorWidth * scale;
+            uiProgressBar.Width = progressBarWidth * scale;
+            uiProgressBarBg.Width = progressBarWidth * scale;
+
+            uiTitle.Offset = new Vector2D(0.012, -0.018) * scale;
+            uiTitleBg.Offset = new Vector2D(uiTitleBg.Width * 0.5, uiTitleBg.Height * -0.5);
+
+            // 0.032
+            uiText.Offset = new Vector2D(0.07 * aspectRatioMod, -0.09) * scale;
+            uiTextBg.Offset = new Vector2D(uiTextBg.Width * 0.5, uiTextBg.Height * -0.5) + (uiTextBgPosition * scale);
+
+            // 0.045
+            uiTargetColor.Offset = new Vector2D(0.09 * aspectRatioMod, -0.228) * scale;
+            uiPaintColor.Offset = new Vector2D(0.09 * aspectRatioMod, -0.35) * scale;
+
+            uiProgressBar.Offset = new Vector2D(uiProgressBar.Width * 0.5, uiProgressBar.Height * -0.5) + (uiProgressBarPosition * scale);
+            uiProgressBarBg.Offset = new Vector2D(uiProgressBarBg.Width * 0.5, uiProgressBarBg.Height * -0.5) + (uiProgressBarPosition * scale);
+
+            uiTitle.Scale = UI_TITLE_SCALE * scale;
+            uiTitleBg.Scale = scale;
+            uiText.Scale = UI_TEXT_SCALE * scale;
+            uiTextBg.Scale = scale;
+            uiTargetColor.Scale = scale;
+            uiPaintColor.Scale = scale;
+            uiProgressBar.Scale = scale;
+            uiProgressBarBg.Scale = scale;
+        }
+
         public void GenerateAimInfo()
         {
             if(!TextAPIReady)
                 return;
 
-            if(titleObject == null)
-                titleObject = new HudAPIv2.HUDMessage(new StringBuilder(), Vector2D.Zero, Scale: BLOCKINFO_TITLE_SCALE, HideHud: settings.hidePaletteWithHUD, Blend: FOREGROUND_BLEND_TYPE);
+            if(uiTitle == null)
+            {
+                // NOTE: this creation order is needed to have background elements stay in background when everything uses PostPP (or SDR)
+                ui[3] = uiTextBg = new HudAPIv2.BillBoardHUDMessage(MATERIAL_PALETTE_BACKGROUND, uiPosition, UI_TEXT_BG_COLOR, Width: UI_BOX_WIDTH, Height: UI_TEXT_BG_HEIGHT, Blend: UI_BG_BLENDTYPE);
+                ui[1] = uiTitleBg = new HudAPIv2.BillBoardHUDMessage(MATERIAL_PALETTE_BACKGROUND, uiPosition, UI_TITLE_BG_COLOR, Width: UI_BOX_WIDTH, Height: UI_TITLE_BG_HEIGHT, Blend: UI_BG_BLENDTYPE);
 
-            if(textObject == null)
-                textObject = new HudAPIv2.HUDMessage(new StringBuilder(), Vector2D.Zero, Scale: BLOCKINFO_TEXT_SCALE, HideHud: settings.hidePaletteWithHUD, Blend: FOREGROUND_BLEND_TYPE);
+                ui[0] = uiTitle = new HudAPIv2.HUDMessage(new StringBuilder(), uiPosition, Scale: UI_TITLE_SCALE, Blend: UI_FG_BLENDTYPE);
+                ui[2] = uiText = new HudAPIv2.HUDMessage(new StringBuilder(), uiPosition, Scale: UI_TEXT_SCALE, Blend: UI_FG_BLENDTYPE);
+
+                ui[4] = uiTargetColor = new HudAPIv2.BillBoardHUDMessage(MATERIAL_ICON_GENERIC_BLOCK, uiPosition, Color.White, Width: UI_COLORBOX_WIDTH, Height: UI_COLORBOX_HEIGHT, Blend: UI_FG_BLENDTYPE);
+                ui[5] = uiPaintColor = new HudAPIv2.BillBoardHUDMessage(MATERIAL_ICON_PAINT_AMMO, uiPosition, Color.White, Width: UI_COLORBOX_WIDTH, Height: UI_COLORBOX_HEIGHT, Blend: UI_FG_BLENDTYPE);
+
+                ui[7] = uiProgressBarBg = new HudAPIv2.BillBoardHUDMessage(MATERIAL_PALETTE_BACKGROUND, uiPosition, UI_PROGRESSBAR_BG_COLOR, Width: UI_PROGRESSBAR_WIDTH, Height: UI_PROGRESSBAR_HEIGHT, Blend: UI_BG_BLENDTYPE);
+                ui[6] = uiProgressBar = new HudAPIv2.BillBoardHUDMessage(MATERIAL_PALETTE_BACKGROUND, uiPosition, UI_PROGRESSBAR_COLOR, Width: UI_PROGRESSBAR_WIDTH, Height: UI_PROGRESSBAR_HEIGHT, Blend: UI_FG_BLENDTYPE);
+
+                UpdateUISettings();
+            }
 
             bool targetCharacter = (colorPickMode && selectedPlayer != null);
             bool visible = (!MyAPIGateway.Gui.IsCursorVisible && localColorData != null && (targetCharacter || selectedSlimBlock != null));
 
-            titleObject.Visible = visible;
-            textObject.Visible = visible;
+            for(int i = 0; i < ui.Length; ++i)
+            {
+                ui[i].Visible = visible;
+            }
+
             textAPIvisible = visible;
 
             if(!visible)
@@ -985,54 +1067,61 @@ namespace Digi.PaintGun
             var paintColor = localColorData.Colors[localColorData.SelectedSlot];
             int ammo = (localHeldTool != null ? localHeldTool.Ammo : 0);
 
-            var title = titleObject.Message.Clear().Append("<color=220,244,252>");
+            var title = uiTitle.Message.Clear().Append("<color=220,244,252>");
 
             if(targetCharacter)
             {
+                uiTargetColor.Material = MATERIAL_ICON_GENERIC_CHARACTER;
                 targetColor = selectedPlayerColorMask;
 
                 title.Append(selectedPlayer.DisplayName);
             }
             else
             {
+                uiTargetColor.Material = MATERIAL_ICON_GENERIC_BLOCK;
                 targetColor = selectedSlimBlock.ColorMaskHSV;
 
                 var selectedDef = (MyCubeBlockDefinition)selectedSlimBlock.BlockDefinition;
                 title.Append(selectedDef.DisplayNameText);
             }
 
+            uiTargetColor.BillBoardColor = ColorMaskToRGB(targetColor);
+            uiPaintColor.BillBoardColor = ColorMaskToRGB(paintColor);
 
-            var s = textObject.Message;
-            s.Clear()
+            var progress = ColorScalar(targetColor, paintColor);
+            var height = UI_PROGRESSBAR_HEIGHT * progress;
+
+            uiProgressBar.Height = height;
+            uiProgressBar.Offset = new Vector2D(uiProgressBar.Width * 0.5, -UI_PROGRESSBAR_HEIGHT + uiProgressBar.Height * 0.5) + uiProgressBarPosition;
+
+            var text = uiText.Message;
+            text.Clear()
                 .Append(blockInfoStatus[0])
                 .Append("\n\n<color=220,244,252>");
 
             if(colorPickMode && selectedPlayer != null)
-                s.Append("Player's selected color:");
+                text.Append("Player's selected color:");
             else
-                s.Append("Block's color:");
+                text.Append("Block's color:");
 
-            s.Append("\n\n<color=white>        ")
+            text.Append("\n\n<color=white>        ")
                 .Append(ColorMaskToString(targetColor))
                 .Append("\n\n<color=220,244,252>");
 
             if(colorPickMode)
-                s.Append("Replace slot: ").Append(localColorData.SelectedSlot + 1);
+                text.Append("Replace slot: ").Append(localColorData.SelectedSlot + 1);
             else
-                s.Append("Paint: ").Append(ammo);
+                text.Append("Paint: ").Append(ammo);
 
-            s.Append("\n\n<color=white>        ")
+            text.Append("\n\n<color=white>        ")
                 .Append(ColorMaskToString(paintColor))
-                .Append("\n\n");
+                .Append('\n');
 
             if(blockInfoStatus[1] != null)
-                s.Append(blockInfoStatus[1]);
-            else
-                s.Append("\n<color=gray>Keys & commands: /pg help");
+                text.Append('\n').Append(blockInfoStatus[1]);
 
-            var hudPos = new Vector2D(BLOCKINFO_POSITION.X, BLOCKINFO_POSITION.Y);
-            titleObject.Origin = hudPos + BLOCKINFO_TITLE_OFFSET;
-            textObject.Origin = hudPos + BLOCKINFO_TEXT_OFFSET;
+            if(blockInfoStatus[2] != null)
+                text.Append('\n').Append(blockInfoStatus[2]);
         }
         #endregion
 
@@ -1769,20 +1858,7 @@ namespace Digi.PaintGun
                         else
                             MyVisualScriptLogicProvider.SendChatMessage("Config created with the current settings.", MOD_NAME, 0, MyFontEnum.Green);
 
-                        if(titleObject != null)
-                        {
-                            if(settings.hidePaletteWithHUD)
-                            {
-                                titleObject.Options |= HudAPIv2.Options.HideHud;
-                                textObject.Options |= HudAPIv2.Options.HideHud;
-                            }
-                            else
-                            {
-                                titleObject.Options &= ~HudAPIv2.Options.HideHud;
-                                textObject.Options &= ~HudAPIv2.Options.HideHud;
-                            }
-                        }
-
+                        UpdateUISettings();
                         settings.Save();
                         return;
                     }

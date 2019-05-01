@@ -9,7 +9,7 @@ namespace Digi.PaintGun
     public class Settings
     {
         private const string FILE = "paintgun.cfg";
-        private const int CFG_VERSION = 2;
+        private const int CFG_VERSION = 3;
         private const int CFG_VERSION_NEWHUDDEFAULTS = 1;
         private const int CFG_VERSION_HUDBKOPACITYDEFAULTS = 2;
 
@@ -21,27 +21,52 @@ namespace Digi.PaintGun
         public Vector2D paletteScreenPos = paletteScreenPosDefault;
         public float paletteScale = paletteScaleDefault;
         public float paletteBackgroundOpacity = -1;
-
-        public static readonly Vector2D paletteScreenPosDefault = new Vector2D(0.4345, -0.691);
-        public static readonly float paletteScaleDefault = 0.5f;
-
+        public Vector2D aimInfoScreenPos = aimInfoScreenPosDefault;
+        public float aimInfoScale = aimInfoScaleDefault;
+        public float aimInfoBackgroundOpacity = -1;
         public ControlCombination colorPickMode1;
         public ControlCombination colorPickMode2;
-
         public ControlCombination instantColorPick1;
         public ControlCombination instantColorPick2;
-
         public ControlCombination replaceColorMode1;
         public ControlCombination replaceColorMode2;
 
+        public static readonly Vector2D paletteScreenPosDefault = new Vector2D(0.4345, -0.691);
+        public static readonly float paletteScaleDefault = 0.5f;
+        public static readonly Vector2D aimInfoScreenPosDefault = new Vector2D(0.642f, -0.22f);
+        public static readonly float aimInfoScaleDefault = 1f;
         public ControlCombination default_colorPickMode1;
         public ControlCombination default_colorPickMode2;
-
         public ControlCombination default_instantColorPick1;
         public ControlCombination default_instantColorPick2;
-
         public ControlCombination default_replaceColorMode1;
         public ControlCombination default_replaceColorMode2;
+
+        private void ResetToDefaults()
+        {
+            extraSounds = true;
+            sprayParticles = true;
+            spraySoundVolume = 0.8f;
+            selectColorZigZag = false;
+            hidePaletteWithHUD = true;
+
+            paletteScreenPos = paletteScreenPosDefault;
+            paletteScale = paletteScaleDefault;
+            paletteBackgroundOpacity = -1;
+
+            aimInfoScreenPos = aimInfoScreenPosDefault;
+            aimInfoScale = aimInfoScaleDefault;
+            aimInfoBackgroundOpacity = -1;
+
+            colorPickMode1 = default_colorPickMode1;
+            colorPickMode2 = default_colorPickMode2;
+
+            instantColorPick1 = default_instantColorPick1;
+            instantColorPick2 = default_instantColorPick2;
+
+            replaceColorMode1 = default_replaceColorMode1;
+            replaceColorMode2 = default_replaceColorMode2;
+        }
 
         private char[] CHARS = new char[] { '=' };
 
@@ -88,18 +113,6 @@ namespace Digi.PaintGun
             }
 
             return false;
-        }
-
-        private void ResetToDefaults()
-        {
-            colorPickMode1 = default_colorPickMode1;
-            colorPickMode2 = default_colorPickMode2;
-
-            instantColorPick1 = default_instantColorPick1;
-            instantColorPick2 = default_instantColorPick2;
-
-            replaceColorMode1 = default_replaceColorMode1;
-            replaceColorMode2 = default_replaceColorMode2;
         }
 
         private void ReadSettings(TextReader file)
@@ -176,37 +189,79 @@ namespace Digi.PaintGun
                                 Log.Error("Invalid " + key + " value: " + value);
                             continue;
                         case "palettescreenpos":
+                        case "aiminfoscreenpos":
                             var vars = value.Split(',');
                             double x, y;
                             if(vars.Length == 2 && double.TryParse(vars[0], out x) && double.TryParse(vars[1], out y))
                             {
-                                if(prevConfigVersion < CFG_VERSION_NEWHUDDEFAULTS && x == 0.29d && y == -0.73d) // reset to default if config is older and had default setting
-                                    paletteScreenPos = paletteScreenPosDefault;
+                                var vec = new Vector2D(x, y);
+
+                                if(key == "aiminfoscreenpos")
+                                {
+                                    aimInfoScreenPos = vec;
+                                }
                                 else
-                                    paletteScreenPos = new Vector2D(x, y);
+                                {
+                                    if(prevConfigVersion < CFG_VERSION_NEWHUDDEFAULTS && x == 0.29d && y == -0.73d) // reset to default if config is older and had default setting
+                                        paletteScreenPos = paletteScreenPosDefault;
+                                    else
+                                        paletteScreenPos = vec;
+                                }
                             }
                             else
                                 Log.Error("Invalid " + key + " value: " + value);
                             continue;
                         case "palettescale":
+                        case "aiminfoscale":
                             if(float.TryParse(value, out f))
                             {
-                                if(prevConfigVersion < CFG_VERSION_NEWHUDDEFAULTS && f == 1f) // reset to default if config is older and had default setting
-                                    paletteScale = paletteScaleDefault;
+                                f = MathHelper.Clamp(f, -100, 100);
+
+                                if(key == "aiminfoscale")
+                                {
+                                    aimInfoScale = f;
+                                }
                                 else
-                                    paletteScale = MathHelper.Clamp(f, -100, 100);
+                                {
+                                    if(prevConfigVersion < CFG_VERSION_NEWHUDDEFAULTS && f == 1f) // reset to default if config is older and had default setting
+                                        paletteScale = paletteScaleDefault;
+                                    else
+                                        paletteScale = f;
+                                }
                             }
                             else
                                 Log.Error("Invalid " + key + " value: " + value);
                             continue;
                         case "palettebackgroundopacity":
-                            if(prevConfigVersion < CFG_VERSION_HUDBKOPACITYDEFAULTS || value.Trim().Equals("hud", StringComparison.CurrentCultureIgnoreCase))
-                                paletteBackgroundOpacity = -1;
-                            else if(float.TryParse(value, out f))
-                                paletteBackgroundOpacity = MathHelper.Clamp(f, 0, 1);
-                            else
-                                Log.Error("Invalid " + key + " value: " + value);
-                            continue;
+                        case "aiminfobackgroundopacity":
+                            {
+                                if(value.Trim().Equals("hud", StringComparison.CurrentCultureIgnoreCase))
+                                {
+                                    f = -1;
+                                }
+                                else if(float.TryParse(value, out f))
+                                {
+                                    f = MathHelper.Clamp(f, 0, 1);
+                                }
+                                else
+                                {
+                                    Log.Error("Invalid " + key + " value: " + value);
+                                    continue;
+                                }
+
+                                if(key == "aiminfoscale")
+                                {
+                                    aimInfoScale = f;
+                                }
+                                else
+                                {
+                                    if(prevConfigVersion < CFG_VERSION_HUDBKOPACITYDEFAULTS)
+                                        paletteBackgroundOpacity = -1;
+                                    else
+                                        paletteBackgroundOpacity = f;
+                                }
+                                continue;
+                            }
                         case "pickcolorinput1": // backwards compatibility
                         case "pickcolorinput2": // backwards compatibility
                         case "pickcolormode-input1":
@@ -300,9 +355,15 @@ namespace Digi.PaintGun
             str.Append("SpraySoundVolume=").Append(spraySoundVolume).AppendLine(comments ? " // paint gun spraying sound volume. Default: 0.8" : "");
             str.Append("SelectColorZigZag=").Append(selectColorZigZag).AppendLine(comments ? " // type of scrolling through colors in the palette, false is each row at a time, true is in zig-zag. Default: false" : "");
             str.Append("HidePaletteWithHUD=").Append(hidePaletteWithHUD).AppendLine(comments ? " // wether to hide the color palette and aim info along with the HUD. Set to false to always show regardless of the HUD being visible or not. Default: true" : "");
-            str.Append("PaletteScreenPos=").Append(Math.Round(paletteScreenPos.X, 5)).Append(", ").Append(Math.Round(paletteScreenPos.Y, 5)).AppendLine(comments ? " // color palette screen position in X and Y coordinates where 0,0 is the screen center. Positive values are right and up and negative ones are opposite of that. Default: 0.4345, -0.691" : "");
-            str.Append("PaletteScale=").Append(Math.Round(paletteScale, 5)).AppendLine(comments ? " // color palette overall scale. Default: 0.5" : "");
-            str.Append("PaletteBackgroundOpacity=").Append(paletteBackgroundOpacity < 0 ? "HUD" : Math.Round(paletteBackgroundOpacity, 5).ToString()).AppendLine(comments ? " // Palette's background opacity percent scale (0 to 1 value) or set to HUD to use the game's HUD opacity. Default: HUD" : "");
+
+            str.Append("PaletteScreenPos=").Append(Math.Round(paletteScreenPos.X, 5)).Append(", ").Append(Math.Round(paletteScreenPos.Y, 5)).AppendLine(comments ? $" // color palette screen position in X and Y coordinates where 0,0 is the screen center. Positive values are right and up and negative ones are opposite of that. Default: {paletteScreenPos.X:0.#####}, {paletteScreenPos.Y:0.#####}" : "");
+            str.Append("PaletteScale=").Append(Math.Round(paletteScale, 5)).AppendLine(comments ? $" // color palette overall scale. Default: {paletteScaleDefault:0.#####}" : "");
+            str.Append("PaletteBackgroundOpacity=").Append(paletteBackgroundOpacity < 0 ? "HUD" : Math.Round(paletteBackgroundOpacity, 5).ToString()).AppendLine(comments ? " // palette's background opacity percent scalar (0 to 1 value) or set to HUD to use the game's HUD opacity. Default: HUD" : "");
+
+            str.Append("AimInfoScreenPos=").Append(Math.Round(aimInfoScreenPos.X, 5)).Append(", ").Append(Math.Round(aimInfoScreenPos.Y, 5)).AppendLine(comments ? $" // aim info's screen position in X and Y coordinates where 0,0 is the screen center. Positive values are right and up and negative ones are opposite of that. Default: {aimInfoScreenPos.X:0.#####}, {aimInfoScreenPos.Y:0.#####}" : "");
+            // DEBUG make it work with scale?
+            //str.Append("AimInfoScale=").Append(Math.Round(aimInfoScale, 5)).AppendLine(comments ? $" // aiming info box overall scale. Default: {aimInfoScaleDefault:0.#####}" : "");
+            str.Append("AimInfoBackgroundOpacity=").Append(aimInfoBackgroundOpacity < 0 ? "HUD" : Math.Round(aimInfoBackgroundOpacity, 5).ToString()).AppendLine(comments ? " // aim info's background opacity percent scalar (0 to 1 value) or set to HUD to use the game's HUD opacity. Default: HUD" : "");
 
             if(comments)
             {

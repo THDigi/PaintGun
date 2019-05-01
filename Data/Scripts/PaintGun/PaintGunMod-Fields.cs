@@ -19,6 +19,7 @@ namespace Digi.PaintGun
         public static PaintGunMod instance = null;
 
         public static bool DEBUG => false;
+        public static bool UIEDIT => false;
 
         public bool init = false;
         public bool isPlayer = false;
@@ -27,22 +28,20 @@ namespace Digi.PaintGun
         public Settings settings = null;
         public bool gameHUD = true;
         public float gameHUDBkOpacity = 1f;
-
         public bool TextAPIReady = false;
 
+        private UIEdit uiEdit;
         private HudAPIv2 textAPI;
-        private HudAPIv2.HUDMessage titleObject;
-        private HudAPIv2.HUDMessage textObject;
         private bool viewProjInvCompute = true;
         private MatrixD viewProjInvCache;
         private double aspectRatio;
         private bool textAPIvisible = false;
 
-        // HACK Session.EnableCopyPaste used as spacemaster check
+        private bool CreativeTools => MyAPIGateway.Session.EnableCopyPaste; // HACK Session.EnableCopyPaste used as spacemaster check
         public bool IgnoreAmmoConsumption => MyAPIGateway.Session.CreativeMode;
-        public bool InstantPaintAccess => (MyAPIGateway.Session.CreativeMode || MyAPIGateway.Session.EnableCopyPaste);
-        public bool ReplaceColorAccess => (MyAPIGateway.Session.CreativeMode || MyAPIGateway.Session.EnableCopyPaste);
-        public bool SymmetryAccess => (MyAPIGateway.Session.CreativeMode || MyAPIGateway.Session.EnableCopyPaste);
+        public bool InstantPaintAccess => (MyAPIGateway.Session.CreativeMode || CreativeTools);
+        public bool ReplaceColorAccess => (MyAPIGateway.Session.CreativeMode || CreativeTools);
+        public bool SymmetryAccess => (MyAPIGateway.Session.CreativeMode || CreativeTools);
 
         public bool triggerInputPressed = false;
         public bool colorPickInputPressed = false;
@@ -64,7 +63,7 @@ namespace Digi.PaintGun
         public long selectedBlockBuiltBy = 0;
         private MyEntity3DSoundEmitter hudSoundEmitter;
         private uint hudSoundTimeout = 0;
-        public string[] blockInfoStatus = new string[2];
+        public string[] blockInfoStatus = new string[3];
         public IMyHudNotification[] toolStatus = new IMyHudNotification[3];
         public MyHudBlockInfo.ComponentInfo[] blockInfoLines = new MyHudBlockInfo.ComponentInfo[]
         {
@@ -127,26 +126,6 @@ namespace Digi.PaintGun
             SubtypeName = PAINT_MAGAZINE_ID,
             ProjectilesCount = 1
         };
-
-        private const float ASPECT_RATIO_5_4_FIX = 0.938f;
-        private const float ASPECT_RATIO_16_10_FIX = 0.938f;
-        private readonly Vector2 BLOCKINFO_POSITION = new Vector2(0.98f, -0.8f); // bottom-right position of the box
-        private readonly Vector2 BLOCKINFO_SIZE = new Vector2(0.02f, 0.0142f);
-        private readonly Vector3D BLOCKINFO_ICONS_OFFSET = new Vector3D(-0.0178, 0.03, 0.0124);
-        private readonly Vector2D BLOCKINFO_TITLE_OFFSET = new Vector2D(-0.42, 0.527);
-        private readonly Vector2D BLOCKINFO_TEXT_OFFSET = new Vector2D(-0.371, 0.41);
-        private const float BLOCKINFO_BAR_OFFSET_X = -0.0065f;
-        private const float BLOCKINFO_BAR_WIDTH = 0.0048f;
-        private const float BLOCKINFO_BAR_HEIGHT_SCALE = 0.935f;
-        private const float BLOCKINFO_TITLE_SCALE = 1.55f;
-        private const float BLOCKINFO_TEXT_SCALE = 1.25f;
-        private const float BLOCKINFO_ICON_SIZE = 0.0035f;
-        private readonly Color BLOCKINFO_TITLE_BG_COLOR = new Vector4(0.20784314f, 0.266666681f, 0.298039228f, 1f);
-        private readonly Color BLOCKINFO_LOWER_BG_COLOR = new Vector4(0.13333334f, 0.180392161f, 0.203921571f, 1f) * 0.9f;
-        private readonly Color BLOCKINFO_BAR_BG_COLOR = new Vector4(0.266666681f, 0.3019608f, 0.3372549f, 0.9f);
-        private readonly Color BLOCKINFO_BAR_COLOR = new Vector4(0.478431374f, 0.549019635f, 0.6039216f, 1f);
-        private const BlendTypeEnum FOREGROUND_BLEND_TYPE = BlendTypeEnum.SDR;
-        private const BlendTypeEnum BACKGROUND_BLEND_TYPE = BlendTypeEnum.Standard;
 
         public readonly List<IMyPlayer> players = new List<IMyPlayer>();
         private readonly StringBuilder assigned = new StringBuilder();

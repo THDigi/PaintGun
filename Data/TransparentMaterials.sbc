@@ -13,6 +13,7 @@
       <SoftParticleDistanceScale>1</SoftParticleDistanceScale>
       <Texture>Textures\Spray.dds</Texture>
       <UseAtlas>false</UseAtlas>
+      <Reflectivity>0</Reflectivity>
       <UVOffset>
         <X>0</X>
         <Y>0</Y>
@@ -34,6 +35,7 @@
       <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
       <Texture>Textures\GUI\Blank.dds</Texture>
       <UseAtlas>false</UseAtlas>
+      <Reflectivity>0</Reflectivity>
       <UVOffset>
         <X>0</X>
         <Y>0</Y>
@@ -55,6 +57,7 @@
       <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
       <Texture>Textures\GUI\Blank.dds</Texture>
       <UseAtlas>false</UseAtlas>
+      <Reflectivity>0</Reflectivity>
       <UVOffset>
         <X>0</X>
         <Y>0</Y>
@@ -76,6 +79,7 @@
       <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
       <Texture>Textures\SelectedColor.dds</Texture>
       <UseAtlas>false</UseAtlas>
+      <Reflectivity>0</Reflectivity>
       <UVOffset>
         <X>0</X>
         <Y>0</Y>
@@ -97,6 +101,7 @@
       <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
       <Texture>Textures\Icons\GenericBlock.dds</Texture>
       <UseAtlas>false</UseAtlas>
+      <Reflectivity>0</Reflectivity>
       <UVOffset>
         <X>0</X>
         <Y>0</Y>
@@ -118,6 +123,7 @@
       <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
       <Texture>Textures\Icons\GenericCharacter.dds</Texture>
       <UseAtlas>false</UseAtlas>
+      <Reflectivity>0</Reflectivity>
       <UVOffset>
         <X>0</X>
         <Y>0</Y>
@@ -139,6 +145,7 @@
       <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
       <Texture>Textures\Icons\PaintGunMagIcon.dds</Texture>
       <UseAtlas>false</UseAtlas>
+      <Reflectivity>0</Reflectivity>
       <UVOffset>
         <X>0</X>
         <Y>0</Y>

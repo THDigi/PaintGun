@@ -117,6 +117,7 @@
     <Compile Include="PaintGunItem.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="TextAPIv2.cs" />
+    <Compile Include="UIEdit.cs" />
   </ItemGroup>
   <ItemGroup>
     <Analyzer Include="..\..\..\..\..\_SharedCode\SEWhitelistChecker.dll" />

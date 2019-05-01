@@ -18,7 +18,7 @@ namespace Digi.PaintGun
             return (byte)MathHelper.Clamp((1 - percentScale) * 99, 0, 99);
         }
 
-        static float ColorPercentFull(Vector3 blockColor, Vector3 paintColor)
+        static float ColorScalar(Vector3 blockColor, Vector3 paintColor)
         {
             var blockHSV = ColorMaskToHSV(blockColor);
             var paintHSV = ColorMaskToHSV(paintColor);
@@ -29,9 +29,6 @@ namespace Digi.PaintGun
             float def2paint = 1 - ((Math.Abs(paintHSV.Y - defaultHSV.Y) + Math.Abs(paintHSV.Z - defaultHSV.Z)) * 0.5f);
 
             bool needsToAddPaint = Math.Abs(paintColor.X - blockColor.X) < 0.0001f;
-
-            // DEBUG TODO improve the progress bar
-            //MyAPIGateway.Utilities.ShowNotification($"[DEBUG: needsToAddPaint={needsToAddPaint}; addPaint={addPaint:0.00}; removePaint={removePaint:0.00}; def2paint={def2paint:0.00}]", 16);
 
             var progress = addPaint;
 
@@ -109,7 +106,7 @@ namespace Digi.PaintGun
 
         public void SetGUIToolStatus(int line, string text, string color = null)
         {
-            blockInfoStatus[line] = (color != null && TextAPIReady ? $"<color={color}>{text}" : text);
+            blockInfoStatus[line] = (color != null ? $"<color={color}>{text}" : text);
         }
 
         public void ShowNotification(int id, string text, string font = MyFontEnum.White, int aliveTime = TOOLSTATUS_TIMEOUT)
