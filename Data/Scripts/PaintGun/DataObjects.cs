@@ -14,8 +14,8 @@ namespace Digi.PaintGun
 
         public PlayerColorData(ulong steamId, List<Vector3> colors)
         {
-            this.SteamId = steamId;
-            this.Colors = colors;
+            SteamId = steamId;
+            Colors = colors;
         }
     }
 
@@ -48,37 +48,37 @@ namespace Digi.PaintGun
     public class PacketData
     {
         [ProtoMember]
-        public PacketAction Type = PacketAction.PAINT_BLOCK;
+        public PacketAction Type;
 
         [ProtoMember]
-        public ulong SteamId = 0;
+        public ulong SteamId;
 
         [ProtoMember]
-        public long EntityId = 0;
+        public long EntityId;
 
         [ProtoMember]
-        public uint PackedColor = 0;
+        public uint PackedColor;
 
         [ProtoMember]
-        public uint PackedColor2 = 0;
+        public uint PackedColor2;
 
         [ProtoMember]
-        public byte Slot = 0;
+        public byte Slot;
 
         [ProtoMember]
-        public OddAxis OddAxis = OddAxis.NONE;
+        public OddAxis OddAxis;
 
         [ProtoMember]
-        public bool UseGridSystem = false;
+        public bool UseGridSystem;
 
         [ProtoMember]
-        public Vector3I? GridPosition = null;
+        public Vector3I? GridPosition;
 
         [ProtoMember]
-        public Vector3I? MirrorPlanes = null;
+        public Vector3I? MirrorPlanes;
 
         [ProtoMember]
-        public uint[] PackedColors = null;
+        public uint[] PackedColors;
 
         public PacketData() { } // empty ctor is required for deserialization
 
@@ -90,6 +90,7 @@ namespace Digi.PaintGun
                 $"PackedColor={PackedColor}\n" +
                 $"Slot={Slot}\n" +
                 $"OddAxis={OddAxis}\n" +
+                $"UseGridSystem={UseGridSystem}\n" +
                 $"GridPosition={(GridPosition.HasValue ? GridPosition.Value.ToString() : "NULL")}\n" +
                 $"MirrorPlanes={(MirrorPlanes.HasValue ? MirrorPlanes.Value.ToString() : "NULL")}\n" +
                 $"PackedColors={(PackedColors != null ? string.Join(",", PackedColors) : "NULL")}";
