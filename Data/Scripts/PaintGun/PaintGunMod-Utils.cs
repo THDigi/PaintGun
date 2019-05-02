@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using Sandbox.Common.ObjectBuilders;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
+using Sandbox.Game.Entities.Character.Components;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.ModAPI;
+using VRage.ObjectBuilders;
 using VRage.Utils;
 using VRageMath;
 
@@ -215,6 +218,12 @@ namespace Digi.PaintGun
             hudSoundEmitter.PlaySound(soundPair, stopPrevious: false, alwaysHearOnRealistic: true, force2D: true);
         }
 
+        private static bool IsAimingDownSights(IMyCharacter character)
+        {
+            var weaponPosComp = character?.Components?.Get<MyCharacterWeaponPositionComponent>();
+            return (weaponPosComp != null ? weaponPosComp.IsInIronSight : false);
+        }
+
         private bool EnsureColorDataEntry(ulong steamId)
         {
             if(!playerColorData.ContainsKey(steamId))
@@ -234,20 +243,66 @@ namespace Digi.PaintGun
             return true;
         }
 
-        public static void DrawInflatedSelectionBox(IMySlimBlock block, MyStringId lineMaterial)
+        private static void DrawBlockSelection(IMySlimBlock block, bool validSelection = true)
         {
             var grid = block.CubeGrid;
             var def = (MyCubeBlockDefinition)block.BlockDefinition;
-            var color = Color.White;
 
-            Matrix lm;
-            block.Orientation.GetMatrix(out lm);
-            var wm = lm * Matrix.CreateTranslation(block.Position) * Matrix.CreateScale(grid.GridSize) * grid.WorldMatrix;
-            var lineWidth = (grid.GridSizeEnum == MyCubeSize.Large) ? 0.06f : 0.03f;
-            var v1 = new Vector3(0.5f, 0.5f, 0.5f);
-            var v2 = new Vector3(0.05f);
-            var localBB = new BoundingBoxD(-def.Center - v1 - v2, def.Size - def.Center - v1 + v2);
-            MySimpleObjectDraw.DrawTransparentBox(ref wm, ref localBB, ref color, MySimpleObjectRasterizer.Wireframe, 1, lineWidth, null, lineMaterial);
+            var color = (validSelection ? Color.Green : Color.Red);
+            var material = PaintGunMod.instance.MATERIAL_PALETTE_COLOR;
+            var lineWidth = (grid.GridSizeEnum == MyCubeSize.Large ? 0.01f : 0.008f);
+
+            MatrixD worldMatrix;
+            BoundingBoxD localBB;
+
+            if(block.FatBlock != null)
+            {
+                var inflate = new Vector3(0.05f) / grid.GridSize;
+                worldMatrix = block.FatBlock.WorldMatrix;
+                localBB = new BoundingBoxD(block.FatBlock.LocalAABB.Min - inflate, block.FatBlock.LocalAABB.Max + inflate);
+            }
+            else
+            {
+                Matrix localMatrix;
+                block.Orientation.GetMatrix(out localMatrix);
+                worldMatrix = localMatrix * Matrix.CreateTranslation(block.Position) * Matrix.CreateScale(grid.GridSize) * grid.WorldMatrix;
+
+                var inflate = new Vector3(0.05f);
+                var offset = new Vector3(0.5f);
+                localBB = new BoundingBoxD(-def.Center - offset - inflate, def.Size - def.Center - offset + inflate);
+            }
+
+            // FIXME: draw lines of consistent width between fatblock == null and fatblock != null
+
+            MySimpleObjectDraw.DrawTransparentBox(ref worldMatrix, ref localBB, ref color, MySimpleObjectRasterizer.Wireframe, 1, lineWidth, null, material, blendType: HELPERS_BLEND_TYPE);
+        }
+
+        private static BoundingSphereD GetCharacterSelectionSphere(IMyCharacter character)
+        {
+            var sphere = character.WorldVolume;
+            sphere.Center += character.WorldMatrix.Up * 0.2;
+            sphere.Radius *= 0.6;
+
+            var crouching = (MyCharacterMovement.GetMode(character.CurrentMovementState) == MyCharacterMovement.Crouching);
+            if(crouching)
+            {
+                sphere.Center += character.WorldMatrix.Up * 0.1;
+                sphere.Radius *= 1.2;
+            }
+
+            return sphere;
+        }
+
+        private static void DrawCharacterSelection(IMyCharacter character)
+        {
+            var color = Color.Lime;
+            var material = PaintGunMod.instance.MATERIAL_VANILLA_SQUARE;
+
+            var matrix = character.WorldMatrix;
+            var localBox = (BoundingBoxD)character.LocalAABB;
+            var worldToLocal = character.WorldMatrixInvScaled;
+
+            MySimpleObjectDraw.DrawAttachedTransparentBox(ref matrix, ref localBox, ref color, character.Render.GetRenderObjectID(), ref worldToLocal, MySimpleObjectRasterizer.Wireframe, Vector3I.One, 0.005f, null, material, false, blendType: HELPERS_BLEND_TYPE);
         }
 
         MatrixD ViewProjectionInv

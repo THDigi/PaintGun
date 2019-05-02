@@ -8,12 +8,15 @@ using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Components;
+using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.Input;
+using VRage.ModAPI;
 using VRageMath;
+
 using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
 
-// DEBUG FIXME: color not selected in paintgun when changing color via [ or ] via cubebuilder
+// FIXME: color not selected in paintgun when changing color via [ or ] via cubebuilder
 
 namespace Digi.PaintGun
 {
@@ -204,7 +207,7 @@ namespace Digi.PaintGun
 
             if(MyAPIGateway.Multiplayer.MyId == steamId)
             {
-                ShowNotification(2, $"Replaced color in {affected} blocks.", MyFontEnum.White, 2000);
+                ShowNotification(2, $"Replaced color for {affected} blocks.", MyFontEnum.White, 2000);
             }
         }
 
@@ -310,7 +313,7 @@ namespace Digi.PaintGun
                         var block = g.GetCubeBlock(mirrorX) as IMySlimBlock;
 
                         if(block != null)
-                            DrawInflatedSelectionBox(block, MATERIAL_GIZMIDRAWLINE);
+                            DrawBlockSelection(block);
 
                         return mirrorX;
                     }
@@ -323,7 +326,7 @@ namespace Digi.PaintGun
                         var block = g.GetCubeBlock(mirrorY) as IMySlimBlock;
 
                         if(block != null)
-                            DrawInflatedSelectionBox(block, MATERIAL_GIZMIDRAWLINE);
+                            DrawBlockSelection(block);
 
                         return mirrorY;
                     }
@@ -336,7 +339,7 @@ namespace Digi.PaintGun
                         var block = g.GetCubeBlock(mirrorZ) as IMySlimBlock;
 
                         if(block != null)
-                            DrawInflatedSelectionBox(block, MATERIAL_GIZMIDRAWLINE);
+                            DrawBlockSelection(block);
 
                         return mirrorZ;
                     }
@@ -377,7 +380,7 @@ namespace Digi.PaintGun
                     SetToolColor(localColorData.Colors[localColorData.SelectedSlot]);
                 }
 
-                // DEBUG TODO added controlled check but needs to get rid of the fake block UI if you're already selecting something...
+                // FIXME: added controlled check but needs to get rid of the fake block UI if you're already selecting something...
                 if(localHeldTool != null && MyAPIGateway.Session.ControlledObject == MyAPIGateway.Session.Player.Character)
                 {
                     bool inputReadable = InputHandler.IsInputReadable();
@@ -638,7 +641,7 @@ namespace Digi.PaintGun
                         }
                         else
                         {
-                            DrawInflatedSelectionBox(selectedSlimBlock, (selectedInvalid ? MATERIAL_GIZMIDRAWLINERED : MATERIAL_GIZMIDRAWLINE));
+                            DrawBlockSelection(selectedSlimBlock, !selectedInvalid);
 
                             // symmetry highlight
                             if(SymmetryAccess && MyCubeBuilder.Static.UseSymmetry && (selectedGrid.XSymmetryPlane.HasValue || selectedGrid.YSymmetryPlane.HasValue || selectedGrid.ZSymmetryPlane.HasValue))
@@ -763,11 +766,23 @@ namespace Digi.PaintGun
                 DrawToolParticles();
                 DrawCharacterSelection();
                 DrawHUDPalette();
+
+                //DebugDrawCharacterSphere();
             }
             catch(Exception e)
             {
                 Log.Error(e);
             }
+        }
+
+        private void DebugDrawCharacterSphere()
+        {
+            var character = MyAPIGateway.Session.Player.Character;
+            var sphere = GetCharacterSelectionSphere(character);
+            var matrix = MatrixD.CreateTranslation(sphere.Center);
+            var color = Color.Lime;
+
+            MySimpleObjectDraw.DrawTransparentSphere(ref matrix, (float)sphere.Radius, ref color, MySimpleObjectRasterizer.Wireframe, 12, MATERIAL_PALETTE_COLOR, MATERIAL_PALETTE_COLOR, 0.001f, blendType: HELPERS_BLEND_TYPE);
         }
 
         private void DrawToolParticles()
@@ -796,12 +811,7 @@ namespace Digi.PaintGun
             }
             else if(selectedCharacter.Visible)
             {
-                var color = Color.Green;
-                var matrix = selectedCharacter.WorldMatrix;
-                var box = (BoundingBoxD)selectedCharacter.LocalAABB;
-                var worldToLocal = selectedCharacter.WorldMatrixInvScaled;
-
-                MySimpleObjectDraw.DrawAttachedTransparentBox(ref matrix, ref box, ref color, selectedCharacter.Render.GetRenderObjectID(), ref worldToLocal, MySimpleObjectRasterizer.Wireframe, Vector3I.One, 0.05f, null, MATERIAL_GIZMIDRAWLINE, false, blendType: HELPERS_BLEND_TYPE);
+                DrawCharacterSelection(selectedCharacter);
             }
         }
 
@@ -819,6 +829,13 @@ namespace Digi.PaintGun
                 var camMatrix = cam.WorldMatrix;
                 var scaleFOV = (float)Math.Tan(cam.FovWithZoom * 0.5);
                 scaleFOV *= settings.paletteScale;
+
+                var character = MyAPIGateway.Session.Player.Character;
+
+                if(IsAimingDownSights(character))
+                {
+                    MyTransparentGeometry.AddPointBillboard(MATERIAL_WHITEDOT, Color.Lime, camMatrix.Translation + camMatrix.Forward * PAINT_AIM_START_OFFSET, 0.005f, 0, blendType: HELPERS_BLEND_TYPE);
+                }
 
                 var worldPos = HUDtoWorld(new Vector2((float)settings.paletteScreenPos.X, (float)settings.paletteScreenPos.Y));
 
@@ -854,7 +871,7 @@ namespace Digi.PaintGun
                     pos += camMatrix.Right * spacingWidth;
                 }
 
-                // DEBUG TODO: needs more color testing - vanilla title bg doesn't match my bg even though they're copied colors...
+                // FIXME: needs more color testing - vanilla title bg doesn't match my bg even though they're copied colors...
                 //{
                 //    worldPos = HUDtoWorld(new Vector2((float)settings.aimInfoScreenPos.X, (float)settings.aimInfoScreenPos.Y));
                 //
@@ -994,7 +1011,7 @@ namespace Digi.PaintGun
             }
 
             //float scale = settings.aimInfoScale;
-            const float scale = 1f; // DEBUG TODO: make it scaleable?
+            const float scale = 1f; // FIXME: make it scaleable?
 
             uiTitleBg.Width = boxBgWidth * scale;
             uiTextBg.Width = boxBgWidth * scale;
@@ -1144,7 +1161,7 @@ namespace Digi.PaintGun
 
                 GetTarget(character, out targetGrid, out targetBlock, out targetPlayer);
 
-                // DEBUG TESTING aim to paint subpart
+                // TODO testing aim to paint subpart
 #if false
                 {
                     if(MyAPIGateway.Input.IsGameControlPressed(MyControlsSpace.SECONDARY_TOOL_ACTION))
@@ -1439,56 +1456,211 @@ namespace Digi.PaintGun
             return false;
         }
 
+        const double PAINT_DISTANCE = 5;
+        const double PAINT_AIM_START_OFFSET = 2.5; // forward offset of ray start when aiming down sights
+
+        private List<IHitInfo> hits = new List<IHitInfo>();
+        private Dictionary<long, DetectionInfo> detections = new Dictionary<long, DetectionInfo>();
+        private List<MyLineSegmentOverlapResult<MyEntity>> rayOverlapResults = new List<MyLineSegmentOverlapResult<MyEntity>>();
+
+        private struct DetectionInfo
+        {
+            public readonly IMyEntity Entity;
+            public readonly Vector3D DetectionPoint;
+
+            public DetectionInfo(IMyEntity entity, Vector3D detectionPoint)
+            {
+                Entity = entity;
+                DetectionPoint = detectionPoint;
+            }
+        }
+
         private void GetTarget(IMyCharacter character, out IMyCubeGrid targetGrid, out IMySlimBlock targetBlock, out IMyPlayer targetPlayer)
         {
             targetGrid = null;
             targetBlock = null;
             targetPlayer = null;
 
-            const double RAY_START = 1.6; // a forward offset to allow penetrating blocks by getting closer
-            const double RAY_LENGTH = 5;
-
             var head = character.GetHeadMatrix(false, true);
-            var rayFrom = head.Translation + head.Forward * RAY_START;
-            var rayTo = head.Translation + head.Forward * (RAY_START + RAY_LENGTH);
+            var rayDir = head.Forward;
+            var rayFrom = head.Translation;
+            bool aiming = IsAimingDownSights(character);
 
-            if(colorPickMode)
-            {
-                players.Clear();
-                MyAPIGateway.Players.GetPlayers(players);
+            if(aiming)
+                rayFrom += rayDir * PAINT_AIM_START_OFFSET;
 
-                var ray = new RayD(rayFrom, head.Forward);
+            var rayTo = head.Translation + rayDir * PAINT_DISTANCE;
 
-                foreach(var p in players)
-                {
-                    if(p.Character == null || p.Character == character)
-                        continue;
-
-                    double? dist;
-                    p.Character.WorldAABB.Intersects(ref ray, out dist);
-
-                    if(!dist.HasValue || dist.Value > RAY_LENGTH)
-                        continue;
-
-                    targetPlayer = p;
-                    break;
-                }
-
-                players.Clear();
-
-                if(targetPlayer != null)
-                    return;
-            }
+            if(colorPickMode && GetTargetCharacter(rayFrom, rayDir, PAINT_DISTANCE, character, ref targetPlayer))
+                return;
 
             targetGrid = MyAPIGateway.CubeBuilder.FindClosestGrid();
 
-            if(targetGrid != null)
+            if(targetGrid == null)
+                return;
+
+            if(aiming)
             {
                 var blockPos = targetGrid.RayCastBlocks(rayFrom, rayTo);
 
                 if(blockPos.HasValue)
                     targetBlock = targetGrid.GetCubeBlock(blockPos.Value);
+
+                return;
             }
+
+            hits.Clear();
+            detections.Clear();
+            rayOverlapResults.Clear();
+
+            // HACK copied and converted from MyDrillSensorRayCast.ReadEntitiesInRange()
+            MyAPIGateway.Physics.CastRay(rayFrom, rayTo, hits, 24);
+
+            foreach(var hit in hits)
+            {
+                if(hit.HitEntity == null)
+                    continue;
+
+                var hitPos = hit.Position;
+                var parent = hit.HitEntity.GetTopMostParent();
+
+                var grid = parent as IMyCubeGrid;
+                if(grid != null)
+                    hitPos += (grid.GridSizeEnum == MyCubeSize.Small ? (hit.Normal * -0.02f) : (hit.Normal * -0.08f));
+
+                DetectionInfo detected;
+
+                if(detections.TryGetValue(parent.EntityId, out detected))
+                {
+                    float dist1 = Vector3.DistanceSquared(rayFrom, detected.DetectionPoint);
+                    float dist2 = Vector3.DistanceSquared(rayFrom, hitPos);
+
+                    if(dist1 > dist2)
+                        detections[parent.EntityId] = new DetectionInfo(parent, hitPos);
+                }
+                else
+                {
+                    detections[parent.EntityId] = new DetectionInfo(parent, hitPos);
+                }
+            }
+
+            hits.Clear();
+
+            var line = new LineD(rayFrom, rayTo);
+            MyGamePruningStructure.GetAllEntitiesInRay(ref line, rayOverlapResults);
+
+            foreach(var result in rayOverlapResults)
+            {
+                if(result.Element == null)
+                    continue;
+
+                var block = result.Element as IMyCubeBlock;
+
+                if(block == null)
+                    continue;
+
+                var def = (MyCubeBlockDefinition)block.SlimBlock.BlockDefinition;
+
+                if(def.HasPhysics)
+                    continue;
+
+                var parent = result.Element.GetTopMostParent();
+
+                var blockInvMatrix = block.PositionComp.WorldMatrixNormalizedInv;
+                var localRayFrom = Vector3D.Transform(rayFrom, ref blockInvMatrix);
+                var localRayTo = Vector3D.Transform(rayTo, ref blockInvMatrix);
+                var localLine = new Line(localRayFrom, localRayTo);
+
+                //float? dist = new Ray(localRayFrom, Vector3.Normalize(localRayTo - localRayFrom)).Intersects(block.PositionComp.LocalAABB) + 0.01f;
+
+                float dist;
+
+                if(!block.PositionComp.LocalAABB.Intersects(localLine, out dist))
+                    continue;
+
+                var hitPos = rayFrom + rayDir * dist;
+                DetectionInfo detected;
+
+                if(detections.TryGetValue(parent.EntityId, out detected))
+                {
+                    var dist1 = Vector3.DistanceSquared(detected.DetectionPoint, rayFrom);
+                    var dist2 = Vector3.DistanceSquared(hitPos, rayFrom);
+
+                    if(dist1 > dist2)
+                        detections[parent.EntityId] = new DetectionInfo(parent, hitPos);
+                }
+                else
+                {
+                    detections[parent.EntityId] = new DetectionInfo(parent, hitPos);
+                }
+            }
+
+            rayOverlapResults.Clear();
+
+            if(detections.Count == 0)
+                return;
+
+            float num = float.MaxValue;
+            DetectionInfo closest = new DetectionInfo(null, Vector3D.Zero);
+
+            foreach(var detected in detections.Values)
+            {
+                var ent = detected.Entity;
+
+                if(ent.Physics == null || !ent.Physics.Enabled)
+                    continue;
+
+                float dist = (float)Vector3D.DistanceSquared(detected.DetectionPoint, rayFrom);
+
+                if(dist < num)
+                {
+                    closest = detected;
+                    num = dist;
+                }
+            }
+
+            detections.Clear();
+
+            targetGrid = closest.Entity as IMyCubeGrid;
+
+            if(targetGrid == null)
+                return;
+
+            var localHitPos = Vector3D.Transform(closest.DetectionPoint, targetGrid.WorldMatrixNormalizedInv);
+            Vector3I blockGridPos;
+            targetGrid.FixTargetCube(out blockGridPos, localHitPos / targetGrid.GridSize);
+            targetBlock = targetGrid.GetCubeBlock(blockGridPos);
+        }
+
+        private bool GetTargetCharacter(Vector3D rayFrom, Vector3D rayDir, double rayLength, IMyCharacter character, ref IMyPlayer targetPlayer)
+        {
+            players.Clear();
+            MyAPIGateway.Players.GetPlayers(players);
+
+            var ray = new RayD(rayFrom, rayDir);
+
+            foreach(var p in players)
+            {
+                if(p.Character == null || p.Character == character)
+                    continue;
+
+                var sphere = GetCharacterSelectionSphere(character);
+
+                if(Vector3D.DistanceSquared(rayFrom, sphere.Center) > (rayLength * rayLength))
+                    continue;
+
+                var dist = sphere.Intersects(ray);
+
+                if(!dist.HasValue || dist.Value > rayLength)
+                    continue;
+
+                targetPlayer = p;
+                break;
+            }
+
+            players.Clear();
+
+            return (targetPlayer != null);
         }
 
         private bool IsBlockValid(IMySlimBlock block, Vector3 colorMask, bool trigger, out string blockName, out Vector3 blockColor)

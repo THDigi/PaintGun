@@ -361,7 +361,7 @@ namespace Digi.PaintGun
             str.Append("PaletteBackgroundOpacity=").Append(paletteBackgroundOpacity < 0 ? "HUD" : Math.Round(paletteBackgroundOpacity, 5).ToString()).AppendLine(comments ? " // palette's background opacity percent scalar (0 to 1 value) or set to HUD to use the game's HUD opacity. Default: HUD" : "");
 
             str.Append("AimInfoScreenPos=").Append(Math.Round(aimInfoScreenPos.X, 5)).Append(", ").Append(Math.Round(aimInfoScreenPos.Y, 5)).AppendLine(comments ? $" // aim info's screen position in X and Y coordinates where 0,0 is the screen center. Positive values are right and up and negative ones are opposite of that. Default: {aimInfoScreenPos.X:0.#####}, {aimInfoScreenPos.Y:0.#####}" : "");
-            // DEBUG make it work with scale?
+            // FIXME: make it work with scale?
             //str.Append("AimInfoScale=").Append(Math.Round(aimInfoScale, 5)).AppendLine(comments ? $" // aiming info box overall scale. Default: {aimInfoScaleDefault:0.#####}" : "");
             str.Append("AimInfoBackgroundOpacity=").Append(aimInfoBackgroundOpacity < 0 ? "HUD" : Math.Round(aimInfoBackgroundOpacity, 5).ToString()).AppendLine(comments ? " // aim info's background opacity percent scalar (0 to 1 value) or set to HUD to use the game's HUD opacity. Default: HUD" : "");
 

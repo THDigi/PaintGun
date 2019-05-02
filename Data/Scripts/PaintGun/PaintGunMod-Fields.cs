@@ -113,6 +113,7 @@ namespace Digi.PaintGun
         public readonly MyStringId MATERIAL_ICON_GENERIC_BLOCK = MyStringId.GetOrCompute("PaintGunIcon_GenericBlock");
         public readonly MyStringId MATERIAL_ICON_GENERIC_CHARACTER = MyStringId.GetOrCompute("PaintGunIcon_GenericCharacter");
         public readonly MyStringId MATERIAL_ICON_PAINT_AMMO = MyStringId.GetOrCompute("PaintGunBlockIcon_PaintAmmo");
+        public readonly MyStringId MATERIAL_WHITEDOT = MyStringId.GetOrCompute("WhiteDot");
 
         public const BlendTypeEnum HELPERS_BLEND_TYPE = BlendTypeEnum.SDR;
         public const BlendTypeEnum SPRAY_BLEND_TYPE = BlendTypeEnum.SDR;
