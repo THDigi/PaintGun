@@ -1128,7 +1128,14 @@ namespace Digi.PaintGun
             if(colorPickMode)
                 text.Append("Replace slot: ").Append(localColorData.SelectedSlot + 1);
             else
-                text.Append("Paint: ").Append(ammo);
+            {
+                text.Append("Paint: ");
+
+                if(IgnoreAmmoConsumption)
+                    text.Append("Inf.");
+                else
+                    text.Append(ammo);
+            }
 
             text.Append("\n\n<color=white>        ")
                 .Append(ColorMaskToString(paintColor))

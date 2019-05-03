@@ -38,7 +38,7 @@ namespace Digi.PaintGun
         private bool textAPIvisible = false;
 
         private bool CreativeTools => MyAPIGateway.Session.EnableCopyPaste; // HACK Session.EnableCopyPaste used as spacemaster check
-        public bool IgnoreAmmoConsumption => MyAPIGateway.Session.CreativeMode;
+        public bool IgnoreAmmoConsumption => (MyAPIGateway.Session.CreativeMode || MyAPIGateway.Session.SessionSettings.InfiniteAmmo);
         public bool InstantPaintAccess => (MyAPIGateway.Session.CreativeMode || CreativeTools);
         public bool ReplaceColorAccess => (MyAPIGateway.Session.CreativeMode || CreativeTools);
         public bool SymmetryAccess => (MyAPIGateway.Session.CreativeMode || CreativeTools);
