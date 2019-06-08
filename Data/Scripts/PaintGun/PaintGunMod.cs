@@ -152,12 +152,12 @@ namespace Digi.PaintGun
         #region Painting methods
         private void PaintBlock(MyCubeGrid grid, Vector3I gridPosition, Vector3 color)
         {
-            grid.ChangeColor(grid.GetCubeBlock(gridPosition), color); // HACK getting a MySlimBlock and sending it straight to arguments avoids getting prohibited errors.
+            grid.ChangeColorAndSkin(grid.GetCubeBlock(gridPosition), color); // HACK getting a MySlimBlock and sending it straight to arguments avoids getting prohibited errors.
         }
 
         private void PaintBlockSymmetry(MyCubeGrid grid, Vector3I gridPosition, Vector3 color, Vector3I mirrorPlane, OddAxis odd)
         {
-            grid.ChangeColor(grid.GetCubeBlock(gridPosition), color);
+            PaintBlock(grid, gridPosition, color);
 
             bool oddX = (odd & OddAxis.X) == OddAxis.X;
             bool oddY = (odd & OddAxis.Y) == OddAxis.Y;
@@ -198,8 +198,7 @@ namespace Digi.PaintGun
                 {
                     if(ColorMaskEquals(slim.GetColorMask(), oldColor))
                     {
-                        // GetCubeBlock() is a workaround for MySlimBlock being prohibited
-                        g.ChangeColor(g.GetCubeBlock(slim.Position), newColor);
+                        PaintBlock(g, slim.Position, newColor);
                         affected++;
                     }
                 }
@@ -222,7 +221,7 @@ namespace Digi.PaintGun
                         var mirrorX = originalPosition + new Vector3I(((mirror.X - originalPosition.X) * 2) - (odd ? 1 : 0), 0, 0);
 
                         if(g.CubeExists(mirrorX))
-                            g.ChangeColor(g.GetCubeBlock(mirrorX), color);
+                            PaintBlock(g, mirrorX, color);
 
                         return mirrorX;
                     }
@@ -234,7 +233,7 @@ namespace Digi.PaintGun
                         var mirrorY = originalPosition + new Vector3I(0, ((mirror.Y - originalPosition.Y) * 2) - (odd ? 1 : 0), 0);
 
                         if(g.CubeExists(mirrorY))
-                            g.ChangeColor(g.GetCubeBlock(mirrorY), color);
+                            PaintBlock(g, mirrorY, color);
 
                         return mirrorY;
                     }
@@ -246,7 +245,7 @@ namespace Digi.PaintGun
                         var mirrorZ = originalPosition + new Vector3I(0, 0, ((mirror.Z - originalPosition.Z) * 2) + (odd ? 1 : 0)); // reversed on odd
 
                         if(g.CubeExists(mirrorZ))
-                            g.ChangeColor(g.GetCubeBlock(mirrorZ), color);
+                            PaintBlock(g, mirrorZ, color);
 
                         return mirrorZ;
                     }
