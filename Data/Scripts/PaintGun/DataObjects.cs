@@ -47,37 +47,37 @@ namespace Digi.PaintGun
     [ProtoContract(UseProtoMembersOnly = true)]
     public class PacketData
     {
-        [ProtoMember]
+        [ProtoMember(1)]
         public PacketAction Type;
 
-        [ProtoMember]
+        [ProtoMember(2)]
         public ulong SteamId;
 
-        [ProtoMember]
+        [ProtoMember(3)]
         public long EntityId;
 
-        [ProtoMember]
+        [ProtoMember(4)]
         public uint PackedColor;
 
-        [ProtoMember]
+        [ProtoMember(5)]
         public uint PackedColor2;
 
-        [ProtoMember]
+        [ProtoMember(6)]
         public byte Slot;
 
-        [ProtoMember]
+        [ProtoMember(7)]
         public OddAxis OddAxis;
 
-        [ProtoMember]
+        [ProtoMember(8)]
         public bool UseGridSystem;
 
-        [ProtoMember]
+        [ProtoMember(9)]
         public Vector3I? GridPosition;
 
-        [ProtoMember]
+        [ProtoMember(10)]
         public Vector3I? MirrorPlanes;
 
-        [ProtoMember]
+        [ProtoMember(11)]
         public uint[] PackedColors;
 
         public PacketData() { } // empty ctor is required for deserialization
@@ -88,6 +88,7 @@ namespace Digi.PaintGun
                 $"SteamId={SteamId}\n" +
                 $"EntityId={EntityId}\n" +
                 $"PackedColor={PackedColor}\n" +
+                $"PackedColor2={PackedColor2}\n" +
                 $"Slot={Slot}\n" +
                 $"OddAxis={OddAxis}\n" +
                 $"UseGridSystem={UseGridSystem}\n" +
