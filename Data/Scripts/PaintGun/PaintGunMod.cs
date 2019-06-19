@@ -376,9 +376,6 @@ namespace Digi.PaintGun
 
                     HandleInputs_Trigger(trigger);
                     HandleInputs_Painting(trigger);
-
-                    Draw_Symmetry();
-                    Draw_BlockSelection();
                 }
             }
             catch(Exception e)
@@ -626,104 +623,6 @@ namespace Digi.PaintGun
             GenerateAimInfo();
         }
 
-        private void Draw_Symmetry()
-        {
-            if(symmetryInputAvailable && MyAPIGateway.CubeBuilder.UseSymmetry && selectedGrid != null && (selectedGrid.XSymmetryPlane.HasValue || selectedGrid.YSymmetryPlane.HasValue || selectedGrid.ZSymmetryPlane.HasValue))
-            {
-                var matrix = selectedGrid.WorldMatrix;
-                var quad = new MyQuadD();
-                Vector3D gridSize = (Vector3I.One + (selectedGrid.Max - selectedGrid.Min)) * selectedGrid.GridSizeHalf;
-                const float alpha = 0.4f;
-
-                if(selectedGrid.XSymmetryPlane.HasValue)
-                {
-                    var center = matrix.Translation + matrix.Right * ((selectedGrid.XSymmetryPlane.Value.X * selectedGrid.GridSize) - (selectedGrid.XSymmetryOdd ? selectedGrid.GridSizeHalf : 0));
-
-                    var minY = matrix.Up * ((selectedGrid.Min.Y - 1.5f) * selectedGrid.GridSize);
-                    var maxY = matrix.Up * ((selectedGrid.Max.Y + 1.5f) * selectedGrid.GridSize);
-                    var minZ = matrix.Backward * ((selectedGrid.Min.Z - 1.5f) * selectedGrid.GridSize);
-                    var maxZ = matrix.Backward * ((selectedGrid.Max.Z + 1.5f) * selectedGrid.GridSize);
-
-                    quad.Point0 = center + maxY + maxZ;
-                    quad.Point1 = center + maxY + minZ;
-                    quad.Point2 = center + minY + minZ;
-                    quad.Point3 = center + minY + maxZ;
-
-                    MyTransparentGeometry.AddQuad(MATERIAL_VANILLA_SQUARE, ref quad, Color.Red * alpha, ref center, blendType: HELPERS_BLEND_TYPE);
-                }
-
-                if(selectedGrid.YSymmetryPlane.HasValue)
-                {
-                    var center = matrix.Translation + matrix.Up * ((selectedGrid.YSymmetryPlane.Value.Y * selectedGrid.GridSize) - (selectedGrid.YSymmetryOdd ? selectedGrid.GridSizeHalf : 0));
-
-                    var minZ = matrix.Backward * ((selectedGrid.Min.Z - 1.5f) * selectedGrid.GridSize);
-                    var maxZ = matrix.Backward * ((selectedGrid.Max.Z + 1.5f) * selectedGrid.GridSize);
-                    var minX = matrix.Right * ((selectedGrid.Min.X - 1.5f) * selectedGrid.GridSize);
-                    var maxX = matrix.Right * ((selectedGrid.Max.X + 1.5f) * selectedGrid.GridSize);
-
-                    quad.Point0 = center + maxZ + maxX;
-                    quad.Point1 = center + maxZ + minX;
-                    quad.Point2 = center + minZ + minX;
-                    quad.Point3 = center + minZ + maxX;
-
-                    MyTransparentGeometry.AddQuad(MATERIAL_VANILLA_SQUARE, ref quad, Color.Green * alpha, ref center, blendType: HELPERS_BLEND_TYPE);
-                }
-
-                if(selectedGrid.ZSymmetryPlane.HasValue)
-                {
-                    var center = matrix.Translation + matrix.Backward * ((selectedGrid.ZSymmetryPlane.Value.Z * selectedGrid.GridSize) + (selectedGrid.ZSymmetryOdd ? selectedGrid.GridSizeHalf : 0));
-
-                    var minY = matrix.Up * ((selectedGrid.Min.Y - 1.5f) * selectedGrid.GridSize);
-                    var maxY = matrix.Up * ((selectedGrid.Max.Y + 1.5f) * selectedGrid.GridSize);
-                    var minX = matrix.Right * ((selectedGrid.Min.X - 1.5f) * selectedGrid.GridSize);
-                    var maxX = matrix.Right * ((selectedGrid.Max.X + 1.5f) * selectedGrid.GridSize);
-
-                    quad.Point0 = center + maxY + maxX;
-                    quad.Point1 = center + maxY + minX;
-                    quad.Point2 = center + minY + minX;
-                    quad.Point3 = center + minY + maxX;
-
-                    MyTransparentGeometry.AddQuad(MATERIAL_VANILLA_SQUARE, ref quad, Color.Blue * alpha, ref center, blendType: HELPERS_BLEND_TYPE);
-                }
-            }
-        }
-
-        private void Draw_BlockSelection()
-        {
-            if(selectedSlimBlock == null)
-                return;
-
-            if(selectedSlimBlock.IsDestroyed || selectedSlimBlock.IsFullyDismounted)
-            {
-                selectedSlimBlock = null;
-            }
-            else
-            {
-                DrawBlockSelection(selectedSlimBlock, !selectedInvalid);
-
-                // symmetry highlight
-                if(SymmetryAccess && MyCubeBuilder.Static.UseSymmetry && (selectedGrid.XSymmetryPlane.HasValue || selectedGrid.YSymmetryPlane.HasValue || selectedGrid.ZSymmetryPlane.HasValue))
-                {
-                    var mirrorX = MirrorHighlight(selectedGrid, 0, selectedSlimBlock.Position); // X
-                    var mirrorY = MirrorHighlight(selectedGrid, 1, selectedSlimBlock.Position); // Y
-                    var mirrorZ = MirrorHighlight(selectedGrid, 2, selectedSlimBlock.Position); // Z
-                    Vector3I? mirrorYZ = null;
-
-                    if(mirrorX.HasValue && selectedGrid.YSymmetryPlane.HasValue) // XY
-                        MirrorHighlight(selectedGrid, 1, mirrorX.Value);
-
-                    if(mirrorX.HasValue && selectedGrid.ZSymmetryPlane.HasValue) // XZ
-                        MirrorHighlight(selectedGrid, 2, mirrorX.Value);
-
-                    if(mirrorY.HasValue && selectedGrid.ZSymmetryPlane.HasValue) // YZ
-                        mirrorYZ = MirrorHighlight(selectedGrid, 2, mirrorY.Value);
-
-                    if(selectedGrid.XSymmetryPlane.HasValue && mirrorYZ.HasValue) // XYZ
-                        MirrorHighlight(selectedGrid, 0, mirrorYZ.Value);
-                }
-            }
-        }
-
         public override void UpdateBeforeSimulation()
         {
             try
@@ -824,6 +723,14 @@ namespace Digi.PaintGun
                 DrawToolParticles();
                 DrawCharacterSelection();
                 DrawHUDPalette();
+
+                bool controllingLocalChar = (MyAPIGateway.Session.ControlledObject == MyAPIGateway.Session.Player.Character);
+
+                if(controllingLocalChar && localHeldTool != null)
+                {
+                    DrawSymmetry();
+                    DrawBlockSelection();
+                }
 
                 //DebugDrawCharacterSphere();
             }
@@ -1206,6 +1113,104 @@ namespace Digi.PaintGun
                 text.Append('\n').Append(blockInfoStatus[2]);
         }
         #endregion
+
+        private void DrawSymmetry()
+        {
+            if(symmetryInputAvailable && MyAPIGateway.CubeBuilder.UseSymmetry && selectedGrid != null && (selectedGrid.XSymmetryPlane.HasValue || selectedGrid.YSymmetryPlane.HasValue || selectedGrid.ZSymmetryPlane.HasValue))
+            {
+                var matrix = selectedGrid.WorldMatrix;
+                var quad = new MyQuadD();
+                Vector3D gridSize = (Vector3I.One + (selectedGrid.Max - selectedGrid.Min)) * selectedGrid.GridSizeHalf;
+                const float alpha = 0.4f;
+
+                if(selectedGrid.XSymmetryPlane.HasValue)
+                {
+                    var center = matrix.Translation + matrix.Right * ((selectedGrid.XSymmetryPlane.Value.X * selectedGrid.GridSize) - (selectedGrid.XSymmetryOdd ? selectedGrid.GridSizeHalf : 0));
+
+                    var minY = matrix.Up * ((selectedGrid.Min.Y - 1.5f) * selectedGrid.GridSize);
+                    var maxY = matrix.Up * ((selectedGrid.Max.Y + 1.5f) * selectedGrid.GridSize);
+                    var minZ = matrix.Backward * ((selectedGrid.Min.Z - 1.5f) * selectedGrid.GridSize);
+                    var maxZ = matrix.Backward * ((selectedGrid.Max.Z + 1.5f) * selectedGrid.GridSize);
+
+                    quad.Point0 = center + maxY + maxZ;
+                    quad.Point1 = center + maxY + minZ;
+                    quad.Point2 = center + minY + minZ;
+                    quad.Point3 = center + minY + maxZ;
+
+                    MyTransparentGeometry.AddQuad(MATERIAL_VANILLA_SQUARE, ref quad, Color.Red * alpha, ref center, blendType: HELPERS_BLEND_TYPE);
+                }
+
+                if(selectedGrid.YSymmetryPlane.HasValue)
+                {
+                    var center = matrix.Translation + matrix.Up * ((selectedGrid.YSymmetryPlane.Value.Y * selectedGrid.GridSize) - (selectedGrid.YSymmetryOdd ? selectedGrid.GridSizeHalf : 0));
+
+                    var minZ = matrix.Backward * ((selectedGrid.Min.Z - 1.5f) * selectedGrid.GridSize);
+                    var maxZ = matrix.Backward * ((selectedGrid.Max.Z + 1.5f) * selectedGrid.GridSize);
+                    var minX = matrix.Right * ((selectedGrid.Min.X - 1.5f) * selectedGrid.GridSize);
+                    var maxX = matrix.Right * ((selectedGrid.Max.X + 1.5f) * selectedGrid.GridSize);
+
+                    quad.Point0 = center + maxZ + maxX;
+                    quad.Point1 = center + maxZ + minX;
+                    quad.Point2 = center + minZ + minX;
+                    quad.Point3 = center + minZ + maxX;
+
+                    MyTransparentGeometry.AddQuad(MATERIAL_VANILLA_SQUARE, ref quad, Color.Green * alpha, ref center, blendType: HELPERS_BLEND_TYPE);
+                }
+
+                if(selectedGrid.ZSymmetryPlane.HasValue)
+                {
+                    var center = matrix.Translation + matrix.Backward * ((selectedGrid.ZSymmetryPlane.Value.Z * selectedGrid.GridSize) + (selectedGrid.ZSymmetryOdd ? selectedGrid.GridSizeHalf : 0));
+
+                    var minY = matrix.Up * ((selectedGrid.Min.Y - 1.5f) * selectedGrid.GridSize);
+                    var maxY = matrix.Up * ((selectedGrid.Max.Y + 1.5f) * selectedGrid.GridSize);
+                    var minX = matrix.Right * ((selectedGrid.Min.X - 1.5f) * selectedGrid.GridSize);
+                    var maxX = matrix.Right * ((selectedGrid.Max.X + 1.5f) * selectedGrid.GridSize);
+
+                    quad.Point0 = center + maxY + maxX;
+                    quad.Point1 = center + maxY + minX;
+                    quad.Point2 = center + minY + minX;
+                    quad.Point3 = center + minY + maxX;
+
+                    MyTransparentGeometry.AddQuad(MATERIAL_VANILLA_SQUARE, ref quad, Color.Blue * alpha, ref center, blendType: HELPERS_BLEND_TYPE);
+                }
+            }
+        }
+
+        private void DrawBlockSelection()
+        {
+            if(selectedSlimBlock == null)
+                return;
+
+            if(selectedSlimBlock.IsDestroyed || selectedSlimBlock.IsFullyDismounted)
+            {
+                selectedSlimBlock = null;
+            }
+            else
+            {
+                DrawBlockSelection(selectedSlimBlock, !selectedInvalid);
+
+                // symmetry highlight
+                if(SymmetryAccess && MyCubeBuilder.Static.UseSymmetry && (selectedGrid.XSymmetryPlane.HasValue || selectedGrid.YSymmetryPlane.HasValue || selectedGrid.ZSymmetryPlane.HasValue))
+                {
+                    var mirrorX = MirrorHighlight(selectedGrid, 0, selectedSlimBlock.Position); // X
+                    var mirrorY = MirrorHighlight(selectedGrid, 1, selectedSlimBlock.Position); // Y
+                    var mirrorZ = MirrorHighlight(selectedGrid, 2, selectedSlimBlock.Position); // Z
+                    Vector3I? mirrorYZ = null;
+
+                    if(mirrorX.HasValue && selectedGrid.YSymmetryPlane.HasValue) // XY
+                        MirrorHighlight(selectedGrid, 1, mirrorX.Value);
+
+                    if(mirrorX.HasValue && selectedGrid.ZSymmetryPlane.HasValue) // XZ
+                        MirrorHighlight(selectedGrid, 2, mirrorX.Value);
+
+                    if(mirrorY.HasValue && selectedGrid.ZSymmetryPlane.HasValue) // YZ
+                        mirrorYZ = MirrorHighlight(selectedGrid, 2, mirrorY.Value);
+
+                    if(selectedGrid.XSymmetryPlane.HasValue && mirrorYZ.HasValue) // XYZ
+                        MirrorHighlight(selectedGrid, 0, mirrorYZ.Value);
+                }
+            }
+        }
 
         #region Tool update & targeting
         /// <summary>
