@@ -26,9 +26,10 @@
       <Description>Paints blocks.
 
 {0} paint
+{1} deep paint mode
 [Scroll] cycle color
-[Shift+]{1} get color from block/player
-[Shift+]{2} color picker mode
+[Shift+]{1} get color from aimed block/player
+[Shift+]{2} color picking mode
 [Shift+]{3} replace mode (creative/SM)
 
 [/pg help] for more info</Description>
