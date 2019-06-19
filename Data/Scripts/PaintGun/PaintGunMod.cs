@@ -349,334 +349,378 @@ namespace Digi.PaintGun
 
         public override void HandleInput()
         {
-            if(!isPlayer || MyParticlesManager.Paused)
-                return;
-
             try
             {
-                // apply selected slot when inside the color picker menu
-                if(MyAPIGateway.Gui.IsCursorVisible && MyAPIGateway.Gui.ActiveGamePlayScreen == "ColorPick")
-                {
-                    localColorData.SelectedSlot = MyAPIGateway.Session.Player.SelectedBuildColorSlot;
-                    SetToolColor(localColorData.Colors[localColorData.SelectedSlot]);
-                }
+                if(!isPlayer || MyParticlesManager.Paused)
+                    return;
 
                 bool controllingLocalChar = (MyAPIGateway.Session.ControlledObject == MyAPIGateway.Session.Player.Character);
                 bool inputReadable = (InputHandler.IsInputReadable() && !MyAPIGateway.Session.IsCameraUserControlledSpectator);
 
-                // apply selected slot when changing colors via cubebuilder
-                if(inputReadable && controllingLocalChar && MyAPIGateway.CubeBuilder.IsActivated)
-                {
-                    if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.SWITCH_LEFT) || MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.SWITCH_RIGHT))
-                    {
-                        localColorData.SelectedSlot = MyAPIGateway.Session.Player.SelectedBuildColorSlot;
-                        SetToolColor(localColorData.Colors[localColorData.SelectedSlot]);
-                    }
-                }
-
-                // check selected slot and send updates to server
-                if(tick % 10 == 0)
-                {
-                    if(localColorData == null && !playerColorData.TryGetValue(MyAPIGateway.Multiplayer.MyId, out localColorData))
-                    {
-                        localColorData = null;
-                    }
-
-                    if(localColorData != null && localColorData.SelectedSlot != prevSelectedColorSlot)
-                    {
-                        prevSelectedColorSlot = localColorData.SelectedSlot;
-                        SendToServer_SelectedColorSlot((byte)localColorData.SelectedSlot);
-                    }
-                }
+                MatchSelectedColorSlots(inputReadable, controllingLocalChar);
+                SendSelectedSlotToServer();
 
                 // FIXME: added controlled check but needs to get rid of the fake block UI if you're already selecting something...
                 if(controllingLocalChar && localHeldTool != null)
                 {
                     if(inputReadable)
                     {
-                        if(symmetryInputAvailable && MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.USE_SYMMETRY))
-                        {
-                            MyAPIGateway.CubeBuilder.UseSymmetry = !MyAPIGateway.CubeBuilder.UseSymmetry;
-                        }
-
-                        if(replaceAllMode && MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.USE_SYMMETRY))
-                        {
-                            replaceGridSystem = !replaceGridSystem;
-                        }
-
-                        if(!MyAPIGateway.Input.IsAnyAltKeyPressed())
-                        {
-                            var change = 0;
-
-                            if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.SWITCH_LEFT))
-                                change = 1;
-                            else if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.SWITCH_RIGHT))
-                                change = -1;
-                            else
-                                change = MyAPIGateway.Input.DeltaMouseScrollWheelValue();
-
-                            if(change != 0 && localColorData != null)
-                            {
-                                if(settings.extraSounds)
-                                    PlayHudSound(SOUND_HUD_CLICK, 0.1f);
-
-                                if(change < 0)
-                                {
-                                    if(settings.selectColorZigZag)
-                                    {
-                                        if(localColorData.SelectedSlot >= 13)
-                                            localColorData.SelectedSlot = 0;
-                                        else if(localColorData.SelectedSlot >= 7)
-                                            localColorData.SelectedSlot -= 6;
-                                        else
-                                            localColorData.SelectedSlot += 7;
-                                    }
-                                    else
-                                    {
-                                        if(++localColorData.SelectedSlot >= localColorData.Colors.Count)
-                                            localColorData.SelectedSlot = 0;
-                                    }
-                                }
-                                else
-                                {
-                                    if(settings.selectColorZigZag)
-                                    {
-                                        if(localColorData.SelectedSlot >= 7)
-                                            localColorData.SelectedSlot -= 7;
-                                        else
-                                            localColorData.SelectedSlot += 6;
-                                    }
-                                    else
-                                    {
-                                        if(--localColorData.SelectedSlot < 0)
-                                            localColorData.SelectedSlot = (localColorData.Colors.Count - 1);
-                                    }
-                                }
-
-                                MyAPIGateway.Session.Player.SelectedBuildColorSlot = localColorData.SelectedSlot;
-                                SetToolColor(localColorData.Colors[localColorData.SelectedSlot]);
-                            }
-                        }
-
-                        if(InputHandler.GetPressedOr(settings.colorPickMode1, settings.colorPickMode2))
-                        {
-                            if(!colorPickModeInputPressed)
-                            {
-                                colorPickModeInputPressed = true;
-
-                                if(colorPickMode)
-                                    ShowNotification(0, "Color pick mode turned off.", MyFontEnum.White, 2000);
-
-                                SendToServer_ColorPickMode(!colorPickMode);
-                            }
-                        }
-                        else
-                        {
-                            colorPickModeInputPressed = false;
-                        }
-
-                        if(InputHandler.GetPressedOr(settings.instantColorPick1, settings.instantColorPick2))
-                        {
-                            if(!colorPickInputPressed)
-                            {
-                                colorPickInputPressed = true;
-
-                                if(selectedSlimBlock != null || selectedPlayer != null)
-                                {
-                                    if(colorPickMode)
-                                        SendToServer_ColorPickMode(false);
-
-                                    var targetColor = (selectedSlimBlock != null ? selectedSlimBlock.ColorMaskHSV : selectedPlayerColorMask);
-
-                                    if(SendToServer_SetColor((byte)localColorData.SelectedSlot, targetColor, true))
-                                    {
-                                        PlayHudSound(SOUND_HUD_MOUSE_CLICK, 0.25f);
-                                        ShowNotification(0, $"Slot {localColorData.SelectedSlot + 1} set to {ColorMaskToString(targetColor)}", MyFontEnum.White, 2000);
-                                    }
-                                    else
-                                    {
-                                        PlayHudSound(SOUND_HUD_UNABLE, SOUND_HUD_UNABLE_VOLUME, SOUND_HUD_UNABLE_TIMEOUT);
-                                    }
-                                }
-                                else
-                                {
-                                    ShowNotification(0, "First aim at a block or player.", MyFontEnum.Red, 2000);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            colorPickInputPressed = false;
-                        }
-
-                        if(InputHandler.GetPressedOr(settings.replaceColorMode1, settings.replaceColorMode2))
-                        {
-                            if(!replaceAllModeInputPressed)
-                            {
-                                replaceAllModeInputPressed = true;
-
-                                if(ReplaceColorAccess)
-                                {
-                                    replaceAllMode = !replaceAllMode;
-                                    ShowNotification(0, "Replace color mode " + (replaceAllMode ? "enabled." : "turned off."), MyFontEnum.White, 2000);
-                                }
-                                else
-                                {
-                                    ShowNotification(0, "Replace color mode is only available in creative game mode or with SM creative tools on.", MyFontEnum.Red, 3000);
-                                }
-                            }
-                        }
-                        else if(replaceAllModeInputPressed)
-                        {
-                            replaceAllModeInputPressed = false;
-                        }
+                        HandleInputs_Symmetry();
+                        HandleInputs_CyclePalette();
+                        HandleInputs_ColorPickMode();
+                        HandleInputs_InstantColorPick();
+                        HandleInputs_ReplaceMode();
                     }
 
                     bool trigger = inputReadable && MyAPIGateway.Input.IsGameControlPressed(MyControlsSpace.PRIMARY_TOOL_ACTION);
 
-                    if(trigger && (IgnoreAmmoConsumption || localHeldTool.Ammo > 0))
-                    {
-                        if(!triggerInputPressed)
-                        {
-                            triggerInputPressed = true;
-                            SendToServer_PaintGunFiring(localHeldTool, true);
-                        }
-                    }
-                    else if(triggerInputPressed)
-                    {
-                        triggerInputPressed = false;
-                        SendToServer_PaintGunFiring(localHeldTool, false);
-                    }
+                    HandleInputs_Trigger(trigger);
+                    HandleInputs_Painting(trigger);
 
-                    if(tick % PAINT_SKIP_TICKS == 0)
-                    {
-                        if(replaceAllMode && !ReplaceColorAccess) // if access no longer allows it, disable the replace mode
-                        {
-                            replaceAllMode = false;
-                            ShowNotification(0, "Replace color mode turned off.", MyFontEnum.White, 2000);
-                        }
-
-                        var painted = HoldingTool(trigger);
-
-                        if(painted && !colorPickMode && !IgnoreAmmoConsumption) // expend the ammo manually when painting
-                        {
-                            var character = MyAPIGateway.Session.Player.Character;
-
-                            if(MyAPIGateway.Multiplayer.IsServer)
-                            {
-                                var inv = character.GetInventory();
-
-                                if(inv != null)
-                                    inv.RemoveItemsOfType(1, PAINT_MAG, false); // inventory actions get synchronized to clients automatically if called server-side
-                            }
-                            else
-                            {
-                                SendToServer_RemoveAmmo(character.EntityId);
-                            }
-                        }
-
-                        GenerateAimInfo();
-                    }
-
-                    if(symmetryInputAvailable)
-                    {
-                        if(MyAPIGateway.CubeBuilder.UseSymmetry && selectedGrid != null && (selectedGrid.XSymmetryPlane.HasValue || selectedGrid.YSymmetryPlane.HasValue || selectedGrid.ZSymmetryPlane.HasValue))
-                        {
-                            var matrix = selectedGrid.WorldMatrix;
-                            var quad = new MyQuadD();
-                            Vector3D gridSize = (Vector3I.One + (selectedGrid.Max - selectedGrid.Min)) * selectedGrid.GridSizeHalf;
-                            const float alpha = 0.4f;
-
-                            if(selectedGrid.XSymmetryPlane.HasValue)
-                            {
-                                var center = matrix.Translation + matrix.Right * ((selectedGrid.XSymmetryPlane.Value.X * selectedGrid.GridSize) - (selectedGrid.XSymmetryOdd ? selectedGrid.GridSizeHalf : 0));
-
-                                var minY = matrix.Up * ((selectedGrid.Min.Y - 1.5f) * selectedGrid.GridSize);
-                                var maxY = matrix.Up * ((selectedGrid.Max.Y + 1.5f) * selectedGrid.GridSize);
-                                var minZ = matrix.Backward * ((selectedGrid.Min.Z - 1.5f) * selectedGrid.GridSize);
-                                var maxZ = matrix.Backward * ((selectedGrid.Max.Z + 1.5f) * selectedGrid.GridSize);
-
-                                quad.Point0 = center + maxY + maxZ;
-                                quad.Point1 = center + maxY + minZ;
-                                quad.Point2 = center + minY + minZ;
-                                quad.Point3 = center + minY + maxZ;
-
-                                MyTransparentGeometry.AddQuad(MATERIAL_VANILLA_SQUARE, ref quad, Color.Red * alpha, ref center, blendType: HELPERS_BLEND_TYPE);
-                            }
-
-                            if(selectedGrid.YSymmetryPlane.HasValue)
-                            {
-                                var center = matrix.Translation + matrix.Up * ((selectedGrid.YSymmetryPlane.Value.Y * selectedGrid.GridSize) - (selectedGrid.YSymmetryOdd ? selectedGrid.GridSizeHalf : 0));
-
-                                var minZ = matrix.Backward * ((selectedGrid.Min.Z - 1.5f) * selectedGrid.GridSize);
-                                var maxZ = matrix.Backward * ((selectedGrid.Max.Z + 1.5f) * selectedGrid.GridSize);
-                                var minX = matrix.Right * ((selectedGrid.Min.X - 1.5f) * selectedGrid.GridSize);
-                                var maxX = matrix.Right * ((selectedGrid.Max.X + 1.5f) * selectedGrid.GridSize);
-
-                                quad.Point0 = center + maxZ + maxX;
-                                quad.Point1 = center + maxZ + minX;
-                                quad.Point2 = center + minZ + minX;
-                                quad.Point3 = center + minZ + maxX;
-
-                                MyTransparentGeometry.AddQuad(MATERIAL_VANILLA_SQUARE, ref quad, Color.Green * alpha, ref center, blendType: HELPERS_BLEND_TYPE);
-                            }
-
-                            if(selectedGrid.ZSymmetryPlane.HasValue)
-                            {
-                                var center = matrix.Translation + matrix.Backward * ((selectedGrid.ZSymmetryPlane.Value.Z * selectedGrid.GridSize) + (selectedGrid.ZSymmetryOdd ? selectedGrid.GridSizeHalf : 0));
-
-                                var minY = matrix.Up * ((selectedGrid.Min.Y - 1.5f) * selectedGrid.GridSize);
-                                var maxY = matrix.Up * ((selectedGrid.Max.Y + 1.5f) * selectedGrid.GridSize);
-                                var minX = matrix.Right * ((selectedGrid.Min.X - 1.5f) * selectedGrid.GridSize);
-                                var maxX = matrix.Right * ((selectedGrid.Max.X + 1.5f) * selectedGrid.GridSize);
-
-                                quad.Point0 = center + maxY + maxX;
-                                quad.Point1 = center + maxY + minX;
-                                quad.Point2 = center + minY + minX;
-                                quad.Point3 = center + minY + maxX;
-
-                                MyTransparentGeometry.AddQuad(MATERIAL_VANILLA_SQUARE, ref quad, Color.Blue * alpha, ref center, blendType: HELPERS_BLEND_TYPE);
-                            }
-                        }
-                    }
-
-                    if(selectedSlimBlock != null)
-                    {
-                        if(selectedSlimBlock.IsDestroyed || selectedSlimBlock.IsFullyDismounted)
-                        {
-                            selectedSlimBlock = null;
-                        }
-                        else
-                        {
-                            DrawBlockSelection(selectedSlimBlock, !selectedInvalid);
-
-                            // symmetry highlight
-                            if(SymmetryAccess && MyCubeBuilder.Static.UseSymmetry && (selectedGrid.XSymmetryPlane.HasValue || selectedGrid.YSymmetryPlane.HasValue || selectedGrid.ZSymmetryPlane.HasValue))
-                            {
-                                var mirrorX = MirrorHighlight(selectedGrid, 0, selectedSlimBlock.Position); // X
-                                var mirrorY = MirrorHighlight(selectedGrid, 1, selectedSlimBlock.Position); // Y
-                                var mirrorZ = MirrorHighlight(selectedGrid, 2, selectedSlimBlock.Position); // Z
-                                Vector3I? mirrorYZ = null;
-
-                                if(mirrorX.HasValue && selectedGrid.YSymmetryPlane.HasValue) // XY
-                                    MirrorHighlight(selectedGrid, 1, mirrorX.Value);
-
-                                if(mirrorX.HasValue && selectedGrid.ZSymmetryPlane.HasValue) // XZ
-                                    MirrorHighlight(selectedGrid, 2, mirrorX.Value);
-
-                                if(mirrorY.HasValue && selectedGrid.ZSymmetryPlane.HasValue) // YZ
-                                    mirrorYZ = MirrorHighlight(selectedGrid, 2, mirrorY.Value);
-
-                                if(selectedGrid.XSymmetryPlane.HasValue && mirrorYZ.HasValue) // XYZ
-                                    MirrorHighlight(selectedGrid, 0, mirrorYZ.Value);
-                            }
-                        }
-                    }
+                    Draw_Symmetry();
+                    Draw_BlockSelection();
                 }
             }
             catch(Exception e)
             {
                 Log.Error(e);
+            }
+        }
+
+        private void MatchSelectedColorSlots(bool inputReadable, bool controllingLocalChar)
+        {
+            // apply selected slot when inside the color picker menu
+            if(MyAPIGateway.Gui.IsCursorVisible && MyAPIGateway.Gui.ActiveGamePlayScreen == "ColorPick")
+            {
+                localColorData.SelectedSlot = MyAPIGateway.Session.Player.SelectedBuildColorSlot;
+                SetToolColor(localColorData.Colors[localColorData.SelectedSlot]);
+            }
+
+            // apply selected slot when changing colors via cubebuilder
+            if(inputReadable && controllingLocalChar && MyAPIGateway.CubeBuilder.IsActivated)
+            {
+                if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.SWITCH_LEFT) || MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.SWITCH_RIGHT))
+                {
+                    localColorData.SelectedSlot = MyAPIGateway.Session.Player.SelectedBuildColorSlot;
+                    SetToolColor(localColorData.Colors[localColorData.SelectedSlot]);
+                }
+            }
+        }
+
+        private void SendSelectedSlotToServer()
+        {
+            if(tick % 10 != 0)
+                return;
+
+            if(localColorData == null && !playerColorData.TryGetValue(MyAPIGateway.Multiplayer.MyId, out localColorData))
+            {
+                localColorData = null;
+            }
+
+            if(localColorData != null && localColorData.SelectedSlot != prevSelectedColorSlot)
+            {
+                prevSelectedColorSlot = localColorData.SelectedSlot;
+                SendToServer_SelectedColorSlot((byte)localColorData.SelectedSlot);
+            }
+        }
+
+        private void HandleInputs_CyclePalette()
+        {
+            if(MyAPIGateway.Input.IsAnyAltKeyPressed())
+                return;
+
+            var change = 0;
+
+            if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.SWITCH_LEFT))
+                change = 1;
+            else if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.SWITCH_RIGHT))
+                change = -1;
+            else
+                change = MyAPIGateway.Input.DeltaMouseScrollWheelValue();
+
+            if(change != 0 && localColorData != null)
+            {
+                if(settings.extraSounds)
+                    PlayHudSound(SOUND_HUD_CLICK, 0.1f);
+
+                if(change < 0)
+                {
+                    if(settings.selectColorZigZag)
+                    {
+                        if(localColorData.SelectedSlot >= 13)
+                            localColorData.SelectedSlot = 0;
+                        else if(localColorData.SelectedSlot >= 7)
+                            localColorData.SelectedSlot -= 6;
+                        else
+                            localColorData.SelectedSlot += 7;
+                    }
+                    else
+                    {
+                        if(++localColorData.SelectedSlot >= localColorData.Colors.Count)
+                            localColorData.SelectedSlot = 0;
+                    }
+                }
+                else
+                {
+                    if(settings.selectColorZigZag)
+                    {
+                        if(localColorData.SelectedSlot >= 7)
+                            localColorData.SelectedSlot -= 7;
+                        else
+                            localColorData.SelectedSlot += 6;
+                    }
+                    else
+                    {
+                        if(--localColorData.SelectedSlot < 0)
+                            localColorData.SelectedSlot = (localColorData.Colors.Count - 1);
+                    }
+                }
+
+                MyAPIGateway.Session.Player.SelectedBuildColorSlot = localColorData.SelectedSlot;
+                SetToolColor(localColorData.Colors[localColorData.SelectedSlot]);
+            }
+        }
+
+        private void HandleInputs_Symmetry()
+        {
+            if(symmetryInputAvailable && MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.USE_SYMMETRY))
+            {
+                MyAPIGateway.CubeBuilder.UseSymmetry = !MyAPIGateway.CubeBuilder.UseSymmetry;
+            }
+
+            if(replaceAllMode && MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.USE_SYMMETRY))
+            {
+                replaceGridSystem = !replaceGridSystem;
+            }
+        }
+
+        private void HandleInputs_ColorPickMode()
+        {
+            if(InputHandler.GetPressedOr(settings.colorPickMode1, settings.colorPickMode2))
+            {
+                if(!colorPickModeInputPressed)
+                {
+                    colorPickModeInputPressed = true;
+
+                    if(colorPickMode)
+                        ShowNotification(0, "Color pick mode turned off.", MyFontEnum.White, 2000);
+
+                    SendToServer_ColorPickMode(!colorPickMode);
+                }
+            }
+            else
+            {
+                colorPickModeInputPressed = false;
+            }
+        }
+
+        private void HandleInputs_InstantColorPick()
+        {
+            if(InputHandler.GetPressedOr(settings.instantColorPick1, settings.instantColorPick2))
+            {
+                if(!colorPickInputPressed)
+                {
+                    colorPickInputPressed = true;
+
+                    if(selectedSlimBlock != null || selectedPlayer != null)
+                    {
+                        if(colorPickMode)
+                            SendToServer_ColorPickMode(false);
+
+                        var targetColor = (selectedSlimBlock != null ? selectedSlimBlock.ColorMaskHSV : selectedPlayerColorMask);
+
+                        if(SendToServer_SetColor((byte)localColorData.SelectedSlot, targetColor, true))
+                        {
+                            PlayHudSound(SOUND_HUD_MOUSE_CLICK, 0.25f);
+                            ShowNotification(0, $"Slot {localColorData.SelectedSlot + 1} set to {ColorMaskToString(targetColor)}", MyFontEnum.White, 2000);
+                        }
+                        else
+                        {
+                            PlayHudSound(SOUND_HUD_UNABLE, SOUND_HUD_UNABLE_VOLUME, SOUND_HUD_UNABLE_TIMEOUT);
+                        }
+                    }
+                    else
+                    {
+                        ShowNotification(0, "First aim at a block or player.", MyFontEnum.Red, 2000);
+                    }
+                }
+            }
+            else
+            {
+                colorPickInputPressed = false;
+            }
+        }
+
+        private void HandleInputs_ReplaceMode()
+        {
+            if(InputHandler.GetPressedOr(settings.replaceColorMode1, settings.replaceColorMode2))
+            {
+                if(!replaceAllModeInputPressed)
+                {
+                    replaceAllModeInputPressed = true;
+
+                    if(ReplaceColorAccess)
+                    {
+                        replaceAllMode = !replaceAllMode;
+                        ShowNotification(0, "Replace color mode " + (replaceAllMode ? "enabled." : "turned off."), MyFontEnum.White, 2000);
+                    }
+                    else
+                    {
+                        ShowNotification(0, "Replace color mode is only available in creative game mode or with SM creative tools on.", MyFontEnum.Red, 3000);
+                    }
+                }
+            }
+            else if(replaceAllModeInputPressed)
+            {
+                replaceAllModeInputPressed = false;
+            }
+        }
+
+        private void HandleInputs_Trigger(bool trigger)
+        {
+            if(trigger && (IgnoreAmmoConsumption || localHeldTool.Ammo > 0))
+            {
+                if(!triggerInputPressed)
+                {
+                    triggerInputPressed = true;
+                    SendToServer_PaintGunFiring(localHeldTool, true);
+                }
+            }
+            else if(triggerInputPressed)
+            {
+                triggerInputPressed = false;
+                SendToServer_PaintGunFiring(localHeldTool, false);
+            }
+        }
+
+        private void HandleInputs_Painting(bool trigger)
+        {
+            if(tick % PAINT_SKIP_TICKS != 0)
+                return;
+
+            if(replaceAllMode && !ReplaceColorAccess) // if access no longer allows it, disable the replace mode
+            {
+                replaceAllMode = false;
+                ShowNotification(0, "Replace color mode turned off.", MyFontEnum.White, 2000);
+            }
+
+            var painted = HandleTool(trigger);
+
+            if(painted && !colorPickMode && !IgnoreAmmoConsumption) // expend the ammo manually when painting
+            {
+                var character = MyAPIGateway.Session.Player.Character;
+
+                if(MyAPIGateway.Multiplayer.IsServer)
+                {
+                    var inv = character.GetInventory();
+
+                    if(inv != null)
+                        inv.RemoveItemsOfType(1, PAINT_MAG, false); // inventory actions get synchronized to clients automatically if called server-side
+                }
+                else
+                {
+                    SendToServer_RemoveAmmo(character.EntityId);
+                }
+            }
+
+            GenerateAimInfo();
+        }
+
+        private void Draw_Symmetry()
+        {
+            if(symmetryInputAvailable && MyAPIGateway.CubeBuilder.UseSymmetry && selectedGrid != null && (selectedGrid.XSymmetryPlane.HasValue || selectedGrid.YSymmetryPlane.HasValue || selectedGrid.ZSymmetryPlane.HasValue))
+            {
+                var matrix = selectedGrid.WorldMatrix;
+                var quad = new MyQuadD();
+                Vector3D gridSize = (Vector3I.One + (selectedGrid.Max - selectedGrid.Min)) * selectedGrid.GridSizeHalf;
+                const float alpha = 0.4f;
+
+                if(selectedGrid.XSymmetryPlane.HasValue)
+                {
+                    var center = matrix.Translation + matrix.Right * ((selectedGrid.XSymmetryPlane.Value.X * selectedGrid.GridSize) - (selectedGrid.XSymmetryOdd ? selectedGrid.GridSizeHalf : 0));
+
+                    var minY = matrix.Up * ((selectedGrid.Min.Y - 1.5f) * selectedGrid.GridSize);
+                    var maxY = matrix.Up * ((selectedGrid.Max.Y + 1.5f) * selectedGrid.GridSize);
+                    var minZ = matrix.Backward * ((selectedGrid.Min.Z - 1.5f) * selectedGrid.GridSize);
+                    var maxZ = matrix.Backward * ((selectedGrid.Max.Z + 1.5f) * selectedGrid.GridSize);
+
+                    quad.Point0 = center + maxY + maxZ;
+                    quad.Point1 = center + maxY + minZ;
+                    quad.Point2 = center + minY + minZ;
+                    quad.Point3 = center + minY + maxZ;
+
+                    MyTransparentGeometry.AddQuad(MATERIAL_VANILLA_SQUARE, ref quad, Color.Red * alpha, ref center, blendType: HELPERS_BLEND_TYPE);
+                }
+
+                if(selectedGrid.YSymmetryPlane.HasValue)
+                {
+                    var center = matrix.Translation + matrix.Up * ((selectedGrid.YSymmetryPlane.Value.Y * selectedGrid.GridSize) - (selectedGrid.YSymmetryOdd ? selectedGrid.GridSizeHalf : 0));
+
+                    var minZ = matrix.Backward * ((selectedGrid.Min.Z - 1.5f) * selectedGrid.GridSize);
+                    var maxZ = matrix.Backward * ((selectedGrid.Max.Z + 1.5f) * selectedGrid.GridSize);
+                    var minX = matrix.Right * ((selectedGrid.Min.X - 1.5f) * selectedGrid.GridSize);
+                    var maxX = matrix.Right * ((selectedGrid.Max.X + 1.5f) * selectedGrid.GridSize);
+
+                    quad.Point0 = center + maxZ + maxX;
+                    quad.Point1 = center + maxZ + minX;
+                    quad.Point2 = center + minZ + minX;
+                    quad.Point3 = center + minZ + maxX;
+
+                    MyTransparentGeometry.AddQuad(MATERIAL_VANILLA_SQUARE, ref quad, Color.Green * alpha, ref center, blendType: HELPERS_BLEND_TYPE);
+                }
+
+                if(selectedGrid.ZSymmetryPlane.HasValue)
+                {
+                    var center = matrix.Translation + matrix.Backward * ((selectedGrid.ZSymmetryPlane.Value.Z * selectedGrid.GridSize) + (selectedGrid.ZSymmetryOdd ? selectedGrid.GridSizeHalf : 0));
+
+                    var minY = matrix.Up * ((selectedGrid.Min.Y - 1.5f) * selectedGrid.GridSize);
+                    var maxY = matrix.Up * ((selectedGrid.Max.Y + 1.5f) * selectedGrid.GridSize);
+                    var minX = matrix.Right * ((selectedGrid.Min.X - 1.5f) * selectedGrid.GridSize);
+                    var maxX = matrix.Right * ((selectedGrid.Max.X + 1.5f) * selectedGrid.GridSize);
+
+                    quad.Point0 = center + maxY + maxX;
+                    quad.Point1 = center + maxY + minX;
+                    quad.Point2 = center + minY + minX;
+                    quad.Point3 = center + minY + maxX;
+
+                    MyTransparentGeometry.AddQuad(MATERIAL_VANILLA_SQUARE, ref quad, Color.Blue * alpha, ref center, blendType: HELPERS_BLEND_TYPE);
+                }
+            }
+        }
+
+        private void Draw_BlockSelection()
+        {
+            if(selectedSlimBlock == null)
+                return;
+
+            if(selectedSlimBlock.IsDestroyed || selectedSlimBlock.IsFullyDismounted)
+            {
+                selectedSlimBlock = null;
+            }
+            else
+            {
+                DrawBlockSelection(selectedSlimBlock, !selectedInvalid);
+
+                // symmetry highlight
+                if(SymmetryAccess && MyCubeBuilder.Static.UseSymmetry && (selectedGrid.XSymmetryPlane.HasValue || selectedGrid.YSymmetryPlane.HasValue || selectedGrid.ZSymmetryPlane.HasValue))
+                {
+                    var mirrorX = MirrorHighlight(selectedGrid, 0, selectedSlimBlock.Position); // X
+                    var mirrorY = MirrorHighlight(selectedGrid, 1, selectedSlimBlock.Position); // Y
+                    var mirrorZ = MirrorHighlight(selectedGrid, 2, selectedSlimBlock.Position); // Z
+                    Vector3I? mirrorYZ = null;
+
+                    if(mirrorX.HasValue && selectedGrid.YSymmetryPlane.HasValue) // XY
+                        MirrorHighlight(selectedGrid, 1, mirrorX.Value);
+
+                    if(mirrorX.HasValue && selectedGrid.ZSymmetryPlane.HasValue) // XZ
+                        MirrorHighlight(selectedGrid, 2, mirrorX.Value);
+
+                    if(mirrorY.HasValue && selectedGrid.ZSymmetryPlane.HasValue) // YZ
+                        mirrorYZ = MirrorHighlight(selectedGrid, 2, mirrorY.Value);
+
+                    if(selectedGrid.XSymmetryPlane.HasValue && mirrorYZ.HasValue) // XYZ
+                        MirrorHighlight(selectedGrid, 0, mirrorYZ.Value);
+                }
             }
         }
 
@@ -687,77 +731,84 @@ namespace Digi.PaintGun
                 if(!init)
                     return;
 
+                unchecked { ++tick; }
+
                 uiEdit?.Update();
-
-                if(isPlayer && !playerObjectFound)
-                {
-                    var colors = MyAPIGateway.Session.Player?.DefaultBuildColorSlots;
-
-                    if(colors != null && colors.HasValue)
-                    {
-                        DEFAULT_COLOR = colors.Value.ItemAt(0);
-                        playerObjectFound = true;
-                    }
-                }
-
-                unchecked
-                {
-                    ++tick;
-                }
-
-                if(isPlayer)
-                {
-                    // HUD toggle monitor; required here because it gets the previous value if used in HandleInput()
-                    if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.TOGGLE_HUD))
-                        gameHUD = !MyAPIGateway.Session.Config.MinimalHud;
-                }
-
-                if(MyAPIGateway.Multiplayer.IsServer && tick % 10 == 0)
-                {
-                    foreach(var kv in MyCubeBuilder.AllPlayersColors)
-                    {
-                        var steamId = GetSteamId(kv.Key.ToString());
-
-                        if(playerColorData.ContainsKey(steamId))
-                        {
-                            var cd = playerColorData[steamId];
-
-                            // send only changed colors
-                            if(CheckColorList(steamId, cd.Colors, kv.Value))
-                            {
-                                cd.Colors.Clear();
-                                cd.Colors.AddList(kv.Value); // add them separately to avoid the reference being automatically updated and not detecting changes
-                            }
-                        }
-                        else
-                        {
-                            playerColorData.Add(steamId, new PlayerColorData(steamId, new List<Vector3>(kv.Value))); // new list to not use the same reference, reason noted before
-
-                            // send all colors if player is online
-                            if(IsPlayerOnline(steamId))
-                            {
-                                var myId = MyAPIGateway.Multiplayer.MyId;
-
-                                players.Clear();
-                                MyAPIGateway.Players.GetPlayers(players);
-
-                                foreach(var p in players)
-                                {
-                                    if(myId == p.SteamUserId) // don't re-send to yourself
-                                        continue;
-
-                                    SendToPlayer_SendColorList(p.SteamUserId, steamId, 0, kv.Value);
-                                }
-
-                                players.Clear();
-                            }
-                        }
-                    }
-                }
+                InitializePlayer();
+                DetectHudToggle();
+                ReadPlayerColors();
             }
             catch(Exception e)
             {
                 Log.Error(e);
+            }
+        }
+
+        private void InitializePlayer()
+        {
+            if(isPlayer && !playerObjectFound)
+            {
+                var colors = MyAPIGateway.Session.Player?.DefaultBuildColorSlots;
+
+                if(colors != null && colors.HasValue)
+                {
+                    DEFAULT_COLOR = colors.Value.ItemAt(0);
+                    playerObjectFound = true;
+                }
+            }
+        }
+
+        private void DetectHudToggle()
+        {
+            // HUD toggle monitor; needs to be in BeforeSimulation because MinimalHud has the previous value if used in HandleInput()
+            if(isPlayer && MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.TOGGLE_HUD))
+                gameHUD = !MyAPIGateway.Session.Config.MinimalHud;
+        }
+
+        private void ReadPlayerColors()
+        {
+            if(!MyAPIGateway.Multiplayer.IsServer || tick % 10 != 0)
+                return;
+
+            foreach(var kv in MyCubeBuilder.AllPlayersColors)
+            {
+                var steamId = GetSteamId(kv.Key.ToString());
+
+                if(playerColorData.ContainsKey(steamId))
+                {
+                    var cd = playerColorData[steamId];
+
+                    // send only changed colors
+                    if(CheckColorList(steamId, cd.Colors, kv.Value))
+                    {
+                        cd.Colors.Clear();
+                        cd.Colors.AddList(kv.Value); // add them separately to avoid the reference being automatically updated and not detecting changes
+                    }
+                }
+                else
+                {
+                    // new list to not use the same reference as it needs to detect changes
+                    playerColorData.Add(steamId, new PlayerColorData(steamId, new List<Vector3>(kv.Value)));
+
+                    // send all colors if player is online
+                    if(IsPlayerOnline(steamId))
+                    {
+                        var myId = MyAPIGateway.Multiplayer.MyId;
+
+                        players.Clear();
+                        MyAPIGateway.Players.GetPlayers(players);
+
+                        foreach(var p in players)
+                        {
+                            if(myId == p.SteamUserId) // don't re-send to yourself
+                                continue;
+
+                            SendToPlayer_SendColorList(p.SteamUserId, steamId, 0, kv.Value);
+                        }
+
+                        players.Clear();
+                    }
+                }
             }
         }
 
@@ -1157,22 +1208,23 @@ namespace Digi.PaintGun
         #endregion
 
         #region Tool update & targeting
-        public bool HoldingTool(bool trigger)
+        /// <summary>
+        /// Returns True if tool has painted.
+        /// </summary>
+        public bool HandleTool(bool trigger)
         {
             try
             {
-                var character = MyAPIGateway.Session.Player.Character;
-
                 selectedGrid = null;
                 selectedPlayer = null;
                 selectedSlimBlock = null;
                 selectedInvalid = false;
                 symmetryInputAvailable = false;
 
+                var character = MyAPIGateway.Session.Player.Character;
                 IMyPlayer targetPlayer;
                 IMyCubeGrid targetGrid;
                 IMySlimBlock targetBlock;
-
                 GetTarget(character, out targetGrid, out targetBlock, out targetPlayer);
 
                 // TODO testing aim to paint subpart
@@ -1355,46 +1407,7 @@ namespace Digi.PaintGun
 
                 if(colorPickMode && targetPlayer != null)
                 {
-                    if(!playerColorData.ContainsKey(targetPlayer.SteamUserId))
-                        return false;
-
-                    var cd = playerColorData[targetPlayer.SteamUserId];
-                    var targetColorMask = cd.Colors[cd.SelectedSlot];
-                    selectedPlayerColorMask = targetColorMask;
-                    selectedPlayer = targetPlayer;
-
-                    if(trigger)
-                    {
-                        SendToServer_ColorPickMode(false);
-
-                        if(SendToServer_SetColor((byte)localColorData.SelectedSlot, targetColorMask, true))
-                        {
-                            PlayHudSound(SOUND_HUD_MOUSE_CLICK, 0.25f);
-
-                            ShowNotification(0, $"Slot {localColorData.SelectedSlot + 1} set to {ColorMaskToString(targetColorMask)}", MyFontEnum.White, 3000);
-                        }
-                        else
-                        {
-                            PlayHudSound(SOUND_HUD_UNABLE, SOUND_HUD_UNABLE_VOLUME, SOUND_HUD_UNABLE_TIMEOUT);
-                        }
-                    }
-                    else
-                    {
-                        if(!ColorMaskEquals(targetColorMask, prevColorMaskPreview))
-                        {
-                            prevColorMaskPreview = targetColorMask;
-
-                            SetToolColor(targetColorMask);
-
-                            if(settings.extraSounds)
-                                PlayHudSound(SOUND_HUD_ITEM, 0.75f);
-                        }
-
-                        SetGUIToolStatus(0, "Click to get color from player.");
-                        SetGUIToolStatus(1, null);
-                    }
-
-                    return false;
+                    return HandleTool_ColorPickMode(trigger, targetPlayer);
                 }
 
                 selectedGrid = targetGrid as MyCubeGrid;
@@ -1420,7 +1433,6 @@ namespace Digi.PaintGun
                     return false;
                 }
 
-                #region Painting the target block
                 if(trigger)
                 {
                     float paintSpeed = (1.0f / GetBlockSurface(selectedSlimBlock));
@@ -1460,7 +1472,6 @@ namespace Digi.PaintGun
 
                     return true;
                 }
-                #endregion
             }
             catch(Exception e)
             {
@@ -1730,7 +1741,9 @@ namespace Digi.PaintGun
                         assigned.Append(MyAPIGateway.Input.GetKeyName(controlSymmetry.GetSecondKeyboardControl()));
                     }
 
-                    if(InputHandler.IsInputReadable())
+                    bool inputReadable = (InputHandler.IsInputReadable() && !MyAPIGateway.Session.IsCameraUserControlledSpectator);
+
+                    if(inputReadable)
                     {
                         symmetryInputAvailable = true;
 
@@ -1917,6 +1930,50 @@ namespace Digi.PaintGun
             }
 
             return true;
+        }
+
+        private bool HandleTool_ColorPickMode(bool trigger, IMyPlayer targetPlayer)
+        {
+            if(!playerColorData.ContainsKey(targetPlayer.SteamUserId))
+                return false;
+
+            var cd = playerColorData[targetPlayer.SteamUserId];
+            var targetColorMask = cd.Colors[cd.SelectedSlot];
+            selectedPlayerColorMask = targetColorMask;
+            selectedPlayer = targetPlayer;
+
+            if(trigger)
+            {
+                SendToServer_ColorPickMode(false);
+
+                if(SendToServer_SetColor((byte)localColorData.SelectedSlot, targetColorMask, true))
+                {
+                    PlayHudSound(SOUND_HUD_MOUSE_CLICK, 0.25f);
+
+                    ShowNotification(0, $"Slot {localColorData.SelectedSlot + 1} set to {ColorMaskToString(targetColorMask)}", MyFontEnum.White, 3000);
+                }
+                else
+                {
+                    PlayHudSound(SOUND_HUD_UNABLE, SOUND_HUD_UNABLE_VOLUME, SOUND_HUD_UNABLE_TIMEOUT);
+                }
+            }
+            else
+            {
+                if(!ColorMaskEquals(targetColorMask, prevColorMaskPreview))
+                {
+                    prevColorMaskPreview = targetColorMask;
+
+                    SetToolColor(targetColorMask);
+
+                    if(settings.extraSounds)
+                        PlayHudSound(SOUND_HUD_ITEM, 0.75f);
+                }
+
+                SetGUIToolStatus(0, "Click to get color from player.");
+                SetGUIToolStatus(1, null);
+            }
+
+            return false;
         }
 
         public Vector3 PaintProcess(Vector3 blockColor, Vector3 colorMask, float paintSpeed, string blockName)
