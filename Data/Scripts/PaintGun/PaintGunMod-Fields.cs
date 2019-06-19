@@ -60,7 +60,6 @@ namespace Digi.PaintGun
         public bool selectedInvalid = false;
         public Vector3 prevColorMaskPreview;
         public IMySlimBlock prevSlimBlock = null;
-        public long selectedBlockBuiltBy = 0;
         private MyEntity3DSoundEmitter hudSoundEmitter;
         private uint hudSoundTimeout = 0;
         public string[] blockInfoStatus = new string[3];

@@ -13,10 +13,7 @@ using VRage.Game.ModAPI;
 using VRage.Input;
 using VRage.ModAPI;
 using VRageMath;
-
 using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
-
-// FIXME: color not selected in paintgun when changing color via [ or ] via cubebuilder
 
 namespace Digi.PaintGun
 {
@@ -357,6 +354,26 @@ namespace Digi.PaintGun
 
             try
             {
+                // apply selected slot when inside the color picker menu
+                if(MyAPIGateway.Gui.IsCursorVisible && MyAPIGateway.Gui.ActiveGamePlayScreen == "ColorPick")
+                {
+                    localColorData.SelectedSlot = MyAPIGateway.Session.Player.SelectedBuildColorSlot;
+                    SetToolColor(localColorData.Colors[localColorData.SelectedSlot]);
+                }
+
+                bool controllingLocalChar = (MyAPIGateway.Session.ControlledObject == MyAPIGateway.Session.Player.Character);
+                bool inputReadable = (InputHandler.IsInputReadable() && !MyAPIGateway.Session.IsCameraUserControlledSpectator);
+
+                // apply selected slot when changing colors via cubebuilder
+                if(inputReadable && controllingLocalChar && MyAPIGateway.CubeBuilder.IsActivated)
+                {
+                    if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.SWITCH_LEFT) || MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.SWITCH_RIGHT))
+                    {
+                        localColorData.SelectedSlot = MyAPIGateway.Session.Player.SelectedBuildColorSlot;
+                        SetToolColor(localColorData.Colors[localColorData.SelectedSlot]);
+                    }
+                }
+
                 // check selected slot and send updates to server
                 if(tick % 10 == 0)
                 {
@@ -372,18 +389,9 @@ namespace Digi.PaintGun
                     }
                 }
 
-                // sync selected slot when inside the color picker menu
-                if(MyAPIGateway.Gui.IsCursorVisible && MyAPIGateway.Gui.ActiveGamePlayScreen == "ColorPick")
-                {
-                    localColorData.SelectedSlot = MyAPIGateway.Session.Player.SelectedBuildColorSlot;
-                    SetToolColor(localColorData.Colors[localColorData.SelectedSlot]);
-                }
-
                 // FIXME: added controlled check but needs to get rid of the fake block UI if you're already selecting something...
-                if(localHeldTool != null && MyAPIGateway.Session.ControlledObject == MyAPIGateway.Session.Player.Character)
+                if(controllingLocalChar && localHeldTool != null)
                 {
-                    bool inputReadable = InputHandler.IsInputReadable();
-
                     if(inputReadable)
                     {
                         if(symmetryInputAvailable && MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.USE_SYMMETRY))
