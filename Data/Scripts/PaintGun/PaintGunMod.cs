@@ -1671,10 +1671,12 @@ namespace Digi.PaintGun
 
             foreach(var p in players)
             {
-                if(p.Character == null || p.Character == character)
+                var c = p.Character;
+
+                if(c == null || c == character)
                     continue;
 
-                var sphere = GetCharacterSelectionSphere(character);
+                var sphere = GetCharacterSelectionSphere(c);
 
                 if(Vector3D.DistanceSquared(rayFrom, sphere.Center) > (rayLength * rayLength))
                     continue;
