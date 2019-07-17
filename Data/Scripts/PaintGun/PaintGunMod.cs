@@ -351,10 +351,10 @@ namespace Digi.PaintGun
         {
             try
             {
-                if(!isPlayer || MyParticlesManager.Paused)
+                if(!isPlayer || MyAPIGateway.Session == null || MyParticlesManager.Paused)
                     return;
 
-                bool controllingLocalChar = (MyAPIGateway.Session.ControlledObject == MyAPIGateway.Session.Player.Character);
+                bool controllingLocalChar = (MyAPIGateway.Session.ControlledObject == MyAPIGateway.Session.Player?.Character);
                 bool inputReadable = (InputHandler.IsInputReadable() && !MyAPIGateway.Session.IsCameraUserControlledSpectator);
 
                 MatchSelectedColorSlots(inputReadable, controllingLocalChar);
@@ -715,7 +715,7 @@ namespace Digi.PaintGun
         {
             try
             {
-                if(!init || !isPlayer)
+                if(!isPlayer || MyAPIGateway.Session == null)
                     return;
 
                 viewProjInvCompute = true;
@@ -724,7 +724,7 @@ namespace Digi.PaintGun
                 DrawCharacterSelection();
                 DrawHUDPalette();
 
-                bool controllingLocalChar = (MyAPIGateway.Session.ControlledObject == MyAPIGateway.Session.Player.Character);
+                bool controllingLocalChar = (MyAPIGateway.Session.ControlledObject == MyAPIGateway.Session.Player?.Character);
 
                 if(controllingLocalChar && localHeldTool != null)
                 {
