@@ -222,7 +222,13 @@ namespace Digi.PaintGun
                             var cd = playerColorData[steamId];
                             cd.SelectedSlot = slot;
 
-                            GetPlayerBySteamId(steamId)?.Character?.EquippedTool?.GameLogic?.GetAs<PaintGunItem>()?.SetToolColor(cd.Colors[slot]);
+                            var player = GetPlayerBySteamId(steamId);
+
+                            if(player != null)
+                            {
+                                player.SelectedBuildColorSlot = slot;
+                                player.Character?.EquippedTool?.GameLogic?.GetAs<PaintGunItem>()?.SetToolColor(cd.Colors[slot]);
+                            }
 
                             skipSteamId = steamId; // skip relaying to this id
                             break; // relay to clients
@@ -279,6 +285,14 @@ namespace Digi.PaintGun
                             for(int i = 0; i < COLOR_PALETTE_SIZE; i++)
                             {
                                 cd.Colors[i] = RGBToColorMask(new Color(packet.PackedColors[i]));
+                            }
+
+                            var player = GetPlayerBySteamId(steamId);
+
+                            if(player != null)
+                            {
+                                player.SelectedBuildColorSlot = slot;
+                                player.Character?.EquippedTool?.GameLogic?.GetAs<PaintGunItem>()?.SetToolColor(cd.Colors[slot]);
                             }
 
                             return; // don't relay (not that it even can since it's clientside only)
@@ -463,6 +477,7 @@ namespace Digi.PaintGun
                         if(ColorMaskEquals(cd.Colors[i], colorMask))
                         {
                             localColorData.SelectedSlot = i;
+                            MyAPIGateway.Session.Player.SelectedBuildColorSlot = i;
                             SendToServer_SelectedColorSlot((byte)i);
                             ShowNotification(0, $"Color exists in slot {i + 1}, selected.", MyFontEnum.White, 2000);
                             return false; // color exists in palette, stop sending.
