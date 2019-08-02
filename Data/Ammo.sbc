@@ -7,7 +7,7 @@
         <SubtypeId>PaintGunMag</SubtypeId>
       </Id>
       <DisplayName>Paint Chemicals</DisplayName>
-      <Icon>Textures\Icons\PaintGunMag.dds</Icon>
+      <Icon>Textures\UI\PaintGunMag.dds</Icon>
       <Size>
         <X>0.001</X>
         <Y>0.001</Y>

@@ -34,7 +34,7 @@
 
 [/pg help] for more info</Description>
       <DescriptionArgs>PRIMARY_TOOL_ACTION,SECONDARY_TOOL_ACTION,LANDING_GEAR,CUBE_BUILDER_CUBESIZE_MODE</DescriptionArgs>
-      <Icon>Textures\Icons\PaintGun.dds</Icon>
+      <Icon>Textures\UI\PaintGun.dds</Icon>
       <Size>
         <X>0.45</X>
         <Y>0.3</Y>

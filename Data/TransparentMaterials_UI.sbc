@@ -4,28 +4,6 @@
     <TransparentMaterial>
       <Id>
         <TypeId>TransparentMaterialDefinition</TypeId>
-        <SubtypeId>PaintGun_Spray</SubtypeId>
-      </Id>
-      <AlphaMistingEnable>false</AlphaMistingEnable>
-      <AlphaSaturation>1</AlphaSaturation>
-      <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
-      <IgnoreDepth>true</IgnoreDepth>
-      <SoftParticleDistanceScale>1</SoftParticleDistanceScale>
-      <Texture>Textures\Spray.dds</Texture>
-      <UseAtlas>false</UseAtlas>
-      <Reflectivity>0</Reflectivity>
-      <UVOffset>
-        <X>0</X>
-        <Y>0</Y>
-      </UVOffset>
-      <UVSize>
-        <X>1</X>
-        <Y>1</Y>
-      </UVSize>
-    </TransparentMaterial>
-    <TransparentMaterial>
-      <Id>
-        <TypeId>TransparentMaterialDefinition</TypeId>
         <SubtypeId>PaintGunPalette_Background</SubtypeId>
       </Id>
       <AlphaMistingEnable>false</AlphaMistingEnable>
@@ -77,7 +55,7 @@
       <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
       <IgnoreDepth>false</IgnoreDepth>
       <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
-      <Texture>Textures\SelectedColor.dds</Texture>
+      <Texture>Textures\UI\SelectedColor.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
       <UVOffset>
@@ -99,7 +77,7 @@
       <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
       <IgnoreDepth>true</IgnoreDepth>
       <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
-      <Texture>Textures\Icons\GenericBlock.dds</Texture>
+      <Texture>Textures\UI\GenericBlock.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
       <UVOffset>
@@ -121,7 +99,7 @@
       <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
       <IgnoreDepth>true</IgnoreDepth>
       <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
-      <Texture>Textures\Icons\GenericCharacter.dds</Texture>
+      <Texture>Textures\UI\GenericCharacter.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
       <UVOffset>
@@ -143,7 +121,7 @@
       <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
       <IgnoreDepth>true</IgnoreDepth>
       <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
-      <Texture>Textures\Icons\PaintGunMagIcon.dds</Texture>
+      <Texture>Textures\UI\PaintGunMagIcon.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
       <UVOffset>

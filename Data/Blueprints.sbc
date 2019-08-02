@@ -7,7 +7,7 @@
         <SubtypeId>Blueprint_PaintGun</SubtypeId>
       </Id>
       <DisplayName>Paint Gun</DisplayName>
-      <Icon>Textures\Icons\PaintGun.dds</Icon>
+      <Icon>Textures\UI\PaintGun.dds</Icon>
       <Prerequisites>
         <Item Amount="4" TypeId="Ingot" SubtypeId="Iron" />
         <Item Amount="1" TypeId="Ingot" SubtypeId="Nickel" />
@@ -22,7 +22,7 @@
         <SubtypeId>Blueprint_PaintGunMag</SubtypeId>
       </Id>
       <DisplayName>Paint Chemicals</DisplayName>
-      <Icon>Textures\Icons\PaintGunMag.dds</Icon>
+      <Icon>Textures\UI\PaintGunMag.dds</Icon>
       <Prerequisites>
         <Item Amount="0.03" TypeId="Ingot" SubtypeId="Stone" />
       </Prerequisites>
