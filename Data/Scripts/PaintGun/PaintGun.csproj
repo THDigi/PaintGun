@@ -49,6 +49,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <Prefer32Bit>false</Prefer32Bit>
     <CodeAnalysisRuleSet>PaintGun.ruleset</CodeAnalysisRuleSet>
+    <LangVersion>7.0</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -124,6 +125,9 @@
     <Compile Include="PaintGunMod.cs" />
     <Compile Include="PaintGunItem.cs" />
     <Compile Include="Settings.cs" />
+    <Compile Include="SkinOwnershipTester\GridSpawner.cs" />
+    <Compile Include="SkinOwnershipTester\OwnershipTestPlayer.cs" />
+    <Compile Include="SkinOwnershipTester\OwnershipTestServer.cs" />
     <Compile Include="TextAPIv2.cs" />
     <Compile Include="UIEdit.cs" />
   </ItemGroup>

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Digi.PaintGun.SkinOwnershipTester;
 using Draygo.API;
 using Sandbox.Definitions;
 using Sandbox.Game;
@@ -10,8 +11,8 @@ using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
-using VRage.Input;
 using VRage.ModAPI;
+using VRage.Utils;
 using VRageMath;
 using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
 
@@ -26,39 +27,60 @@ namespace Digi.PaintGun
             instance = this;
             Log.ModName = MOD_NAME;
             Log.AutoClose = false;
+
+            BlockSkins = new List<SkinInfo>(4)
+            {
+                new SkinInfo(0, MyStringHash.NullOrEmpty, "Default", "PaintGun_SkinIcon_Default"),
+                new SkinInfo(1, MyStringHash.GetOrCompute("Clean_Armor"), "Clean", "PaintGun_SkinIcon_Clean"),
+                new SkinInfo(2, MyStringHash.GetOrCompute("CarbonFibre_Armor"), "Carbon Fiber", "PaintGun_SkinIcon_CarbonFiber"),
+                new SkinInfo(3, MyStringHash.GetOrCompute("DigitalCamouflage_Armor"), "Digital Camouflage", "PaintGun_SkinIcon_DigitalCamouflage")
+            };
+
+            //blockSkins.Add(MyStringHash.NullOrEmpty); // allowing to remove skin
+            //
+            //foreach(var assetDef in MyDefinitionManager.Static.GetAssetModifierDefinitions())
+            //{
+            //    if(assetDef.Id.SubtypeName.EndsWith("_Armor"))
+            //    {
+            //        blockSkins.Add(assetDef.Id.SubtypeId);
+            //    }
+            //}
         }
 
         public override void BeforeStart()
         {
             init = true;
-            isPlayer = !(MyAPIGateway.Utilities.IsDedicated && MyAPIGateway.Multiplayer.IsServer);
+            isDS = (MyAPIGateway.Utilities.IsDedicated && MyAPIGateway.Multiplayer.IsServer);
 
             MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET, ReceivedPacket);
 
-            if(isPlayer) // stuff that shouldn't happen DS-side.
+            if(MyAPIGateway.Multiplayer.IsServer)
             {
+                ownershipTestServer = new OwnershipTestServer(this);
+            }
+
+            if(!isDS) // stuff that shouldn't happen DS-side.
+            {
+                ownershipTestPlayer = new OwnershipTestPlayer(this);
+
                 UpdateConfigValues();
 
                 textAPI = new HudAPIv2(() => TextAPIReady = true);
                 settings = new Settings();
 
                 MyAPIGateway.Utilities.MessageEntered += MessageEntered;
+                MyAPIGateway.Gui.GuiControlCreated += GuiControlCreated;
                 MyAPIGateway.Gui.GuiControlRemoved += GuiControlRemoved;
 
                 if(!MyAPIGateway.Multiplayer.IsServer)
                     SendToServer_RequestColorList(MyAPIGateway.Multiplayer.MyId);
 
-                if(UIEDIT && MyAPIGateway.Session.OnlineMode == MyOnlineModeEnum.OFFLINE)
-                {
-                    foreach(var mod in MyAPIGateway.Session.Mods)
-                    {
-                        if(mod.Name == "PaintGun.dev")
-                        {
-                            uiEdit = new UIEdit();
-                            break;
-                        }
-                    }
-                }
+                EnsureColorDataEntry(MyAPIGateway.Multiplayer.MyId);
+
+                if(localColorData == null)
+                    playerColorData.TryGetValue(MyAPIGateway.Multiplayer.MyId, out localColorData);
+
+                InitUIEdit();
             }
 
             // make the paintgun not be able to shoot normally, to avoid needing to add ammo and the stupid hardcoded screen shake
@@ -75,6 +97,21 @@ namespace Digi.PaintGun
             }
         }
 
+        private void InitUIEdit()
+        {
+            if(UIEDIT && MyAPIGateway.Session.OnlineMode == MyOnlineModeEnum.OFFLINE)
+            {
+                foreach(var mod in MyAPIGateway.Session.Mods)
+                {
+                    if(mod.Name == "PaintGun.dev")
+                    {
+                        uiEdit = new UIEdit();
+                        break;
+                    }
+                }
+            }
+        }
+
         protected override void UnloadData()
         {
             instance = null;
@@ -87,22 +124,23 @@ namespace Digi.PaintGun
 
                     MyAPIGateway.Utilities.MessageEntered -= MessageEntered;
                     MyAPIGateway.Multiplayer.UnregisterMessageHandler(PACKET, ReceivedPacket);
+                    MyAPIGateway.Gui.GuiControlCreated -= GuiControlCreated;
                     MyAPIGateway.Gui.GuiControlRemoved -= GuiControlRemoved;
-                }
 
-                if(settings != null)
-                {
-                    settings.Close();
+                    settings?.Close();
                     settings = null;
+
+                    ownershipTestServer?.Close();
+                    ownershipTestServer = null;
+
+                    ownershipTestPlayer?.Close();
+                    ownershipTestPlayer = null;
+
+                    textAPI?.Close();
+                    textAPI = null;
                 }
 
                 hudSoundEmitter?.Cleanup();
-
-                if(textAPI != null)
-                {
-                    textAPI.Close();
-                    textAPI = null;
-                }
             }
             catch(Exception e)
             {
@@ -113,12 +151,62 @@ namespace Digi.PaintGun
         }
         #endregion
 
+        HudAPIv2.HUDMessage skinDesyncWarning;
+        HudAPIv2.HUDMessage skinDesyncWarningShadow;
+
+        private void GuiControlCreated(object obj)
+        {
+            try
+            {
+                var name = obj.ToString();
+
+                if(name.EndsWith("ScreenColorPicker"))
+                {
+                    if(TextAPIReady)
+                    {
+                        if(skinDesyncWarning == null)
+                        {
+                            const string TEXT = "PaintGun NOTE:\nThe 'Use color', 'Use skin' and 'skin selection' from this menu are not also selected for the PaintGun.\nYou can select skins and toggle color/skin directly with the PaintGun equipped.";
+                            const double SCALE = 1.25;
+                            var position = new Vector2D(0, 0.75);
+
+                            skinDesyncWarning = new HudAPIv2.HUDMessage(new StringBuilder("<color=255,255,0>").Append(TEXT), position, Scale: SCALE, HideHud: true, Blend: BlendTypeEnum.PostPP);
+                            skinDesyncWarningShadow = new HudAPIv2.HUDMessage(new StringBuilder("<color=0,0,0>").Append(TEXT), position, Scale: SCALE, HideHud: true, Blend: BlendTypeEnum.SDR);
+
+                            var textLen = skinDesyncWarning.GetTextLength();
+                            skinDesyncWarning.Offset = new Vector2D(textLen.X * -0.5, 0);
+                            skinDesyncWarningShadow.Offset = skinDesyncWarning.Offset + new Vector2D(0.0015, -0.0015);
+                        }
+                        else
+                        {
+                            skinDesyncWarning.Visible = true;
+                            skinDesyncWarningShadow.Visible = true;
+                        }
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+                Log.Error(e);
+            }
+        }
+
         #region Game config monitor
         private void GuiControlRemoved(object obj)
         {
             try
             {
-                if(obj.ToString().EndsWith("ScreenOptionsSpace")) // closing options menu just assumes you changed something so it'll re-check config settings
+                var name = obj.ToString();
+
+                if(name.EndsWith("ScreenColorPicker"))
+                {
+                    if(TextAPIReady && skinDesyncWarning != null)
+                    {
+                        skinDesyncWarning.Visible = false;
+                        skinDesyncWarningShadow.Visible = false;
+                    }
+                }
+                else if(name.EndsWith("ScreenOptionsSpace")) // closing options menu just assumes you changed something so it'll re-check config settings
                 {
                     UpdateConfigValues();
                 }
@@ -147,38 +235,17 @@ namespace Digi.PaintGun
         #endregion
 
         #region Painting methods
-        private void PaintBlock(MyCubeGrid grid, Vector3I gridPosition, Vector3 color)
+        private void PaintBlock(MyCubeGrid grid, Vector3I gridPosition, PaintMaterial paint, bool executedSenderSide)
         {
-            grid.ChangeColorAndSkin(grid.GetCubeBlock(gridPosition), color); // HACK getting a MySlimBlock and sending it straight to arguments avoids getting prohibited errors.
+            // HACK getting a MySlimBlock and sending it straight to arguments avoids getting prohibited errors.
+            if(!grid.ChangeColorAndSkin(grid.GetCubeBlock(gridPosition), paint.ColorMask, paint.Skin))
+            {
+                var block = (IMySlimBlock)grid.GetCubeBlock(gridPosition);
+                Log.Error($"Couldn't paint/skin! mode={(paint.ColorMask.HasValue ? "paint" : "no-paint")}&{(paint.Skin.HasValue ? "skin" : "no-skin")}; owner={block.OwnerId}; gridPos={gridPosition}; grid={grid.EntityId}");
+            }
         }
 
-        private void PaintBlockSymmetry(MyCubeGrid grid, Vector3I gridPosition, Vector3 color, Vector3I mirrorPlane, OddAxis odd)
-        {
-            PaintBlock(grid, gridPosition, color);
-
-            bool oddX = (odd & OddAxis.X) == OddAxis.X;
-            bool oddY = (odd & OddAxis.Y) == OddAxis.Y;
-            bool oddZ = (odd & OddAxis.Z) == OddAxis.Z;
-
-            var mirrorX = MirrorPaint(grid, 0, mirrorPlane, oddX, gridPosition, color); // X
-            var mirrorY = MirrorPaint(grid, 1, mirrorPlane, oddY, gridPosition, color); // Y
-            var mirrorZ = MirrorPaint(grid, 2, mirrorPlane, oddZ, gridPosition, color); // Z
-            Vector3I? mirrorYZ = null;
-
-            if(mirrorX.HasValue && mirrorPlane.Y > int.MinValue) // XY
-                MirrorPaint(grid, 1, mirrorPlane, oddY, mirrorX.Value, color);
-
-            if(mirrorX.HasValue && mirrorPlane.Z > int.MinValue) // XZ
-                MirrorPaint(grid, 2, mirrorPlane, oddZ, mirrorX.Value, color);
-
-            if(mirrorY.HasValue && mirrorPlane.Z > int.MinValue) // YZ
-                mirrorYZ = MirrorPaint(grid, 2, mirrorPlane, oddZ, mirrorY.Value, color);
-
-            if(mirrorPlane.X > int.MinValue && mirrorYZ.HasValue) // XYZ
-                MirrorPaint(grid, 0, mirrorPlane, oddX, mirrorYZ.Value, color);
-        }
-
-        private void ReplaceColorInGrid(MyCubeGrid grid, ulong steamId, Vector3 oldColor, Vector3 newColor, bool useGridSystem)
+        private void ReplaceColorInGrid(MyCubeGrid grid, BlockMaterial oldPaint, PaintMaterial paint, bool useGridSystem, bool executedSenderSide)
         {
             gridsInSystemCache.Clear();
 
@@ -193,22 +260,53 @@ namespace Digi.PaintGun
             {
                 foreach(IMySlimBlock slim in g.CubeBlocks)
                 {
-                    if(ColorMaskEquals(slim.GetColorMask(), oldColor))
-                    {
-                        PaintBlock(g, slim.Position, newColor);
-                        affected++;
-                    }
+                    var blockMaterial = new BlockMaterial(slim);
+
+                    if(paint.ColorMask.HasValue && !ColorMaskEquals(blockMaterial.ColorMask, oldPaint.ColorMask))
+                        continue;
+
+                    if(paint.Skin.HasValue && blockMaterial.Skin != oldPaint.Skin)
+                        continue;
+
+                    PaintBlock(g, slim.Position, paint, executedSenderSide);
+                    affected++;
                 }
             }
 
-            if(MyAPIGateway.Multiplayer.MyId == steamId)
+            if(executedSenderSide)
             {
                 ShowNotification(2, $"Replaced color for {affected} blocks.", MyFontEnum.White, 2000);
             }
         }
 
         #region Symmetry
-        private Vector3I? MirrorPaint(MyCubeGrid g, int axis, Vector3I mirror, bool odd, Vector3I originalPosition, Vector3 color)
+        private void PaintBlockSymmetry(MyCubeGrid grid, Vector3I gridPosition, PaintMaterial paint, Vector3I mirrorPlane, OddAxis odd, bool executedSenderSide)
+        {
+            PaintBlock(grid, gridPosition, paint, executedSenderSide);
+
+            bool oddX = (odd & OddAxis.X) == OddAxis.X;
+            bool oddY = (odd & OddAxis.Y) == OddAxis.Y;
+            bool oddZ = (odd & OddAxis.Z) == OddAxis.Z;
+
+            var mirrorX = MirrorPaint(grid, 0, mirrorPlane, oddX, gridPosition, paint, executedSenderSide); // X
+            var mirrorY = MirrorPaint(grid, 1, mirrorPlane, oddY, gridPosition, paint, executedSenderSide); // Y
+            var mirrorZ = MirrorPaint(grid, 2, mirrorPlane, oddZ, gridPosition, paint, executedSenderSide); // Z
+            Vector3I? mirrorYZ = null;
+
+            if(mirrorX.HasValue && mirrorPlane.Y > int.MinValue) // XY
+                MirrorPaint(grid, 1, mirrorPlane, oddY, mirrorX.Value, paint, executedSenderSide);
+
+            if(mirrorX.HasValue && mirrorPlane.Z > int.MinValue) // XZ
+                MirrorPaint(grid, 2, mirrorPlane, oddZ, mirrorX.Value, paint, executedSenderSide);
+
+            if(mirrorY.HasValue && mirrorPlane.Z > int.MinValue) // YZ
+                mirrorYZ = MirrorPaint(grid, 2, mirrorPlane, oddZ, mirrorY.Value, paint, executedSenderSide);
+
+            if(mirrorPlane.X > int.MinValue && mirrorYZ.HasValue) // XYZ
+                MirrorPaint(grid, 0, mirrorPlane, oddX, mirrorYZ.Value, paint, executedSenderSide);
+        }
+
+        private Vector3I? MirrorPaint(MyCubeGrid g, int axis, Vector3I mirror, bool odd, Vector3I originalPosition, PaintMaterial paint, bool executedSenderSide)
         {
             switch(axis)
             {
@@ -218,7 +316,7 @@ namespace Digi.PaintGun
                         var mirrorX = originalPosition + new Vector3I(((mirror.X - originalPosition.X) * 2) - (odd ? 1 : 0), 0, 0);
 
                         if(g.CubeExists(mirrorX))
-                            PaintBlock(g, mirrorX, color);
+                            PaintBlock(g, mirrorX, paint, executedSenderSide);
 
                         return mirrorX;
                     }
@@ -230,7 +328,7 @@ namespace Digi.PaintGun
                         var mirrorY = originalPosition + new Vector3I(0, ((mirror.Y - originalPosition.Y) * 2) - (odd ? 1 : 0), 0);
 
                         if(g.CubeExists(mirrorY))
-                            PaintBlock(g, mirrorY, color);
+                            PaintBlock(g, mirrorY, paint, executedSenderSide);
 
                         return mirrorY;
                     }
@@ -242,7 +340,7 @@ namespace Digi.PaintGun
                         var mirrorZ = originalPosition + new Vector3I(0, 0, ((mirror.Z - originalPosition.Z) * 2) + (odd ? 1 : 0)); // reversed on odd
 
                         if(g.CubeExists(mirrorZ))
-                            PaintBlock(g, mirrorZ, color);
+                            PaintBlock(g, mirrorZ, paint, executedSenderSide);
 
                         return mirrorZ;
                     }
@@ -252,7 +350,7 @@ namespace Digi.PaintGun
             return null;
         }
 
-        private bool MirrorCheckSameColor(MyCubeGrid g, int axis, Vector3I originalPosition, Vector3 colorMask, out Vector3I? mirror)
+        private bool MirrorCheckSameColor(MyCubeGrid g, int axis, Vector3I originalPosition, PaintMaterial paintMaterial, out Vector3I? mirror)
         {
             mirror = null;
 
@@ -266,7 +364,7 @@ namespace Digi.PaintGun
                         mirror = mirrorX;
 
                         if(slim != null)
-                            return ColorMaskEquals(slim.GetColorMask(), colorMask);
+                            return paintMaterial.PaintEquals(slim);
                     }
                     break;
 
@@ -278,7 +376,7 @@ namespace Digi.PaintGun
                         mirror = mirrorY;
 
                         if(slim != null)
-                            return ColorMaskEquals(slim.GetColorMask(), colorMask);
+                            return paintMaterial.PaintEquals(slim);
                     }
                     break;
 
@@ -290,7 +388,7 @@ namespace Digi.PaintGun
                         mirror = mirrorZ;
 
                         if(slim != null)
-                            return ColorMaskEquals(slim.GetColorMask(), colorMask);
+                            return paintMaterial.PaintEquals(slim);
                     }
                     break;
             }
@@ -309,7 +407,10 @@ namespace Digi.PaintGun
                         var block = g.GetCubeBlock(mirrorX) as IMySlimBlock;
 
                         if(block != null)
+                        {
+                            // TODO: validations for drawing mirror and validations for applying paint mirrored
                             DrawBlockSelection(block);
+                        }
 
                         return mirrorX;
                     }
@@ -351,14 +452,13 @@ namespace Digi.PaintGun
         {
             try
             {
-                if(!isPlayer || MyAPIGateway.Session == null || MyParticlesManager.Paused)
+                if(isDS || MyAPIGateway.Session == null || MyParticlesManager.Paused)
                     return;
 
                 bool controllingLocalChar = (MyAPIGateway.Session.ControlledObject == MyAPIGateway.Session.Player?.Character);
                 bool inputReadable = (InputHandler.IsInputReadable() && !MyAPIGateway.Session.IsCameraUserControlledSpectator);
 
                 MatchSelectedColorSlots(inputReadable, controllingLocalChar);
-                SendSelectedSlotToServer();
 
                 // FIXME: added controlled check but needs to get rid of the fake block UI if you're already selecting something...
                 if(controllingLocalChar && localHeldTool != null)
@@ -366,7 +466,8 @@ namespace Digi.PaintGun
                     if(inputReadable)
                     {
                         HandleInputs_Symmetry();
-                        HandleInputs_CyclePalette();
+                        HandleInputs_ToggleApplyColorOrSkin();
+                        HandleInputs_CycleColorOrSkin();
                         HandleInputs_ColorPickMode();
                         HandleInputs_InstantColorPick();
                         HandleInputs_ReplaceMode();
@@ -377,6 +478,8 @@ namespace Digi.PaintGun
                     HandleInputs_Trigger(trigger);
                     HandleInputs_Painting(trigger);
                 }
+
+                SendSelectedSlotToServer();
             }
             catch(Exception e)
             {
@@ -389,7 +492,7 @@ namespace Digi.PaintGun
             // apply selected slot when inside the color picker menu
             if(MyAPIGateway.Gui.IsCursorVisible && MyAPIGateway.Gui.ActiveGamePlayScreen == "ColorPick")
             {
-                localColorData.SelectedSlot = MyAPIGateway.Session.Player.SelectedBuildColorSlot;
+                localColorData.SelectedSlot = (byte)MyAPIGateway.Session.Player.SelectedBuildColorSlot;
                 SetToolColor(localColorData.Colors[localColorData.SelectedSlot]);
             }
 
@@ -398,7 +501,7 @@ namespace Digi.PaintGun
             {
                 if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.SWITCH_LEFT) || MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.SWITCH_RIGHT))
                 {
-                    localColorData.SelectedSlot = MyAPIGateway.Session.Player.SelectedBuildColorSlot;
+                    localColorData.SelectedSlot = (byte)MyAPIGateway.Session.Player.SelectedBuildColorSlot;
                     SetToolColor(localColorData.Colors[localColorData.SelectedSlot]);
                 }
             }
@@ -406,23 +509,47 @@ namespace Digi.PaintGun
 
         private void SendSelectedSlotToServer()
         {
-            if(tick % 10 != 0)
+            if(localColorData == null || tick % 30 != 0)
                 return;
 
-            if(localColorData == null && !playerColorData.TryGetValue(MyAPIGateway.Multiplayer.MyId, out localColorData))
+            if(localColorData.SelectedSlot != prevSelectedColorSlot || localColorData.SelectedSkinIndex != prevSelectedSkinIndex)
             {
-                localColorData = null;
-            }
-
-            if(localColorData != null && localColorData.SelectedSlot != prevSelectedColorSlot)
-            {
-                prevSelectedColorSlot = localColorData.SelectedSlot;
-                SendToServer_SelectedColorSlot((byte)localColorData.SelectedSlot);
+                prevSelectedColorSlot = (byte)localColorData.SelectedSlot;
+                prevSelectedSkinIndex = (byte)localColorData.SelectedSkinIndex;
+                SendToServer_SelectedSlots((byte)localColorData.SelectedSlot, (byte)localColorData.SelectedSkinIndex);
             }
         }
 
-        private void HandleInputs_CyclePalette()
+        private void HandleInputs_ToggleApplyColorOrSkin()
         {
+            if(localColorData == null)
+                return;
+
+            if(!MyAPIGateway.Input.IsAnyAltKeyPressed() && MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.CUBE_COLOR_CHANGE))
+            {
+                bool skin = MyAPIGateway.Input.IsAnyShiftKeyPressed();
+
+                if(skin)
+                {
+                    localColorData.ApplySkin = !localColorData.ApplySkin;
+                }
+                else
+                {
+                    localColorData.ApplyColor = !localColorData.ApplyColor;
+
+                    SetToolColor(localColorData.ApplyColor ? localColorData.Colors[localColorData.SelectedSlot] : DEFAULT_COLOR);
+                }
+            }
+        }
+
+        private void HandleInputs_CycleColorOrSkin()
+        {
+            if(localColorData == null)
+                return;
+
+            if(!localColorData.ApplySkin && !localColorData.ApplyColor)
+                return;
+
             if(MyAPIGateway.Input.IsAnyAltKeyPressed())
                 return;
 
@@ -435,12 +562,34 @@ namespace Digi.PaintGun
             else
                 change = MyAPIGateway.Input.DeltaMouseScrollWheelValue();
 
-            if(change != 0 && localColorData != null)
+            if(change == 0 || localColorData == null)
+                return;
+
+            bool pickSkin = MyAPIGateway.Input.IsAnyShiftKeyPressed();
+
+            if(pickSkin ? !localColorData.ApplySkin : !localColorData.ApplyColor)
             {
                 if(settings.extraSounds)
-                    PlayHudSound(SOUND_HUD_CLICK, 0.1f);
+                    PlayHudSound(SOUND_HUD_UNABLE, SOUND_HUD_UNABLE_VOLUME, SOUND_HUD_UNABLE_TIMEOUT);
 
-                if(change < 0)
+                var assigned = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.CUBE_COLOR_CHANGE));
+                ShowNotification(0, pickSkin ? "Skin applying is turned off." : "Color applying is turned off.", MyFontEnum.Red, 1000);
+                ShowNotification(1, pickSkin ? $"Press [Shift] + [{assigned}] to enable" : $"Press [{assigned}] to enable", MyFontEnum.White, 1000);
+                return;
+            }
+
+            if(change < 0)
+            {
+                if(pickSkin)
+                {
+                    do
+                    {
+                        if(++localColorData.SelectedSkinIndex >= BlockSkins.Count)
+                            localColorData.SelectedSkinIndex = 0;
+                    }
+                    while(!BlockSkins[localColorData.SelectedSkinIndex].LocallyOwned);
+                }
+                else
                 {
                     if(settings.selectColorZigZag)
                     {
@@ -457,6 +606,18 @@ namespace Digi.PaintGun
                             localColorData.SelectedSlot = 0;
                     }
                 }
+            }
+            else
+            {
+                if(pickSkin)
+                {
+                    do
+                    {
+                        if(--localColorData.SelectedSkinIndex < 0)
+                            localColorData.SelectedSkinIndex = (byte)(BlockSkins.Count - 1);
+                    }
+                    while(!BlockSkins[localColorData.SelectedSkinIndex].LocallyOwned);
+                }
                 else
                 {
                     if(settings.selectColorZigZag)
@@ -469,13 +630,21 @@ namespace Digi.PaintGun
                     else
                     {
                         if(--localColorData.SelectedSlot < 0)
-                            localColorData.SelectedSlot = (localColorData.Colors.Count - 1);
+                            localColorData.SelectedSlot = (byte)(localColorData.Colors.Count - 1);
                     }
                 }
-
-                MyAPIGateway.Session.Player.SelectedBuildColorSlot = localColorData.SelectedSlot;
-                SetToolColor(localColorData.Colors[localColorData.SelectedSlot]);
             }
+
+            if(settings.extraSounds)
+            {
+                if(pickSkin)
+                    PlayHudSound(SOUND_HUD_ITEM, 0.25f);
+                else
+                    PlayHudSound(SOUND_HUD_CLICK, 0.1f);
+            }
+
+            MyAPIGateway.Session.Player.SelectedBuildColorSlot = localColorData.SelectedSlot;
+            SetToolColor(localColorData.Colors[localColorData.SelectedSlot]);
         }
 
         private void HandleInputs_Symmetry()
@@ -525,16 +694,10 @@ namespace Digi.PaintGun
                             SendToServer_ColorPickMode(false);
 
                         var targetColor = (selectedSlimBlock != null ? selectedSlimBlock.ColorMaskHSV : selectedPlayerColorMask);
+                        var targetSkin = (selectedSlimBlock != null ? selectedSlimBlock.SkinSubtypeId : selectedPlayerBlockSkin);
+                        var blockMaterial = new BlockMaterial(targetColor, targetSkin);
 
-                        if(SendToServer_SetColor((byte)localColorData.SelectedSlot, targetColor, true))
-                        {
-                            PlayHudSound(SOUND_HUD_MOUSE_CLICK, 0.25f);
-                            ShowNotification(0, $"Slot {localColorData.SelectedSlot + 1} set to {ColorMaskToString(targetColor)}", MyFontEnum.White, 2000);
-                        }
-                        else
-                        {
-                            PlayHudSound(SOUND_HUD_UNABLE, SOUND_HUD_UNABLE_VOLUME, SOUND_HUD_UNABLE_TIMEOUT);
-                        }
+                        PickColorAndSkinFromBlock((byte)localColorData.SelectedSlot, blockMaterial);
                     }
                     else
                     {
@@ -632,6 +795,16 @@ namespace Digi.PaintGun
 
                 unchecked { ++tick; }
 
+                if(ownershipTestPlayer != null && ownershipTestPlayer.NeedsUpdate)
+                {
+                    ownershipTestPlayer.Update(tick);
+                }
+
+                if(ownershipTestServer != null && ownershipTestServer.NeedsUpdate)
+                {
+                    ownershipTestServer.Update(tick);
+                }
+
                 uiEdit?.Update();
                 InitializePlayer();
                 DetectHudToggle();
@@ -645,7 +818,7 @@ namespace Digi.PaintGun
 
         private void InitializePlayer()
         {
-            if(isPlayer && !playerObjectFound)
+            if(!isDS && !playerObjectFound)
             {
                 var colors = MyAPIGateway.Session.Player?.DefaultBuildColorSlots;
 
@@ -653,6 +826,8 @@ namespace Digi.PaintGun
                 {
                     DEFAULT_COLOR = colors.Value.ItemAt(0);
                     playerObjectFound = true;
+
+                    ownershipTestPlayer?.TestForLocalPlayer();
                 }
             }
         }
@@ -660,7 +835,7 @@ namespace Digi.PaintGun
         private void DetectHudToggle()
         {
             // HUD toggle monitor; needs to be in BeforeSimulation because MinimalHud has the previous value if used in HandleInput()
-            if(isPlayer && MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.TOGGLE_HUD))
+            if(!isDS && MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.TOGGLE_HUD))
                 gameHUD = !MyAPIGateway.Session.Config.MinimalHud;
         }
 
@@ -715,7 +890,7 @@ namespace Digi.PaintGun
         {
             try
             {
-                if(!isPlayer || MyAPIGateway.Session == null)
+                if(isDS || MyAPIGateway.Session == null)
                     return;
 
                 viewProjInvCompute = true;
@@ -803,38 +978,96 @@ namespace Digi.PaintGun
                 }
 
                 var worldPos = HUDtoWorld(new Vector2((float)settings.paletteScreenPos.X, (float)settings.paletteScreenPos.Y));
+                var bgAlpha = (settings.paletteBackgroundOpacity < 0 ? gameHUDBkOpacity : settings.paletteBackgroundOpacity);
 
-                float squareWidth = 0.0014f * scaleFOV;
-                float squareHeight = 0.0010f * scaleFOV;
-                float selectedWidth = (squareWidth + (squareWidth / 3f));
-                float selectedHeight = (squareHeight + (squareHeight / 3f));
-                double spacingAdd = 0.0006 * scaleFOV;
-                double spacingWidth = (squareWidth * 2) + spacingAdd;
-                double spacingHeight = (squareHeight * 2) + spacingAdd;
-                const int MIDDLE_INDEX = 7;
-                const float BG_WIDTH_MUL = 3.85f;
-                const float BG_HEIGHT_MUL = 1.3f;
-
-                var alpha = (settings.paletteBackgroundOpacity < 0 ? gameHUDBkOpacity : settings.paletteBackgroundOpacity);
-                MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_BACKGROUND, PALETTE_COLOR_BG * alpha, worldPos, camMatrix.Left, camMatrix.Up, (float)(spacingWidth * BG_WIDTH_MUL), (float)(spacingHeight * BG_HEIGHT_MUL), Vector2.Zero, UI_BG_BLENDTYPE);
-
-                var pos = worldPos + camMatrix.Left * (spacingWidth * (MIDDLE_INDEX / 2)) + camMatrix.Up * (spacingHeight / 2);
-
-                for(int i = 0; i < localColorData.Colors.Count; i++)
+                #region Color selector
+                if(localColorData.ApplyColor)
                 {
-                    var keenHSV = localColorData.Colors[i];
-                    var rgb = ColorMaskToRGB(keenHSV);
+                    float squareWidth = 0.0014f * scaleFOV;
+                    float squareHeight = 0.0010f * scaleFOV;
+                    float selectedWidth = (squareWidth + (squareWidth / 3f));
+                    float selectedHeight = (squareHeight + (squareHeight / 3f));
+                    double spacingAdd = 0.0006 * scaleFOV;
+                    double spacingWidth = (squareWidth * 2) + spacingAdd;
+                    double spacingHeight = (squareHeight * 2) + spacingAdd;
+                    const int MIDDLE_INDEX = 7;
+                    const float BG_WIDTH_MUL = 3.85f;
+                    const float BG_HEIGHT_MUL = 1.3f;
 
-                    if(i == MIDDLE_INDEX)
-                        pos += camMatrix.Left * (spacingWidth * MIDDLE_INDEX) + camMatrix.Down * spacingHeight;
+                    MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_BACKGROUND, PALETTE_COLOR_BG * bgAlpha, worldPos, camMatrix.Left, camMatrix.Up, (float)(spacingWidth * BG_WIDTH_MUL), (float)(spacingHeight * BG_HEIGHT_MUL), Vector2.Zero, UI_BG_BLENDTYPE);
 
-                    if(i == localColorData.SelectedSlot)
-                        MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_COLOR, Color.White, pos, camMatrix.Left, camMatrix.Up, selectedWidth, selectedHeight, Vector2.Zero, UI_FG_BLENDTYPE);
+                    var pos = worldPos + camMatrix.Left * (spacingWidth * (MIDDLE_INDEX / 2)) + camMatrix.Up * (spacingHeight / 2);
 
-                    MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_COLOR, rgb, pos, camMatrix.Left, camMatrix.Up, squareWidth, squareHeight, Vector2.Zero, UI_FG_BLENDTYPE);
+                    for(int i = 0; i < localColorData.Colors.Count; i++)
+                    {
+                        var keenHSV = localColorData.Colors[i];
+                        var rgb = ColorMaskToRGB(keenHSV);
 
-                    pos += camMatrix.Right * spacingWidth;
+                        if(i == MIDDLE_INDEX)
+                            pos += camMatrix.Left * (spacingWidth * MIDDLE_INDEX) + camMatrix.Down * spacingHeight;
+
+                        if(i == localColorData.SelectedSlot)
+                            MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_COLOR, Color.White, pos, camMatrix.Left, camMatrix.Up, selectedWidth, selectedHeight, Vector2.Zero, UI_FG_BLENDTYPE);
+
+                        MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_COLOR, rgb, pos, camMatrix.Left, camMatrix.Up, squareWidth, squareHeight, Vector2.Zero, UI_FG_BLENDTYPE);
+
+                        pos += camMatrix.Right * spacingWidth;
+                    }
                 }
+                #endregion
+
+                #region Skin selector
+                if(localColorData.ApplySkin)
+                {
+                    int ownedSkins = 0;
+
+                    for(int i = 0; i < BlockSkins.Count; ++i)
+                    {
+                        var skin = BlockSkins[i];
+
+                        if(skin.LocallyOwned)
+                            ownedSkins++;
+                    }
+
+                    if(ownedSkins > 0)
+                    {
+                        float iconSize = 0.0030f * scaleFOV;
+                        float selectedIconSize = 0.0034f * scaleFOV;
+                        var selectedSkinIndex = localColorData.SelectedSkinIndex;
+                        double iconSpacingAdd = 0.0012 * scaleFOV;
+                        double iconSpacingWidth = (iconSize * 2) + iconSpacingAdd;
+                        float iconBgSpacingAddWidth = 0.0006f * scaleFOV;
+                        float iconBgSpacingAddHeight = 0.0008f * scaleFOV;
+                        double halfOwnedSkins = ownedSkins * 0.5;
+
+                        var pos = worldPos;
+
+                        if(localColorData.ApplyColor)
+                            pos += camMatrix.Up * (0.0075f * scaleFOV);
+
+                        MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_BACKGROUND, PALETTE_COLOR_BG * bgAlpha, pos, camMatrix.Left, camMatrix.Up, (float)(iconSpacingWidth * halfOwnedSkins) + iconBgSpacingAddWidth, iconSize + iconBgSpacingAddHeight, Vector2.Zero, UI_BG_BLENDTYPE);
+
+                        pos += camMatrix.Left * ((iconSpacingWidth * halfOwnedSkins) - (iconSpacingWidth * 0.5));
+
+                        for(int i = 0; i < BlockSkins.Count; ++i)
+                        {
+                            var skin = BlockSkins[i];
+
+                            if(!skin.LocallyOwned)
+                                continue;
+
+                            if(selectedSkinIndex == i)
+                            {
+                                MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_COLOR, Color.White, pos, camMatrix.Left, camMatrix.Up, selectedIconSize, selectedIconSize, Vector2.Zero, UI_FG_BLENDTYPE);
+                            }
+
+                            MyTransparentGeometry.AddBillboardOriented(skin.Icon, Color.White, pos, camMatrix.Left, camMatrix.Up, iconSize, iconSize, Vector2.Zero, UI_FG_BLENDTYPE);
+
+                            pos += camMatrix.Right * iconSpacingWidth;
+                        }
+                    }
+                }
+                #endregion
 
                 // FIXME: needs more color testing - vanilla title bg doesn't match my bg even though they're copied colors...
                 //{
@@ -988,13 +1221,11 @@ namespace Digi.PaintGun
             uiTitle.Offset = new Vector2D(0.012, -0.018) * scale;
             uiTitleBg.Offset = new Vector2D(uiTitleBg.Width * 0.5, uiTitleBg.Height * -0.5);
 
-            // 0.032
             uiText.Offset = new Vector2D(0.07 * aspectRatioMod, -0.09) * scale;
             uiTextBg.Offset = new Vector2D(uiTextBg.Width * 0.5, uiTextBg.Height * -0.5) + (uiTextBgPosition * scale);
 
-            // 0.045
-            uiTargetColor.Offset = new Vector2D(0.09 * aspectRatioMod, -0.228) * scale;
-            uiPaintColor.Offset = new Vector2D(0.09 * aspectRatioMod, -0.35) * scale;
+            uiTargetColor.Offset = new Vector2D(0.09 * aspectRatioMod, -0.214) * scale;
+            uiPaintColor.Offset = new Vector2D(0.09 * aspectRatioMod, -0.335) * scale;
 
             uiProgressBar.Offset = new Vector2D(uiProgressBar.Width * 0.5, uiProgressBar.Height * -0.5) + (uiProgressBarPosition * scale);
             uiProgressBarBg.Offset = new Vector2D(uiProgressBarBg.Width * 0.5, uiProgressBarBg.Height * -0.5) + (uiProgressBarPosition * scale);
@@ -1045,8 +1276,8 @@ namespace Digi.PaintGun
             if(!visible)
                 return;
 
-            Vector3 targetColor;
-            var paintColor = localColorData.Colors[localColorData.SelectedSlot];
+            BlockMaterial targetMaterial;
+            var paint = GetLocalPaintMaterial();
             int ammo = (localHeldTool != null ? localHeldTool.Ammo : 0);
 
             var title = uiTitle.Message.Clear().Append("<color=220,244,252>");
@@ -1054,57 +1285,99 @@ namespace Digi.PaintGun
             if(targetCharacter)
             {
                 uiTargetColor.Material = MATERIAL_ICON_GENERIC_CHARACTER;
-                targetColor = selectedPlayerColorMask;
+                targetMaterial = new BlockMaterial(selectedPlayerColorMask, selectedPlayerBlockSkin);
 
                 title.Append(selectedPlayer.DisplayName);
             }
             else
             {
                 uiTargetColor.Material = MATERIAL_ICON_GENERIC_BLOCK;
-                targetColor = selectedSlimBlock.ColorMaskHSV;
+                targetMaterial = new BlockMaterial(selectedSlimBlock);
 
                 var selectedDef = (MyCubeBlockDefinition)selectedSlimBlock.BlockDefinition;
                 title.Append(selectedDef.DisplayNameText);
             }
 
-            uiTargetColor.BillBoardColor = ColorMaskToRGB(targetColor);
-            uiPaintColor.BillBoardColor = ColorMaskToRGB(paintColor);
+            var targetSkin = GetSkinInfo(targetMaterial.Skin);
 
-            var progress = ColorScalar(targetColor, paintColor);
+            uiTargetColor.BillBoardColor = ColorMaskToRGB(targetMaterial.ColorMask);
+            uiPaintColor.BillBoardColor = (paint.ColorMask.HasValue ? ColorMaskToRGB(paint.ColorMask.Value) : Color.Gray);
+
+            float progress = 0f;
+
+            if(paint.ColorMask.HasValue)
+                progress = ColorScalar(targetMaterial.ColorMask, paint.ColorMask.Value);
+            else if(paint.Skin.HasValue)
+                progress = (targetMaterial.Skin == paint.Skin.Value ? 1f : 0.25f);
+
             var height = UI_PROGRESSBAR_HEIGHT * progress;
 
             uiProgressBar.Height = height;
             uiProgressBar.Offset = new Vector2D(uiProgressBar.Width * 0.5, -UI_PROGRESSBAR_HEIGHT + uiProgressBar.Height * 0.5) + uiProgressBarPosition;
 
             var text = uiText.Message;
-            text.Clear()
-                .Append(blockInfoStatus[0])
-                .Append("\n\n<color=220,244,252>");
+            text.Clear().Append(blockInfoStatus[0]);
+            text.Append('\n');
+            text.Append('\n');
 
-            if(colorPickMode && selectedPlayer != null)
-                text.Append("Player's selected color:");
-            else
-                text.Append("Block's color:");
-
-            text.Append("\n\n<color=white>        ")
-                .Append(ColorMaskToString(targetColor))
-                .Append("\n\n<color=220,244,252>");
-
-            if(colorPickMode)
-                text.Append("Replace slot: ").Append(localColorData.SelectedSlot + 1);
-            else
             {
-                text.Append("Paint: ");
+                text.Append("<color=220,244,252>");
 
-                if(IgnoreAmmoConsumption)
-                    text.Append("Inf.");
+                if(colorPickMode && selectedPlayer != null)
+                    text.Append("Engineer's selected paint:");
                 else
-                    text.Append(ammo);
+                    text.Append("Block's material:");
+
+                text.Append('\n');
+                text.Append("<color=white>        ").Append(ColorMaskToString(targetMaterial.ColorMask)).Append("\n");
+
+                text.Append("<color=white>        Skin: ");
+                if(!targetSkin.LocallyOwned)
+                    text.Append("<color=red>");
+                text.Append(targetSkin.Name).Append('\n');
             }
 
-            text.Append("\n\n<color=white>        ")
-                .Append(ColorMaskToString(paintColor))
-                .Append('\n');
+            {
+                text.Append('\n');
+                text.Append("<color=220,244,252>");
+                if(colorPickMode)
+                {
+                    text.Append("Replace slot: ").Append(localColorData.SelectedSlot + 1);
+                }
+                else
+                {
+                    text.Append("Paint: ");
+
+                    if(IgnoreAmmoConsumption)
+                        text.Append("Inf.");
+                    else
+                        text.Append(ammo);
+                }
+                text.Append('\n');
+            }
+
+            {
+                text.Append("        ");
+                if(paint.ColorMask.HasValue)
+                    text.Append("<color=white>").Append(ColorMaskToString(paint.ColorMask.Value)).Append('\n');
+                else
+                    text.Append('\n');
+            }
+
+            {
+                text.Append("        ");
+                if(paint.Skin.HasValue)
+                {
+                    var skin = GetSkinInfo(paint.Skin.Value);
+                    text.Append("<color=white>Skin: ").Append(skin.Name).Append('\n');
+                }
+                else
+                {
+                    text.Append('\n');
+                }
+            }
+
+            text.Append("<color=white>");
 
             if(blockInfoStatus[1] != null)
                 text.Append('\n').Append(blockInfoStatus[1]);
@@ -1417,11 +1690,18 @@ namespace Digi.PaintGun
 
                 selectedGrid = targetGrid as MyCubeGrid;
 
-                var colorMask = GetBuildColorMask();
-                Vector3 blockColorMask;
-                string blockName;
+                PaintMaterial paintMaterial = GetLocalPaintMaterial();
 
-                if(!IsBlockValid(targetBlock, colorMask, trigger, out blockName, out blockColorMask))
+                BlockMaterial blockMaterial = new BlockMaterial();
+                string blockName = string.Empty;
+
+                if(targetBlock != null)
+                {
+                    blockMaterial = new BlockMaterial(targetBlock.GetColorMask(), targetBlock.SkinSubtypeId);
+                    blockName = (targetBlock.FatBlock == null ? targetBlock.ToString() : targetBlock.FatBlock.DefinitionDisplayNameText);
+                }
+
+                if(!IsBlockValid(targetBlock, paintMaterial, blockMaterial, trigger))
                     return false;
 
                 selectedSlimBlock = targetBlock;
@@ -1441,11 +1721,11 @@ namespace Digi.PaintGun
                 if(trigger)
                 {
                     float paintSpeed = (1.0f / GetBlockSurface(selectedSlimBlock));
-                    var paintedColor = PaintProcess(blockColorMask, colorMask, paintSpeed, blockName);
+                    var paintedMaterial = PaintProcess(paintMaterial, blockMaterial, paintSpeed, blockName);
 
                     if(replaceAllMode && ReplaceColorAccess)
                     {
-                        SendToServer_ReplaceColor(selectedGrid, selectedSlimBlock.GetColorMask(), paintedColor, replaceGridSystem);
+                        SendToServer_ReplaceColor(selectedGrid, new BlockMaterial(selectedSlimBlock), paintedMaterial, replaceGridSystem);
                     }
                     else
                     {
@@ -1467,11 +1747,11 @@ namespace Digi.PaintGun
                             if(selectedGrid.ZSymmetryOdd)
                                 odd |= OddAxis.Z;
 
-                            SendToServer_PaintBlock(selectedGrid, selectedSlimBlock.Position, paintedColor, mirrorPlane, odd);
+                            SendToServer_PaintBlock(selectedGrid, selectedSlimBlock.Position, paintedMaterial, mirrorPlane, odd);
                         }
                         else
                         {
-                            SendToServer_PaintBlock(selectedGrid, selectedSlimBlock.Position, paintedColor);
+                            SendToServer_PaintBlock(selectedGrid, selectedSlimBlock.Position, paintedMaterial);
                         }
                     }
 
@@ -1526,8 +1806,11 @@ namespace Digi.PaintGun
 
             targetGrid = MyAPIGateway.CubeBuilder.FindClosestGrid();
 
-            if(targetGrid == null)
+            if(targetGrid == null || targetGrid.Physics == null || !targetGrid.Physics.Enabled)
+            {
+                targetGrid = null;
                 return;
+            }
 
             if(aiming)
             {
@@ -1695,7 +1978,7 @@ namespace Digi.PaintGun
             return (targetPlayer != null);
         }
 
-        private bool IsBlockValid(IMySlimBlock block, Vector3 colorMask, bool trigger, out string blockName, out Vector3 blockColor)
+        private bool IsBlockValid(IMySlimBlock block, PaintMaterial paintMaterial, BlockMaterial blockMaterial, bool trigger)
         {
             if(block == null)
             {
@@ -1717,15 +2000,11 @@ namespace Digi.PaintGun
                         ShowNotification(1, "Aim at a block to paint it.", MyFontEnum.Red);
                 }
 
-                blockName = null;
-                blockColor = DEFAULT_COLOR;
                 return false;
             }
 
             selectedSlimBlock = block;
             selectedInvalid = false;
-            blockColor = block.GetColorMask();
-            blockName = (block.FatBlock == null ? block.ToString() : block.FatBlock.DefinitionDisplayNameText);
 
             #region Symmetry toggle info
             symmetryStatus = null;
@@ -1734,42 +2013,29 @@ namespace Digi.PaintGun
             {
                 if(selectedGrid.XSymmetryPlane.HasValue || selectedGrid.YSymmetryPlane.HasValue || selectedGrid.ZSymmetryPlane.HasValue)
                 {
-                    var controlSymmetry = MyAPIGateway.Input.GetGameControl(MyControlsSpace.USE_SYMMETRY);
-                    assigned.Clear();
-
-                    if(controlSymmetry.GetKeyboardControl() != MyKeys.None)
-                        assigned.Append(MyAPIGateway.Input.GetKeyName(controlSymmetry.GetKeyboardControl()));
-
-                    if(controlSymmetry.GetSecondKeyboardControl() != MyKeys.None)
-                    {
-                        if(assigned.Length > 0)
-                            assigned.Append(" or ");
-
-                        assigned.Append(MyAPIGateway.Input.GetKeyName(controlSymmetry.GetSecondKeyboardControl()));
-                    }
-
                     bool inputReadable = (InputHandler.IsInputReadable() && !MyAPIGateway.Session.IsCameraUserControlledSpectator);
+                    var assigned = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.USE_SYMMETRY));
 
                     if(inputReadable)
                     {
                         symmetryInputAvailable = true;
 
                         if(MyAPIGateway.CubeBuilder.UseSymmetry)
-                            symmetryStatus = (TextAPIReady ? $"<color=yellow>Symmetry enabled.\n<color=white>Press {assigned} to turn off." : $"Symmetry is ON\n({assigned} to toggle)");
+                            symmetryStatus = (TextAPIReady ? $"[{assigned}] <color=yellow>Symmetry: ON" : $"([{assigned}]) Symmetry: ON");
                         else
-                            symmetryStatus = (TextAPIReady ? $"Symmetry is off.\nPress {assigned} to enable." : $"Symmetry is OFF\n({assigned} to toggle)");
+                            symmetryStatus = (TextAPIReady ? $"[{assigned}] Symmetry: OFF" : $"([{assigned}]) Symmetry: OFF");
                     }
                     else
                     {
                         if(MyAPIGateway.CubeBuilder.UseSymmetry)
-                            symmetryStatus = (TextAPIReady ? "<color=yellow>Symmetry enabled." : "Symmetry ON");
+                            symmetryStatus = (TextAPIReady ? "<color=yellow>Symmetry: ON" : "Symmetry: ON");
                         else
-                            symmetryStatus = (TextAPIReady ? "Symmetry is off." : "Symmetry OFF");
+                            symmetryStatus = (TextAPIReady ? "Symmetry: OFF" : "Symmetry: OFF");
                     }
                 }
                 else
                 {
-                    symmetryStatus = (TextAPIReady ? "<color=red>No symmetry on this ship." : "No symmetry on this ship.");
+                    symmetryStatus = (TextAPIReady ? "<color=gray>Symetry: not set-up" : "Symetry: not set-up");
                 }
             }
             #endregion
@@ -1779,42 +2045,52 @@ namespace Digi.PaintGun
                 if(trigger)
                 {
                     SendToServer_ColorPickMode(false);
-
-                    if(SendToServer_SetColor((byte)localColorData.SelectedSlot, blockColor, true))
-                    {
-                        PlayHudSound(SOUND_HUD_MOUSE_CLICK, 0.25f);
-                        ShowNotification(0, $"Slot {localColorData.SelectedSlot + 1} set to {ColorMaskToString(blockColor)}", MyFontEnum.White, 2000);
-                    }
-                    else
-                    {
-                        PlayHudSound(SOUND_HUD_UNABLE, SOUND_HUD_UNABLE_VOLUME, SOUND_HUD_UNABLE_TIMEOUT);
-                    }
+                    PickColorAndSkinFromBlock((byte)localColorData.SelectedSlot, blockMaterial);
                 }
                 else
                 {
-                    if(!ColorMaskEquals(blockColor, prevColorMaskPreview))
+                    if(!ColorMaskEquals(blockMaterial.ColorMask, prevColorMaskPreview))
                     {
-                        prevColorMaskPreview = blockColor;
-                        SetToolColor(blockColor);
+                        prevColorMaskPreview = blockMaterial.ColorMask;
+                        SetToolColor(blockMaterial.ColorMask);
 
                         if(settings.extraSounds)
                             PlayHudSound(SOUND_HUD_ITEM, 0.75f);
                     }
 
-                    SetGUIToolStatus(0, "Click to get this color.", "lime");
+                    if(paintMaterial.ColorMask.HasValue && !paintMaterial.Skin.HasValue)
+                        SetGUIToolStatus(0, "Click to get this color.", "lime");
+                    else if(!paintMaterial.ColorMask.HasValue && paintMaterial.Skin.HasValue)
+                        SetGUIToolStatus(0, "Click to select this skin.", "lime");
+                    else
+                        SetGUIToolStatus(0, "Click to get this material.", "lime");
+
                     SetGUIToolStatus(1, null);
                 }
 
                 return false;
             }
 
-            if(!block.CubeGrid.ColorGridOrBlockRequestValidation(MyAPIGateway.Session.Player.IdentityId))
+            if(!paintMaterial.ColorMask.HasValue && !paintMaterial.Skin.HasValue)
             {
+                var assigned = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.CUBE_COLOR_CHANGE));
+
+                ShowNotification(0, "No paint or skin enabled.", MyFontEnum.Red);
+                ShowNotification(1, $"Press [{assigned}] to toggle color or combined with [Shift] to toggle skin.", MyFontEnum.White);
+
+                SetGUIToolStatus(0, "No paint or skin enabled.", "red");
+                SetGUIToolStatus(1, null);
+                return false;
+            }
+
+            if(!AllowedToPaintGrid(block.CubeGrid, MyAPIGateway.Session.Player.IdentityId))
+            {
+                selectedInvalid = true;
+
                 if(trigger)
                 {
                     PlayHudSound(SOUND_HUD_UNABLE, SOUND_HUD_UNABLE_VOLUME, SOUND_HUD_UNABLE_TIMEOUT);
-
-                    ShowNotification(0, "Can't paint enemy ships!", MyFontEnum.Red);
+                    ShowNotification(0, "Can't paint enemy ships.", MyFontEnum.Red);
                 }
 
                 SetGUIToolStatus(0, "Not allied ship.", "red");
@@ -1823,18 +2099,20 @@ namespace Digi.PaintGun
                 return false;
             }
 
+            bool materialEquals = paintMaterial.PaintEquals(blockMaterial);
+
             if(replaceAllMode)
             {
-                selectedInvalid = ColorMaskEquals(blockColor, colorMask);
+                selectedInvalid = materialEquals;
 
                 var assigned = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.USE_SYMMETRY));
 
                 if(selectedInvalid)
-                    SetGUIToolStatus(0, "Already painted this color.", "red");
+                    SetGUIToolStatus(0, "Already this material.", "red");
                 else
-                    SetGUIToolStatus(0, "Click to replace color.", "lime");
+                    SetGUIToolStatus(0, "Click to replace material.", "lime");
 
-                SetGUIToolStatus(1, $"Replace mode: {(replaceGridSystem ? "Ship-wide" : "Grid")}\n(Press {assigned} to change)", (replaceGridSystem ? "yellow" : null));
+                SetGUIToolStatus(1, $"[{assigned}] Replace mode: {(replaceGridSystem ? "Ship-wide" : "Grid")}", (replaceGridSystem ? "yellow" : null));
 
                 return (selectedInvalid ? false : true);
             }
@@ -1866,7 +2144,7 @@ namespace Digi.PaintGun
             bool symmetry = SymmetryAccess && MyCubeBuilder.Static.UseSymmetry && (grid.XSymmetryPlane.HasValue || grid.YSymmetryPlane.HasValue || grid.ZSymmetryPlane.HasValue);
             bool symmetrySameColor = true;
 
-            if(ColorMaskEquals(blockColor, colorMask))
+            if(materialEquals)
             {
                 if(symmetry)
                 {
@@ -1876,36 +2154,36 @@ namespace Digi.PaintGun
                     Vector3I? mirrorYZ = null;
 
                     // NOTE: do not optimize, all methods must be called
-                    if(!MirrorCheckSameColor(grid, 0, block.Position, colorMask, out mirrorX))
+                    if(!MirrorCheckSameColor(grid, 0, block.Position, paintMaterial, out mirrorX))
                         symmetrySameColor = false;
 
-                    if(!MirrorCheckSameColor(grid, 1, block.Position, colorMask, out mirrorY))
+                    if(!MirrorCheckSameColor(grid, 1, block.Position, paintMaterial, out mirrorY))
                         symmetrySameColor = false;
 
-                    if(!MirrorCheckSameColor(grid, 2, block.Position, colorMask, out mirrorZ))
+                    if(!MirrorCheckSameColor(grid, 2, block.Position, paintMaterial, out mirrorZ))
                         symmetrySameColor = false;
 
                     if(mirrorX.HasValue && grid.YSymmetryPlane.HasValue) // XY
                     {
-                        if(!MirrorCheckSameColor(grid, 1, mirrorX.Value, colorMask, out mirrorX))
+                        if(!MirrorCheckSameColor(grid, 1, mirrorX.Value, paintMaterial, out mirrorX))
                             symmetrySameColor = false;
                     }
 
                     if(mirrorX.HasValue && grid.ZSymmetryPlane.HasValue) // XZ
                     {
-                        if(!MirrorCheckSameColor(grid, 2, mirrorX.Value, colorMask, out mirrorX))
+                        if(!MirrorCheckSameColor(grid, 2, mirrorX.Value, paintMaterial, out mirrorX))
                             symmetrySameColor = false;
                     }
 
                     if(mirrorY.HasValue && grid.ZSymmetryPlane.HasValue) // YZ
                     {
-                        if(!MirrorCheckSameColor(grid, 2, mirrorY.Value, colorMask, out mirrorYZ))
+                        if(!MirrorCheckSameColor(grid, 2, mirrorY.Value, paintMaterial, out mirrorYZ))
                             symmetrySameColor = false;
                     }
 
                     if(grid.XSymmetryPlane.HasValue && mirrorYZ.HasValue) // XYZ
                     {
-                        if(!MirrorCheckSameColor(grid, 0, mirrorYZ.Value, colorMask, out mirrorX))
+                        if(!MirrorCheckSameColor(grid, 0, mirrorYZ.Value, paintMaterial, out mirrorX))
                             symmetrySameColor = false;
                     }
                 }
@@ -1947,22 +2225,16 @@ namespace Digi.PaintGun
             var cd = playerColorData[targetPlayer.SteamUserId];
             var targetColorMask = cd.Colors[cd.SelectedSlot];
             selectedPlayerColorMask = targetColorMask;
+            selectedPlayerBlockSkin = BlockSkins[cd.SelectedSkinIndex].SubtypeId;
             selectedPlayer = targetPlayer;
 
             if(trigger)
             {
                 SendToServer_ColorPickMode(false);
 
-                if(SendToServer_SetColor((byte)localColorData.SelectedSlot, targetColorMask, true))
-                {
-                    PlayHudSound(SOUND_HUD_MOUSE_CLICK, 0.25f);
+                var targetMaterial = new BlockMaterial(selectedPlayerColorMask, selectedPlayerBlockSkin);
 
-                    ShowNotification(0, $"Slot {localColorData.SelectedSlot + 1} set to {ColorMaskToString(targetColorMask)}", MyFontEnum.White, 3000);
-                }
-                else
-                {
-                    PlayHudSound(SOUND_HUD_UNABLE, SOUND_HUD_UNABLE_VOLUME, SOUND_HUD_UNABLE_TIMEOUT);
-                }
+                PickColorAndSkinFromBlock((byte)localColorData.SelectedSlot, targetMaterial);
             }
             else
             {
@@ -1983,22 +2255,38 @@ namespace Digi.PaintGun
             return false;
         }
 
-        public Vector3 PaintProcess(Vector3 blockColor, Vector3 colorMask, float paintSpeed, string blockName)
+        internal PaintMaterial PaintProcess(PaintMaterial paintMaterial, BlockMaterial blockMaterial, float paintSpeed, string blockName)
         {
             if(replaceAllMode)
             {
                 // notification for this is done in the ReceivedPacket method to avoid re-iterating blocks
 
-                return colorMask;
+                return paintMaterial;
+            }
+
+            if(!paintMaterial.ColorMask.HasValue && !paintMaterial.Skin.HasValue)
+            {
+                return paintMaterial;
             }
 
             if(InstantPaintAccess)
             {
                 SetGUIToolStatus(0, "Painted!", "lime");
                 SetGUIToolStatus(1, symmetryStatus);
-                return colorMask;
+                return paintMaterial;
             }
 
+            if(!paintMaterial.ColorMask.HasValue && paintMaterial.Skin.HasValue)
+            {
+                SetGUIToolStatus(0, "Skinned!", "lime");
+                SetGUIToolStatus(1, symmetryStatus);
+                return paintMaterial;
+            }
+
+            var colorMask = (paintMaterial.ColorMask.HasValue ? paintMaterial.ColorMask.Value : blockMaterial.ColorMask);
+            var blockColor = blockMaterial.ColorMask;
+
+            // If hue is within reason change saturation and value directly.
             if(Math.Abs(blockColor.X - colorMask.X) < COLOR_EPSILON)
             {
                 paintSpeed *= PAINT_SPEED * PAINT_SKIP_TICKS;
@@ -2028,7 +2316,7 @@ namespace Digi.PaintGun
                     SetGUIToolStatus(0, $"Painting {percent}%...");
                 }
             }
-            else
+            else // if hue is too far off, first "remove" the paint.
             {
                 paintSpeed *= DEPAINT_SPEED * PAINT_SKIP_TICKS;
                 paintSpeed *= MyAPIGateway.Session.GrinderSpeedMultiplier;
@@ -2060,7 +2348,7 @@ namespace Digi.PaintGun
                 }
             }
 
-            return blockColor;
+            return new PaintMaterial(blockColor, paintMaterial.Skin);
         }
 
         public void ToolHolstered()
@@ -2121,7 +2409,7 @@ namespace Digi.PaintGun
                         }
                         else
                         {
-                            prevColorMaskPreview = GetBuildColorMask();
+                            prevColorMaskPreview = GetLocalBuildColorMask();
                             SendToServer_ColorPickMode(true);
                         }
 
@@ -2183,16 +2471,9 @@ namespace Digi.PaintGun
                             colorMask = RGBToColorMask(new Color(MathHelper.Clamp((int)values[0], 0, 255), MathHelper.Clamp((int)values[1], 0, 255), MathHelper.Clamp((int)values[2], 0, 255)));
                         }
 
-                        if(SendToServer_SetColor((byte)localColorData.SelectedSlot, colorMask, true))
-                        {
-                            PlayHudSound(SOUND_HUD_MOUSE_CLICK, 0.25f);
-                            MyVisualScriptLogicProvider.SendChatMessage($"Slot {localColorData.SelectedSlot + 1} set to {ColorMaskToString(colorMask)}", MOD_NAME, 0, MyFontEnum.Green);
-                        }
-                        else
-                        {
-                            PlayHudSound(SOUND_HUD_UNABLE, SOUND_HUD_UNABLE_VOLUME, SOUND_HUD_UNABLE_TIMEOUT);
-                        }
+                        var material = new BlockMaterial(colorMask, BlockSkins[localColorData.SelectedSkinIndex].SubtypeId);
 
+                        PickColorAndSkinFromBlock((byte)localColorData.SelectedSlot, material);
                         return;
                     }
 
@@ -2201,6 +2482,7 @@ namespace Digi.PaintGun
                     var assignedLG = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.LANDING_GEAR));
                     var assignedSecondaryClick = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.SECONDARY_TOOL_ACTION));
                     var assignedCubeSize = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.CUBE_BUILDER_CUBESIZE_MODE));
+                    var assignedColorBlock = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.CUBE_COLOR_CHANGE));
 
                     var assignedColorPrev = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.SWITCH_LEFT));
                     var assignedColorNext = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.SWITCH_RIGHT));
@@ -2220,6 +2502,21 @@ namespace Digi.PaintGun
                     help.Append('\n');
                     help.Append("##### Hotkeys #####").Append('\n');
                     help.Append('\n');
+                    help.Append("MouseScroll or ").Append(assignedColorPrev).Append("/").Append(assignedColorNext).Append('\n');
+                    help.Append("  Change selected color slot.").Append('\n');
+                    help.Append('\n');
+                    help.Append("Shift+MouseScroll or Shift+").Append(assignedColorPrev).Append("/Shift+").Append(assignedColorNext).Append('\n');
+                    help.Append("  Change selected skin.").Append('\n');
+                    help.Append('\n');
+                    help.Append(assignedColorBlock).Append('\n');
+                    help.Append("  Toggle if color is applied.").Append('\n');
+                    help.Append('\n');
+                    help.Append("Shift+").Append(assignedColorBlock).Append('\n');
+                    help.Append("  Toggle if skin is applied.").Append('\n');
+                    help.Append('\n');
+                    help.Append(assignedSecondaryClick).Append('\n');
+                    help.Append("  Deep paint mode, allows painting under blocks if you're close enough.").Append('\n');
+                    help.Append('\n');
                     help.Append("Shift+").Append(assignedSecondaryClick).Append('\n');
                     help.Append("  Replaces selected color with aimed block/player's color.").Append('\n');
                     help.Append('\n');
@@ -2228,9 +2525,6 @@ namespace Digi.PaintGun
                     help.Append('\n');
                     help.Append("Shift+").Append(assignedCubeSize).Append('\n');
                     help.Append("  (Creative or SM) Toggle replace color mode.").Append('\n');
-                    help.Append('\n');
-                    help.Append("MouseScroll or ").Append(assignedColorPrev).Append("/").Append(assignedColorNext).Append('\n');
-                    help.Append("  Change selected color slot.").Append('\n');
                     help.Append('\n');
                     help.Append("##### Config path #####").Append('\n');
                     help.Append('\n');

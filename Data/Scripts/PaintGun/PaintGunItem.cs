@@ -91,7 +91,7 @@ namespace Digi.PaintGun
                 mod.localHeldTool = this;
             }
 
-            if(mod.isPlayer)
+            if(!mod.isDS)
             {
                 mod.ToolDraw.Add(this); // register for draw updates
 
@@ -127,7 +127,7 @@ namespace Digi.PaintGun
                     FirstUpdate();
                 }
 
-                if(!mod.isPlayer || heldById == 0)
+                if(mod.isDS || heldById == 0)
                     return;
 
                 colorPickMode = mod.playersColorPickMode.Contains(heldById);
@@ -177,7 +177,9 @@ namespace Digi.PaintGun
         {
             PlayerColorData cd;
             if(mod.playerColorData.TryGetValue(heldById, out cd))
-                SetToolColor(cd.Colors[cd.SelectedSlot]);
+            {
+                SetToolColor(cd.ApplyColor ? cd.Colors[cd.SelectedSlot] : PaintGunMod.instance.DEFAULT_COLOR);
+            }
         }
 
         public void Draw()

@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using System.Text;
+using Digi.PaintGun.SkinOwnershipTester;
 using Draygo.API;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Gui;
@@ -22,13 +22,15 @@ namespace Digi.PaintGun
         public static bool UIEDIT => false;
 
         public bool init = false;
-        public bool isPlayer = false;
+        public bool isDS = false;
         public bool playerObjectFound = false;
         public uint tick = 0;
         public Settings settings = null;
         public bool gameHUD = true;
         public float gameHUDBkOpacity = 1f;
         public bool TextAPIReady = false;
+        public OwnershipTestPlayer ownershipTestPlayer;
+        public OwnershipTestServer ownershipTestServer;
 
         private UIEdit uiEdit;
         private HudAPIv2 textAPI;
@@ -57,6 +59,7 @@ namespace Digi.PaintGun
         public IMySlimBlock selectedSlimBlock = null;
         public IMyPlayer selectedPlayer = null;
         public Vector3 selectedPlayerColorMask;
+        public MyStringHash selectedPlayerBlockSkin;
         public bool selectedInvalid = false;
         public Vector3 prevColorMaskPreview;
         public IMySlimBlock prevSlimBlock = null;
@@ -72,10 +75,12 @@ namespace Digi.PaintGun
             new MyHudBlockInfo.ComponentInfo(),
         };
 
-        private int prevSelectedColorSlot = 0;
+        private byte prevSelectedColorSlot = 0;
+        private byte prevSelectedSkinIndex = 0;
 
         public PaintGunItem localHeldTool = null;
         public PlayerColorData localColorData = null;
+        public List<SkinInfo> BlockSkins;
         public readonly Dictionary<ulong, PlayerColorData> playerColorData = new Dictionary<ulong, PlayerColorData>();
         public readonly HashSet<ulong> playersColorPickMode = new HashSet<ulong>();
 
@@ -128,7 +133,51 @@ namespace Digi.PaintGun
         };
 
         public readonly List<IMyPlayer> players = new List<IMyPlayer>();
-        private readonly StringBuilder assigned = new StringBuilder();
         private readonly HashSet<MyCubeGrid> gridsInSystemCache = new HashSet<MyCubeGrid>();
+
+        private readonly PacketData packetUpdateColorList = new PacketData()
+        {
+            Type = PacketAction.UPDATE_COLOR_LIST,
+            PackedColors = new Color[COLOR_PALETTE_SIZE],
+        };
+
+        private readonly PacketData packetPaintGunFiring = new PacketData();
+
+        private readonly PacketData packetConsumeAmmo = new PacketData()
+        {
+            Type = PacketAction.CONSUME_AMMO,
+        };
+
+        private readonly PacketData packetPaint = new PacketData()
+        {
+            Type = PacketAction.PAINT_BLOCK,
+        };
+
+        private readonly PacketData packetReplaceColor = new PacketData()
+        {
+            Type = PacketAction.BLOCK_REPLACE_COLOR,
+        };
+
+        private readonly PacketData packetSelectedSlots = new PacketData()
+        {
+            Type = PacketAction.SELECTED_SLOTS,
+        };
+
+        private readonly PacketData packetColorPickMode = new PacketData();
+
+        private readonly PacketData packetSetColor = new PacketData()
+        {
+            Type = PacketAction.SET_COLOR,
+        };
+
+        private readonly PacketData packetRequestColorList = new PacketData()
+        {
+            Type = PacketAction.REQUEST_COLOR_LIST,
+        };
+
+        private readonly PacketData packetUpdateColor = new PacketData()
+        {
+            Type = PacketAction.UPDATE_COLOR,
+        };
     }
 }

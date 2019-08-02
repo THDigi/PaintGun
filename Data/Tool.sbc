@@ -24,16 +24,17 @@
       </Id>
       <DisplayName>Paint Gun</DisplayName>
       <Description>Paints blocks.
-
 {0} paint
 {1} deep paint mode
-[Scroll] cycle color
-[Shift+]{1} get color from aimed block/player
-[Shift+]{2} color picking mode
+[Scroll] cycle color slots
+[Shift+Scroll] cycle skins
+{4} toggle apply color
+[Shift+]{4} toggle apply skin
+[Shift+]{1} grab color+skin from aimed block/player
+[Shift+]{2} color+skin picking mode
 [Shift+]{3} replace mode (creative/SM)
-
-[/pg help] for more info</Description>
-      <DescriptionArgs>PRIMARY_TOOL_ACTION,SECONDARY_TOOL_ACTION,LANDING_GEAR,CUBE_BUILDER_CUBESIZE_MODE</DescriptionArgs>
+[/pg help] in chat for more info</Description>
+      <DescriptionArgs>PRIMARY_TOOL_ACTION,SECONDARY_TOOL_ACTION,LANDING_GEAR,CUBE_BUILDER_CUBESIZE_MODE,CUBE_COLOR_CHANGE</DescriptionArgs>
       <Icon>Textures\UI\PaintGun.dds</Icon>
       <Size>
         <X>0.45</X>

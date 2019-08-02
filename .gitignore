@@ -291,3 +291,4 @@ Models/*.xml
 
 Ignored/
 *.txt
+*.bat

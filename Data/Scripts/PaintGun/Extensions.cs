@@ -45,46 +45,5 @@ namespace Digi.PaintGun
             return null;
         }
         #endregion
-
-        // HACK copied from Sandbox.Game.Entities.MyCubeGrid because it's private
-        public static bool ColorGridOrBlockRequestValidation(this IMyCubeGrid grid, long player)
-        {
-            if(player == 0L || grid.BigOwners.Count == 0)
-                return true;
-
-            foreach(long owner in grid.BigOwners)
-            {
-                var relation = GetRelationsBetweenPlayers(owner, player);
-
-                if(relation == MyRelationsBetweenPlayers.Allies || relation == MyRelationsBetweenPlayers.Self)
-                    return true;
-            }
-
-            return false;
-        }
-
-        // HACK copied from Sandbox.Game.World.MyPlayer because it's not exposed
-        private static MyRelationsBetweenPlayers GetRelationsBetweenPlayers(long id1, long id2)
-        {
-            if(id1 == id2)
-                return MyRelationsBetweenPlayers.Self;
-
-            if(id1 == 0L || id2 == 0L)
-                return MyRelationsBetweenPlayers.Neutral;
-
-            IMyFaction f1 = MyAPIGateway.Session.Factions.TryGetPlayerFaction(id1);
-            IMyFaction f2 = MyAPIGateway.Session.Factions.TryGetPlayerFaction(id2);
-
-            if(f1 == f2)
-                return MyRelationsBetweenPlayers.Allies;
-
-            if(f1 == null || f2 == null)
-                return MyRelationsBetweenPlayers.Enemies;
-
-            if(MyAPIGateway.Session.Factions.GetRelationBetweenFactions(f1.FactionId, f2.FactionId) == MyRelationsBetweenFactions.Neutral)
-                return MyRelationsBetweenPlayers.Neutral;
-
-            return MyRelationsBetweenPlayers.Enemies;
-        }
     }
 }

@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using Sandbox.Common.ObjectBuilders;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character.Components;
 using Sandbox.ModAPI;
 using VRage.Game;
+using VRage.Game.Entity;
 using VRage.Game.ModAPI;
-using VRage.ObjectBuilders;
 using VRage.Utils;
 using VRageMath;
 
@@ -195,9 +194,43 @@ namespace Digi.PaintGun
         }
         #endregion
 
-        public Vector3 GetBuildColorMask()
+        public Vector3 GetLocalBuildColorMask()
         {
             return (localColorData != null ? localColorData.Colors[localColorData.SelectedSlot] : DEFAULT_COLOR);
+        }
+
+        public PaintMaterial GetLocalPaintMaterial()
+        {
+            if(localColorData == null)
+                return new PaintMaterial();
+
+            Vector3? colorMask = null;
+            MyStringHash? skin = null;
+
+            if(localColorData.ApplyColor)
+                colorMask = localColorData.Colors[localColorData.SelectedSlot];
+
+            if(localColorData.ApplySkin)
+                skin = BlockSkins[localColorData.SelectedSkinIndex].SubtypeId;
+
+            return new PaintMaterial(colorMask, skin);
+        }
+
+        public static SkinInfo GetSkinInfo(MyStringHash skinSubtypeId)
+        {
+            var blockSkins = PaintGunMod.instance.BlockSkins;
+
+            for(byte i = 0; i < blockSkins.Count; i++)
+            {
+                var skin = blockSkins[i];
+
+                if(skin.SubtypeId == skinSubtypeId)
+                {
+                    return skin;
+                }
+            }
+
+            return null;
         }
 
         public void PlayHudSound(MySoundPair soundPair, float volume, uint timeout = 0)
@@ -222,6 +255,52 @@ namespace Digi.PaintGun
         {
             var weaponPosComp = character?.Components?.Get<MyCharacterWeaponPositionComponent>();
             return (weaponPosComp != null ? weaponPosComp.IsInIronSight : false);
+        }
+
+        // HACK copied from Sandbox.Game.Entities.MyCubeGrid because it's private
+        private static bool AllowedToPaintGrid(IMyCubeGrid grid, long identityId)
+        {
+            if(identityId == 0 || grid.BigOwners.Count == 0)
+                return true;
+
+            foreach(long owner in grid.BigOwners)
+            {
+                var relation = GetRelationsBetweenPlayers(owner, identityId);
+
+                // vanilla only checks Self, this mod allows allies to paint aswell
+#pragma warning disable CS0618 // Type or member is obsolete
+                if(relation == MyRelationsBetweenPlayers.Allies || relation == MyRelationsBetweenPlayers.Self)
+#pragma warning restore CS0618 // Type or member is obsolete
+                    return true;
+            }
+
+            return false;
+        }
+
+        // HACK copied from Sandbox.Game.World.MyPlayer because it's not exposed
+        private static MyRelationsBetweenPlayers GetRelationsBetweenPlayers(long id1, long id2)
+        {
+            if(id1 == 0 || id2 == 0)
+                return MyRelationsBetweenPlayers.Neutral;
+
+            if(id1 == id2)
+                return MyRelationsBetweenPlayers.Self;
+
+            IMyFaction f1 = MyAPIGateway.Session.Factions.TryGetPlayerFaction(id1);
+            IMyFaction f2 = MyAPIGateway.Session.Factions.TryGetPlayerFaction(id2);
+
+            if(f1 == f2)
+#pragma warning disable CS0618 // Type or member is obsolete
+                return MyRelationsBetweenPlayers.Allies;
+#pragma warning restore CS0618 // Type or member is obsolete
+
+            if(f1 == null || f2 == null)
+                return MyRelationsBetweenPlayers.Enemies;
+
+            if(MyAPIGateway.Session.Factions.GetRelationBetweenFactions(f1.FactionId, f2.FactionId) == MyRelationsBetweenFactions.Neutral)
+                return MyRelationsBetweenPlayers.Neutral;
+
+            return MyRelationsBetweenPlayers.Enemies;
         }
 
         private bool EnsureColorDataEntry(ulong steamId)

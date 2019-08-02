@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using ProtoBuf;
+using VRage.Game.ModAPI;
 using VRage.ModAPI;
+using VRage.Utils;
 using VRageMath;
 
 namespace Digi.PaintGun
@@ -11,6 +13,9 @@ namespace Digi.PaintGun
         public ulong SteamId;
         public List<Vector3> Colors;
         public int SelectedSlot = 0;
+        public int SelectedSkinIndex = 0;
+        public bool ApplyColor = true;
+        public bool ApplySkin = true;
 
         public PlayerColorData(ulong steamId, List<Vector3> colors)
         {
@@ -28,11 +33,13 @@ namespace Digi.PaintGun
         COLOR_PICK_ON,
         COLOR_PICK_OFF,
         BLOCK_REPLACE_COLOR,
-        SELECTED_COLOR_SLOT,
+        SELECTED_SLOTS,
         SET_COLOR,
         UPDATE_COLOR,
         UPDATE_COLOR_LIST,
         REQUEST_COLOR_LIST,
+        SKINTEST_REQUEST,
+        SKINTEST_RESULT,
     }
 
     [Flags]
@@ -56,45 +63,49 @@ namespace Digi.PaintGun
         [ProtoMember(3)]
         public long EntityId;
 
-        [ProtoMember(4)]
-        public uint PackedColor;
-
-        [ProtoMember(5)]
-        public uint PackedColor2;
-
-        [ProtoMember(6)]
-        public byte Slot;
-
-        [ProtoMember(7)]
-        public OddAxis OddAxis;
-
-        [ProtoMember(8)]
-        public bool UseGridSystem;
-
-        [ProtoMember(9)]
+        [ProtoMember(10)]
         public Vector3I? GridPosition;
 
-        [ProtoMember(10)]
+        [ProtoMember(11)]
+        public SerializedPaintMaterial Paint;
+
+        [ProtoMember(12)]
+        public SerializedBlockMaterial OldPaint;
+
+        [ProtoMember(13)]
+        public byte? Slot;
+
+        [ProtoMember(20)]
+        public OddAxis OddAxis;
+
+        [ProtoMember(21)]
+        public bool UseGridSystem;
+
+        [ProtoMember(22)]
         public Vector3I? MirrorPlanes;
 
-        [ProtoMember(11)]
-        public uint[] PackedColors;
+        [ProtoMember(30)]
+        public Color[] PackedColors;
+
+        [ProtoMember(31)]
+        public bool[] OwnedSkins;
 
         public PacketData() { } // empty ctor is required for deserialization
 
         public override string ToString()
         {
             return $"Type={Type}\n" +
-                $"SteamId={SteamId}\n" +
-                $"EntityId={EntityId}\n" +
-                $"PackedColor={PackedColor}\n" +
-                $"PackedColor2={PackedColor2}\n" +
-                $"Slot={Slot}\n" +
-                $"OddAxis={OddAxis}\n" +
-                $"UseGridSystem={UseGridSystem}\n" +
-                $"GridPosition={(GridPosition.HasValue ? GridPosition.Value.ToString() : "NULL")}\n" +
-                $"MirrorPlanes={(MirrorPlanes.HasValue ? MirrorPlanes.Value.ToString() : "NULL")}\n" +
-                $"PackedColors={(PackedColors != null ? string.Join(",", PackedColors) : "NULL")}";
+                   $"SteamId={SteamId}\n" +
+                   $"EntityId={EntityId}\n" +
+                   $"GridPosition={(GridPosition.HasValue ? GridPosition.Value.ToString() : "NULL")}\n" +
+                   $"Paint={Paint}\n" +
+                   $"OldPaint={OldPaint}\n" +
+                   $"Slot={Slot}\n" +
+                   $"OddAxis={OddAxis}\n" +
+                   $"UseGridSystem={UseGridSystem}\n" +
+                   $"MirrorPlanes={(MirrorPlanes.HasValue ? MirrorPlanes.Value.ToString() : "NULL")}\n" +
+                   $"PackedColors={(PackedColors != null ? string.Join(",", PackedColors) : "NULL")}\n" +
+                   $"OwnedSkins={(OwnedSkins != null ? string.Join(",", OwnedSkins) : "NULL")}";
         }
     }
 
@@ -119,6 +130,164 @@ namespace Digi.PaintGun
         {
             Entity = entity;
             DetectionPoint = detectionPoint;
+        }
+    }
+
+    public struct PaintMaterial
+    {
+        public readonly Vector3? ColorMask;
+        public readonly MyStringHash? Skin;
+
+        public PaintMaterial(Vector3? colorMask, MyStringHash? skin)
+        {
+            ColorMask = colorMask;
+            Skin = skin;
+        }
+
+        public PaintMaterial(SerializedPaintMaterial material)
+        {
+            ColorMask = null;
+            Skin = null;
+
+            if(material.Color.HasValue)
+                ColorMask = PaintGunMod.RGBToColorMask(material.Color.Value);
+
+            if(material.SkinIndex.HasValue)
+                Skin = PaintGunMod.instance.BlockSkins[material.SkinIndex.Value].SubtypeId;
+        }
+
+        public bool PaintEquals(BlockMaterial blockMaterial)
+        {
+            return (!ColorMask.HasValue || PaintGunMod.ColorMaskEquals(ColorMask.Value, blockMaterial.ColorMask)) && (!Skin.HasValue || Skin.Value.Equals(blockMaterial.Skin));
+        }
+
+        public bool PaintEquals(IMySlimBlock block)
+        {
+            return (!ColorMask.HasValue || PaintGunMod.ColorMaskEquals(ColorMask.Value, block.ColorMaskHSV)) && (!Skin.HasValue || Skin.Value.Equals(block.SkinSubtypeId));
+        }
+
+        public override string ToString()
+        {
+            return $"{(ColorMask.HasValue ? ColorMask.Value.ToString() : "(NoColor)")}/{(Skin.HasValue ? Skin.Value.String : "(NoSkin)")}";
+        }
+    }
+
+    public struct BlockMaterial
+    {
+        public readonly Vector3 ColorMask;
+        public readonly MyStringHash Skin;
+
+        public BlockMaterial(Vector3 colorMask, MyStringHash skin)
+        {
+            ColorMask = colorMask;
+            Skin = skin;
+        }
+
+        public BlockMaterial(IMySlimBlock block)
+        {
+            ColorMask = block.ColorMaskHSV;
+            Skin = block.SkinSubtypeId;
+        }
+
+        public bool MaterialEquals(BlockMaterial material)
+        {
+            return Skin == material.Skin && PaintGunMod.ColorMaskEquals(ColorMask, material.ColorMask);
+        }
+
+        public override string ToString()
+        {
+            return $"{ColorMask.ToString()}/{Skin.String}";
+        }
+    }
+
+    [ProtoContract]
+    public struct SerializedPaintMaterial
+    {
+        [ProtoMember(1)]
+        public readonly Color? Color;
+
+        [ProtoMember(2)]
+        public readonly byte? SkinIndex;
+
+        public SerializedPaintMaterial(Color? color, byte? skinIndex)
+        {
+            Color = color;
+            SkinIndex = skinIndex;
+        }
+
+        public SerializedPaintMaterial(PaintMaterial material)
+        {
+            Color = (material.ColorMask.HasValue ? (Vector3?)PaintGunMod.ColorMaskToRGB(material.ColorMask.Value) : null);
+
+            SkinIndex = null;
+            if(material.Skin.HasValue)
+            {
+                var skin = PaintGunMod.GetSkinInfo(material.Skin.Value);
+                SkinIndex = skin.Index;
+            }
+        }
+
+        public override string ToString()
+        {
+            return $"{(Color.HasValue ? Color.Value.ToString() : "(NoColor)")}/{(SkinIndex.HasValue ? SkinIndex.Value.ToString() : "(NoSkinIndex)")}";
+        }
+
+        public PaintMaterial GetMaterial()
+        {
+            Vector3? colorMask = (Color.HasValue ? (Vector3?)PaintGunMod.RGBToColorMask(Color.Value) : null);
+            MyStringHash? skinSubtype = (SkinIndex.HasValue ? (MyStringHash?)PaintGunMod.instance.BlockSkins[SkinIndex.Value].SubtypeId : null);
+
+            return new PaintMaterial(colorMask, skinSubtype);
+        }
+    }
+
+    [ProtoContract]
+    public struct SerializedBlockMaterial
+    {
+        [ProtoMember(1)]
+        public readonly Color Color;
+
+        [ProtoMember(2)]
+        public readonly byte SkinIndex;
+
+        public SerializedBlockMaterial(Color color, byte skinIndex)
+        {
+            Color = color;
+            SkinIndex = skinIndex;
+        }
+
+        public SerializedBlockMaterial(BlockMaterial material)
+        {
+            Color = PaintGunMod.ColorMaskToRGB(material.ColorMask);
+
+            var skin = PaintGunMod.GetSkinInfo(material.Skin);
+            SkinIndex = skin.Index;
+        }
+        public override string ToString()
+        {
+            return $"{Color.ToString()}/{SkinIndex.ToString()}";
+        }
+
+        public BlockMaterial GetMaterial()
+        {
+            return new BlockMaterial(PaintGunMod.RGBToColorMask(Color), PaintGunMod.instance.BlockSkins[SkinIndex].SubtypeId);
+        }
+    }
+
+    public class SkinInfo
+    {
+        public readonly byte Index;
+        public readonly MyStringHash SubtypeId;
+        public readonly string Name;
+        public readonly MyStringId Icon;
+        public bool LocallyOwned = true;
+
+        public SkinInfo(byte index, MyStringHash subtypeId, string name, string icon)
+        {
+            Index = index;
+            SubtypeId = subtypeId;
+            Name = name;
+            Icon = MyStringId.GetOrCompute(icon);
         }
     }
 }
