@@ -268,9 +268,7 @@ namespace Digi.PaintGun
                 var relation = GetRelationsBetweenPlayers(owner, identityId);
 
                 // vanilla only checks Self, this mod allows allies to paint aswell
-#pragma warning disable CS0618 // Type or member is obsolete
                 if(relation == MyRelationsBetweenPlayers.Allies || relation == MyRelationsBetweenPlayers.Self)
-#pragma warning restore CS0618 // Type or member is obsolete
                     return true;
             }
 
@@ -290,9 +288,7 @@ namespace Digi.PaintGun
             IMyFaction f2 = MyAPIGateway.Session.Factions.TryGetPlayerFaction(id2);
 
             if(f1 == f2)
-#pragma warning disable CS0618 // Type or member is obsolete
                 return MyRelationsBetweenPlayers.Allies;
-#pragma warning restore CS0618 // Type or member is obsolete
 
             if(f1 == null || f2 == null)
                 return MyRelationsBetweenPlayers.Enemies;
