@@ -251,24 +251,24 @@ namespace Digi.PaintGun
             hudSoundEmitter.PlaySound(soundPair, stopPrevious: false, alwaysHearOnRealistic: true, force2D: true);
         }
 
-        private static bool IsAimingDownSights(IMyCharacter character)
+        static bool IsAimingDownSights(IMyCharacter character)
         {
             var weaponPosComp = character?.Components?.Get<MyCharacterWeaponPositionComponent>();
             return (weaponPosComp != null ? weaponPosComp.IsInIronSight : false);
         }
 
         // HACK copied from Sandbox.Game.Entities.MyCubeGrid because it's private
-        private static bool AllowedToPaintGrid(IMyCubeGrid grid, long identityId)
+        static bool AllowedToPaintGrid(IMyCubeGrid grid, long identityId)
         {
             if(identityId == 0 || grid.BigOwners.Count == 0)
                 return true;
 
             foreach(long owner in grid.BigOwners)
             {
-                var relation = GetRelationsBetweenPlayers(owner, identityId);
+                var relation = GetRelationBetweenPlayers(owner, identityId);
 
                 // vanilla only checks Self, this mod allows allies to paint aswell
-                if(relation == MyRelationsBetweenPlayers.Allies || relation == MyRelationsBetweenPlayers.Self)
+                if(relation == MyRelationsBetweenPlayerAndBlock.FactionShare || relation == MyRelationsBetweenPlayerAndBlock.Owner)
                     return true;
             }
 
@@ -276,27 +276,26 @@ namespace Digi.PaintGun
         }
 
         // HACK copied from Sandbox.Game.World.MyPlayer because it's not exposed
-        private static MyRelationsBetweenPlayers GetRelationsBetweenPlayers(long id1, long id2)
+        static MyRelationsBetweenPlayerAndBlock GetRelationBetweenPlayers(long id1, long id2)
         {
-            if(id1 == 0 || id2 == 0)
-                return MyRelationsBetweenPlayers.Neutral;
-
             if(id1 == id2)
-                return MyRelationsBetweenPlayers.Self;
+                return MyRelationsBetweenPlayerAndBlock.Owner;
 
             IMyFaction f1 = MyAPIGateway.Session.Factions.TryGetPlayerFaction(id1);
             IMyFaction f2 = MyAPIGateway.Session.Factions.TryGetPlayerFaction(id2);
 
-            if(f1 == f2)
-                return MyRelationsBetweenPlayers.Allies;
-
             if(f1 == null || f2 == null)
-                return MyRelationsBetweenPlayers.Enemies;
+                return MyRelationsBetweenPlayerAndBlock.Enemies;
 
-            if(MyAPIGateway.Session.Factions.GetRelationBetweenFactions(f1.FactionId, f2.FactionId) == MyRelationsBetweenFactions.Neutral)
-                return MyRelationsBetweenPlayers.Neutral;
+            if(f1 == f2)
+                return MyRelationsBetweenPlayerAndBlock.FactionShare;
 
-            return MyRelationsBetweenPlayers.Enemies;
+            var factionRelation = MyAPIGateway.Session.Factions.GetRelationBetweenFactions(f1.FactionId, f2.FactionId);
+
+            if(factionRelation == MyRelationsBetweenFactions.Neutral)
+                return MyRelationsBetweenPlayerAndBlock.Neutral;
+
+            return MyRelationsBetweenPlayerAndBlock.Enemies;
         }
 
         private bool EnsureColorDataEntry(ulong steamId)
