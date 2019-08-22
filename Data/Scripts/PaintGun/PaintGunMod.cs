@@ -33,7 +33,13 @@ namespace Digi.PaintGun
                 new SkinInfo(0, MyStringHash.NullOrEmpty, "Default", "PaintGun_SkinIcon_Default"),
                 new SkinInfo(1, MyStringHash.GetOrCompute("Clean_Armor"), "Clean", "PaintGun_SkinIcon_Clean"),
                 new SkinInfo(2, MyStringHash.GetOrCompute("CarbonFibre_Armor"), "Carbon Fiber", "PaintGun_SkinIcon_CarbonFiber"),
-                new SkinInfo(3, MyStringHash.GetOrCompute("DigitalCamouflage_Armor"), "Digital Camouflage", "PaintGun_SkinIcon_DigitalCamouflage")
+                new SkinInfo(3, MyStringHash.GetOrCompute("DigitalCamouflage_Armor"), "Digital Camouflage", "PaintGun_SkinIcon_DigitalCamouflage"),
+                new SkinInfo(4, MyStringHash.GetOrCompute("Golden_Armor"), "Golden", "PaintGun_SkinIcon_Golden"),
+                new SkinInfo(5, MyStringHash.GetOrCompute("Silver_Armor"), "Silver", "PaintGun_SkinIcon_Silver"),
+                new SkinInfo(6, MyStringHash.GetOrCompute("Glamour_Armor"), "Glamour", "PaintGun_SkinIcon_Glamour"),
+                new SkinInfo(7, MyStringHash.GetOrCompute("Disco_Armor"), "Disco", "PaintGun_SkinIcon_Disco"),
+                new SkinInfo(8, MyStringHash.GetOrCompute("Wood_Armor"), "Wood", "PaintGun_SkinIcon_Wood"),
+                new SkinInfo(9, MyStringHash.GetOrCompute("Mossy_Armor"), "Mossy", "PaintGun_SkinIcon_Mossy"),
             };
 
             //blockSkins.Add(MyStringHash.NullOrEmpty); // allowing to remove skin

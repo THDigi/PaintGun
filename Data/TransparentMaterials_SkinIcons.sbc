@@ -34,7 +34,7 @@
       <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
       <IgnoreDepth>true</IgnoreDepth>
       <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
-      <!-- <Texture>Textures\GUI\UI\Skins\Armor\CleanArmor.dds</Texture> -->
+      <!-- <Texture>Textures\GUI\Icons\Skins\Armor\CleanArmor.dds</Texture> -->
       <Texture>Textures\UI\BlockSkin_Clean.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
@@ -57,7 +57,7 @@
       <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
       <IgnoreDepth>true</IgnoreDepth>
       <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
-      <!-- <Texture>Textures\GUI\UI\Skins\Armor\CarbonFiber.dds</Texture> -->
+      <!-- <Texture>Textures\GUI\Icons\Skins\Armor\CarbonFiber.dds</Texture> -->
       <Texture>Textures\UI\BlockSkin_CarbonFiber.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
@@ -80,8 +80,140 @@
       <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
       <IgnoreDepth>true</IgnoreDepth>
       <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
-      <!-- <Texture>Textures\GUI\UI\Skins\Armor\DigitalCamouflage.dds</Texture> -->
+      <!-- <Texture>Textures\GUI\Icons\Skins\Armor\DigitalCamouflage.dds</Texture> -->
       <Texture>Textures\UI\BlockSkin_DigitalCamouflage.dds</Texture>
+      <UseAtlas>false</UseAtlas>
+      <Reflectivity>0</Reflectivity>
+      <UVOffset>
+        <X>0</X>
+        <Y>0</Y>
+      </UVOffset>
+      <UVSize>
+        <X>1</X>
+        <Y>1</Y>
+      </UVSize>
+    </TransparentMaterial>
+    <TransparentMaterial>
+      <Id>
+        <TypeId>TransparentMaterialDefinition</TypeId>
+        <SubtypeId>PaintGun_SkinIcon_Golden</SubtypeId>
+      </Id>
+      <AlphaMistingEnable>false</AlphaMistingEnable>
+      <AlphaSaturation>1</AlphaSaturation>
+      <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
+      <IgnoreDepth>true</IgnoreDepth>
+      <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
+      <Texture>Textures\GUI\Icons\Skins\Armor\Golden.dds</Texture>
+      <UseAtlas>false</UseAtlas>
+      <Reflectivity>0</Reflectivity>
+      <UVOffset>
+        <X>0</X>
+        <Y>0</Y>
+      </UVOffset>
+      <UVSize>
+        <X>1</X>
+        <Y>1</Y>
+      </UVSize>
+    </TransparentMaterial>
+    <TransparentMaterial>
+      <Id>
+        <TypeId>TransparentMaterialDefinition</TypeId>
+        <SubtypeId>PaintGun_SkinIcon_Silver</SubtypeId>
+      </Id>
+      <AlphaMistingEnable>false</AlphaMistingEnable>
+      <AlphaSaturation>1</AlphaSaturation>
+      <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
+      <IgnoreDepth>true</IgnoreDepth>
+      <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
+      <Texture>Textures\GUI\Icons\Skins\Armor\Silver.dds</Texture>
+      <UseAtlas>false</UseAtlas>
+      <Reflectivity>0</Reflectivity>
+      <UVOffset>
+        <X>0</X>
+        <Y>0</Y>
+      </UVOffset>
+      <UVSize>
+        <X>1</X>
+        <Y>1</Y>
+      </UVSize>
+    </TransparentMaterial>
+    <TransparentMaterial>
+      <Id>
+        <TypeId>TransparentMaterialDefinition</TypeId>
+        <SubtypeId>PaintGun_SkinIcon_Glamour</SubtypeId>
+      </Id>
+      <AlphaMistingEnable>false</AlphaMistingEnable>
+      <AlphaSaturation>1</AlphaSaturation>
+      <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
+      <IgnoreDepth>true</IgnoreDepth>
+      <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
+      <Texture>Textures\GUI\Icons\Skins\Armor\Glamour.dds</Texture>
+      <UseAtlas>false</UseAtlas>
+      <Reflectivity>0</Reflectivity>
+      <UVOffset>
+        <X>0</X>
+        <Y>0</Y>
+      </UVOffset>
+      <UVSize>
+        <X>1</X>
+        <Y>1</Y>
+      </UVSize>
+    </TransparentMaterial>
+    <TransparentMaterial>
+      <Id>
+        <TypeId>TransparentMaterialDefinition</TypeId>
+        <SubtypeId>PaintGun_SkinIcon_Disco</SubtypeId>
+      </Id>
+      <AlphaMistingEnable>false</AlphaMistingEnable>
+      <AlphaSaturation>1</AlphaSaturation>
+      <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
+      <IgnoreDepth>true</IgnoreDepth>
+      <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
+      <Texture>Textures\GUI\Icons\Skins\Armor\Disco.dds</Texture>
+      <UseAtlas>false</UseAtlas>
+      <Reflectivity>0</Reflectivity>
+      <UVOffset>
+        <X>0</X>
+        <Y>0</Y>
+      </UVOffset>
+      <UVSize>
+        <X>1</X>
+        <Y>1</Y>
+      </UVSize>
+    </TransparentMaterial>
+    <TransparentMaterial>
+      <Id>
+        <TypeId>TransparentMaterialDefinition</TypeId>
+        <SubtypeId>PaintGun_SkinIcon_Wood</SubtypeId>
+      </Id>
+      <AlphaMistingEnable>false</AlphaMistingEnable>
+      <AlphaSaturation>1</AlphaSaturation>
+      <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
+      <IgnoreDepth>true</IgnoreDepth>
+      <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
+      <Texture>Textures\GUI\Icons\Skins\Armor\Wood.dds</Texture>
+      <UseAtlas>false</UseAtlas>
+      <Reflectivity>0</Reflectivity>
+      <UVOffset>
+        <X>0</X>
+        <Y>0</Y>
+      </UVOffset>
+      <UVSize>
+        <X>1</X>
+        <Y>1</Y>
+      </UVSize>
+    </TransparentMaterial>
+    <TransparentMaterial>
+      <Id>
+        <TypeId>TransparentMaterialDefinition</TypeId>
+        <SubtypeId>PaintGun_SkinIcon_Mossy</SubtypeId>
+      </Id>
+      <AlphaMistingEnable>false</AlphaMistingEnable>
+      <AlphaSaturation>1</AlphaSaturation>
+      <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
+      <IgnoreDepth>true</IgnoreDepth>
+      <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
+      <Texture>Textures\GUI\Icons\Skins\Armor\Mossy.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
       <UVOffset>
