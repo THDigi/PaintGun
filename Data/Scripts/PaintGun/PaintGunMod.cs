@@ -24,82 +24,88 @@ namespace Digi.PaintGun
         #region Init and unload
         public override void LoadData()
         {
-            instance = this;
-            Log.ModName = MOD_NAME;
-            Log.AutoClose = false;
-
-            BlockSkins = new List<SkinInfo>(4)
+            try
             {
-                new SkinInfo(0, MyStringHash.NullOrEmpty, "Default", "PaintGun_SkinIcon_Default"),
-                new SkinInfo(1, MyStringHash.GetOrCompute("Clean_Armor"), "Clean", "PaintGun_SkinIcon_Clean"),
-                new SkinInfo(2, MyStringHash.GetOrCompute("CarbonFibre_Armor"), "Carbon Fiber", "PaintGun_SkinIcon_CarbonFiber"),
-                new SkinInfo(3, MyStringHash.GetOrCompute("DigitalCamouflage_Armor"), "Digital Camouflage", "PaintGun_SkinIcon_DigitalCamouflage"),
-                new SkinInfo(4, MyStringHash.GetOrCompute("Golden_Armor"), "Golden", "PaintGun_SkinIcon_Golden"),
-                new SkinInfo(5, MyStringHash.GetOrCompute("Silver_Armor"), "Silver", "PaintGun_SkinIcon_Silver"),
-                new SkinInfo(6, MyStringHash.GetOrCompute("Glamour_Armor"), "Glamour", "PaintGun_SkinIcon_Glamour"),
-                new SkinInfo(7, MyStringHash.GetOrCompute("Disco_Armor"), "Disco", "PaintGun_SkinIcon_Disco"),
-                new SkinInfo(8, MyStringHash.GetOrCompute("Wood_Armor"), "Wood", "PaintGun_SkinIcon_Wood"),
-                new SkinInfo(9, MyStringHash.GetOrCompute("Mossy_Armor"), "Mossy", "PaintGun_SkinIcon_Mossy"),
-            };
+                instance = this;
+                Log.ModName = MOD_NAME;
+                Log.AutoClose = false;
 
-            //blockSkins.Add(MyStringHash.NullOrEmpty); // allowing to remove skin
-            //
-            //foreach(var assetDef in MyDefinitionManager.Static.GetAssetModifierDefinitions())
-            //{
-            //    if(assetDef.Id.SubtypeName.EndsWith("_Armor"))
-            //    {
-            //        blockSkins.Add(assetDef.Id.SubtypeId);
-            //    }
-            //}
+                BlockSkins = new List<SkinInfo>(9)
+                {
+                    new SkinInfo(0, MyStringHash.NullOrEmpty, "Default", "PaintGun_SkinIcon_Default"),
+                    new SkinInfo(1, MyStringHash.GetOrCompute("Clean_Armor"), "Clean", "PaintGun_SkinIcon_Clean"),
+                    new SkinInfo(2, MyStringHash.GetOrCompute("CarbonFibre_Armor"), "Carbon Fiber", "PaintGun_SkinIcon_CarbonFibre"),
+                    new SkinInfo(3, MyStringHash.GetOrCompute("DigitalCamouflage_Armor"), "Digital Camouflage", "PaintGun_SkinIcon_DigitalCamouflage"),
+                    new SkinInfo(4, MyStringHash.GetOrCompute("Golden_Armor"), "Golden", "PaintGun_SkinIcon_Golden"),
+                    new SkinInfo(5, MyStringHash.GetOrCompute("Silver_Armor"), "Silver", "PaintGun_SkinIcon_Silver"),
+                    new SkinInfo(6, MyStringHash.GetOrCompute("Glamour_Armor"), "Glamour", "PaintGun_SkinIcon_Glamour"),
+                    new SkinInfo(7, MyStringHash.GetOrCompute("Disco_Armor"), "Disco", "PaintGun_SkinIcon_Disco"),
+                    new SkinInfo(8, MyStringHash.GetOrCompute("Wood_Armor"), "Wood", "PaintGun_SkinIcon_Wood"),
+                    new SkinInfo(9, MyStringHash.GetOrCompute("Mossy_Armor"), "Mossy", "PaintGun_SkinIcon_Mossy"),
+                };
+            }
+            catch(Exception e)
+            {
+                Log.Error(e);
+                Log.Close();
+            }
         }
 
         public override void BeforeStart()
         {
-            init = true;
-            isDS = (MyAPIGateway.Utilities.IsDedicated && MyAPIGateway.Multiplayer.IsServer);
-
-            MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET, ReceivedPacket);
-
-            if(MyAPIGateway.Multiplayer.IsServer)
+            try
             {
-                ownershipTestServer = new OwnershipTestServer(this);
+                init = true;
+                isDS = (MyAPIGateway.Utilities.IsDedicated && MyAPIGateway.Multiplayer.IsServer);
+
+                MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET, ReceivedPacket);
+
+                if(MyAPIGateway.Multiplayer.IsServer)
+                {
+                    ownershipTestServer = new OwnershipTestServer(this);
+                }
+
+                if(!isDS) // stuff that shouldn't happen DS-side.
+                {
+                    ownershipTestPlayer = new OwnershipTestPlayer(this);
+
+                    UpdateConfigValues();
+
+                    textAPI = new HudAPIv2(() => TextAPIReady = true);
+                    settings = new Settings();
+
+                    MyAPIGateway.Utilities.MessageEntered += MessageEntered;
+                    MyAPIGateway.Gui.GuiControlCreated += GuiControlCreated;
+                    MyAPIGateway.Gui.GuiControlRemoved += GuiControlRemoved;
+
+                    if(!MyAPIGateway.Multiplayer.IsServer)
+                        SendToServer_RequestColorList(MyAPIGateway.Multiplayer.MyId);
+
+                    EnsureColorDataEntry(MyAPIGateway.Multiplayer.MyId);
+
+                    if(localColorData == null)
+                        playerColorData.TryGetValue(MyAPIGateway.Multiplayer.MyId, out localColorData);
+
+                    InitUIEdit();
+                }
+
+                // make the paintgun not be able to shoot normally, to avoid needing to add ammo and the stupid hardcoded screen shake
+                var gunDef = MyDefinitionManager.Static.GetWeaponDefinition(new MyDefinitionId(typeof(MyObjectBuilder_WeaponDefinition), PAINTGUN_WEAPONID));
+
+                for(int i = 0; i < gunDef.WeaponAmmoDatas.Length; i++)
+                {
+                    var ammoData = gunDef.WeaponAmmoDatas[i];
+
+                    if(ammoData == null)
+                        continue;
+
+                    ammoData.ShootIntervalInMiliseconds = int.MaxValue;
+                }
             }
-
-            if(!isDS) // stuff that shouldn't happen DS-side.
+            catch(Exception e)
             {
-                ownershipTestPlayer = new OwnershipTestPlayer(this);
-
-                UpdateConfigValues();
-
-                textAPI = new HudAPIv2(() => TextAPIReady = true);
-                settings = new Settings();
-
-                MyAPIGateway.Utilities.MessageEntered += MessageEntered;
-                MyAPIGateway.Gui.GuiControlCreated += GuiControlCreated;
-                MyAPIGateway.Gui.GuiControlRemoved += GuiControlRemoved;
-
-                if(!MyAPIGateway.Multiplayer.IsServer)
-                    SendToServer_RequestColorList(MyAPIGateway.Multiplayer.MyId);
-
-                EnsureColorDataEntry(MyAPIGateway.Multiplayer.MyId);
-
-                if(localColorData == null)
-                    playerColorData.TryGetValue(MyAPIGateway.Multiplayer.MyId, out localColorData);
-
-                InitUIEdit();
-            }
-
-            // make the paintgun not be able to shoot normally, to avoid needing to add ammo and the stupid hardcoded screen shake
-            var gunDef = MyDefinitionManager.Static.GetWeaponDefinition(new MyDefinitionId(typeof(MyObjectBuilder_WeaponDefinition), PAINTGUN_WEAPONID));
-
-            for(int i = 0; i < gunDef.WeaponAmmoDatas.Length; i++)
-            {
-                var ammoData = gunDef.WeaponAmmoDatas[i];
-
-                if(ammoData == null)
-                    continue;
-
-                ammoData.ShootIntervalInMiliseconds = int.MaxValue;
+                Log.Error(e);
+                Log.Close();
             }
         }
 
