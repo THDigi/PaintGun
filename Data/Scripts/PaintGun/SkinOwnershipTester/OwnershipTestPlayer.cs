@@ -54,12 +54,12 @@ namespace Digi.PaintGun.SkinOwnershipTester
                 Type = PacketAction.SKINTEST_REQUEST,
             };
 
-            var bytes = MyAPIGateway.Utilities.SerializeToBinary<PacketData>(packet);
+            var rawData = MyAPIGateway.Utilities.SerializeToBinary<PacketData>(packet);
 
             if(PaintGunMod.DEBUG)
-                Log.Info($"{GetType().Name}.TestForLocalPlayer({packet.SteamId}) :: bytes={bytes.Length}:{string.Join(",", bytes)}");
+                Log.Info($"{GetType().Name}.TestForLocalPlayer({packet.SteamId}) :: rawData={rawData.Length}:{string.Join(",", rawData)}");
 
-            MyAPIGateway.Multiplayer.SendMessageToServer(PaintGunMod.PACKET, bytes, true);
+            MyAPIGateway.Multiplayer.SendMessageToServer(PaintGunMod.PACKET, rawData, true);
         }
         #endregion
 

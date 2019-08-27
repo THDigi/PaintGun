@@ -19,7 +19,7 @@ namespace Digi.PaintGun
     public class PaintGunItem : MyGameLogicComponent
     {
         public bool Firing = false;
-        public byte FireCooldown = 0;
+        public int FireCooldown = 0;
         public int Ammo => rifle.CurrentAmmunition;
 
         private bool init = false;

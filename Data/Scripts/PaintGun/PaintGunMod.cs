@@ -43,11 +43,17 @@ namespace Digi.PaintGun
                     new SkinInfo(8, MyStringHash.GetOrCompute("Wood_Armor"), "Wood", "PaintGun_SkinIcon_Wood"),
                     new SkinInfo(9, MyStringHash.GetOrCompute("Mossy_Armor"), "Mossy", "PaintGun_SkinIcon_Mossy"),
                 };
+
+                    Log.Info($"TestStruct={test}; rawData={string.Join(", ", rawData)}");
+                }
             }
             catch(Exception e)
             {
                 Log.Error(e);
                 Log.Close();
+            }
+        }
+
             }
         }
 
@@ -504,7 +510,7 @@ namespace Digi.PaintGun
             // apply selected slot when inside the color picker menu
             if(MyAPIGateway.Gui.IsCursorVisible && MyAPIGateway.Gui.ActiveGamePlayScreen == "ColorPick")
             {
-                localColorData.SelectedSlot = (byte)MyAPIGateway.Session.Player.SelectedBuildColorSlot;
+                localColorData.SelectedSlot = MyAPIGateway.Session.Player.SelectedBuildColorSlot;
                 SetToolColor(localColorData.Colors[localColorData.SelectedSlot]);
             }
 
@@ -513,7 +519,7 @@ namespace Digi.PaintGun
             {
                 if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.SWITCH_LEFT) || MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.SWITCH_RIGHT))
                 {
-                    localColorData.SelectedSlot = (byte)MyAPIGateway.Session.Player.SelectedBuildColorSlot;
+                    localColorData.SelectedSlot = MyAPIGateway.Session.Player.SelectedBuildColorSlot;
                     SetToolColor(localColorData.Colors[localColorData.SelectedSlot]);
                 }
             }
@@ -526,9 +532,9 @@ namespace Digi.PaintGun
 
             if(localColorData.SelectedSlot != prevSelectedColorSlot || localColorData.SelectedSkinIndex != prevSelectedSkinIndex)
             {
-                prevSelectedColorSlot = (byte)localColorData.SelectedSlot;
-                prevSelectedSkinIndex = (byte)localColorData.SelectedSkinIndex;
-                SendToServer_SelectedSlots((byte)localColorData.SelectedSlot, (byte)localColorData.SelectedSkinIndex);
+                prevSelectedColorSlot = localColorData.SelectedSlot;
+                prevSelectedSkinIndex = localColorData.SelectedSkinIndex;
+                SendToServer_SelectedSlots(localColorData.SelectedSlot, localColorData.SelectedSkinIndex);
             }
         }
 
@@ -626,7 +632,7 @@ namespace Digi.PaintGun
                     do
                     {
                         if(--localColorData.SelectedSkinIndex < 0)
-                            localColorData.SelectedSkinIndex = (byte)(BlockSkins.Count - 1);
+                            localColorData.SelectedSkinIndex = (BlockSkins.Count - 1);
                     }
                     while(!BlockSkins[localColorData.SelectedSkinIndex].LocallyOwned);
                 }
@@ -642,7 +648,7 @@ namespace Digi.PaintGun
                     else
                     {
                         if(--localColorData.SelectedSlot < 0)
-                            localColorData.SelectedSlot = (byte)(localColorData.Colors.Count - 1);
+                            localColorData.SelectedSlot = (localColorData.Colors.Count - 1);
                     }
                 }
             }
@@ -709,7 +715,7 @@ namespace Digi.PaintGun
                         var targetSkin = (selectedSlimBlock != null ? selectedSlimBlock.SkinSubtypeId : selectedPlayerBlockSkin);
                         var blockMaterial = new BlockMaterial(targetColor, targetSkin);
 
-                        PickColorAndSkinFromBlock((byte)localColorData.SelectedSlot, blockMaterial);
+                        PickColorAndSkinFromBlock(localColorData.SelectedSlot, blockMaterial);
                     }
                     else
                     {
@@ -1044,13 +1050,15 @@ namespace Digi.PaintGun
                     if(ownedSkins > 0)
                     {
                         float iconSize = 0.0030f * scaleFOV;
-                        float selectedIconSize = 0.0034f * scaleFOV;
                         var selectedSkinIndex = localColorData.SelectedSkinIndex;
                         double iconSpacingAdd = 0.0012 * scaleFOV;
                         double iconSpacingWidth = (iconSize * 2) + iconSpacingAdd;
                         float iconBgSpacingAddWidth = 0.0006f * scaleFOV;
                         float iconBgSpacingAddHeight = 0.0008f * scaleFOV;
                         double halfOwnedSkins = ownedSkins * 0.5;
+                        float iconBgSpacingAddHeight = 0.0006f * scaleFOV;
+                        //float iconBgSpacingAddWidth = 0.0006f * scaleFOV;
+                        //float iconBgSpacingAddHeight = 0.0008f * scaleFOV;
 
                         var pos = worldPos;
 
@@ -1060,6 +1068,7 @@ namespace Digi.PaintGun
                         MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_BACKGROUND, PALETTE_COLOR_BG * bgAlpha, pos, camMatrix.Left, camMatrix.Up, (float)(iconSpacingWidth * halfOwnedSkins) + iconBgSpacingAddWidth, iconSize + iconBgSpacingAddHeight, Vector2.Zero, UI_BG_BLENDTYPE);
 
                         pos += camMatrix.Left * ((iconSpacingWidth * halfOwnedSkins) - (iconSpacingWidth * 0.5));
+                        const int MAX_VIEW_SKINS_HALF = ((MAX_VIEW_SKINS - 1) / 2);
 
                         for(int i = 0; i < BlockSkins.Count; ++i)
                         {
@@ -1069,6 +1078,7 @@ namespace Digi.PaintGun
                                 continue;
 
                             if(selectedSkinIndex == i)
+                            bool ignoreDistance = false;
                             {
                                 MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_COLOR, Color.White, pos, camMatrix.Left, camMatrix.Up, selectedIconSize, selectedIconSize, Vector2.Zero, UI_FG_BLENDTYPE);
                             }
@@ -1076,6 +1086,12 @@ namespace Digi.PaintGun
                             MyTransparentGeometry.AddBillboardOriented(skin.Icon, Color.White, pos, camMatrix.Left, camMatrix.Up, iconSize, iconSize, Vector2.Zero, UI_FG_BLENDTYPE);
 
                             pos += camMatrix.Right * iconSpacingWidth;
+                                if(index >= BlockSkins.Count)
+                        else
+
+
+                                pos += camMatrix.Right * iconSpacingWidth;
+                            }
                         }
                     }
                 }
@@ -2057,7 +2073,7 @@ namespace Digi.PaintGun
                 if(trigger)
                 {
                     SendToServer_ColorPickMode(false);
-                    PickColorAndSkinFromBlock((byte)localColorData.SelectedSlot, blockMaterial);
+                    PickColorAndSkinFromBlock(localColorData.SelectedSlot, blockMaterial);
                 }
                 else
                 {
@@ -2246,7 +2262,7 @@ namespace Digi.PaintGun
 
                 var targetMaterial = new BlockMaterial(selectedPlayerColorMask, selectedPlayerBlockSkin);
 
-                PickColorAndSkinFromBlock((byte)localColorData.SelectedSlot, targetMaterial);
+                PickColorAndSkinFromBlock(localColorData.SelectedSlot, targetMaterial);
             }
             else
             {
@@ -2323,7 +2339,7 @@ namespace Digi.PaintGun
                 }
                 else
                 {
-                    var percent = ColorPercent(blockColor, colorMask);
+                    int percent = ColorPercent(blockColor, colorMask);
 
                     SetGUIToolStatus(0, $"Painting {percent}%...");
                 }
@@ -2354,7 +2370,7 @@ namespace Digi.PaintGun
                 }
                 else
                 {
-                    var percent = ColorPercent(blockColor, DEFAULT_COLOR);
+                    int percent = ColorPercent(blockColor, DEFAULT_COLOR);
 
                     SetGUIToolStatus(0, $"Removing paint {percent}%...");
                 }
@@ -2485,7 +2501,7 @@ namespace Digi.PaintGun
 
                         var material = new BlockMaterial(colorMask, BlockSkins[localColorData.SelectedSkinIndex].SubtypeId);
 
-                        PickColorAndSkinFromBlock((byte)localColorData.SelectedSlot, material);
+                        PickColorAndSkinFromBlock(localColorData.SelectedSlot, material);
                         return;
                     }
 

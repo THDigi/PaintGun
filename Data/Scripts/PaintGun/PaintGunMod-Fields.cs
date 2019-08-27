@@ -75,8 +75,8 @@ namespace Digi.PaintGun
             new MyHudBlockInfo.ComponentInfo(),
         };
 
-        private byte prevSelectedColorSlot = 0;
-        private byte prevSelectedSkinIndex = 0;
+        private int prevSelectedColorSlot = 0;
+        private int prevSelectedSkinIndex = 0;
 
         public PaintGunItem localHeldTool = null;
         public PlayerColorData localColorData = null;

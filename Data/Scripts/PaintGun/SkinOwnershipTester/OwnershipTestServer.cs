@@ -202,12 +202,12 @@ namespace Digi.PaintGun.SkinOwnershipTester
                         if(tempGrids.Count == 0)
                             NeedsUpdate = false;
 
-                        var bytes = MyAPIGateway.Utilities.SerializeToBinary<PacketData>(packetResult);
+                        var rawData = MyAPIGateway.Utilities.SerializeToBinary<PacketData>(packetResult);
 
                         if(PaintGunMod.DEBUG)
-                            Log.Info($"[DEBUG] {GetType().Name}.Update() :: bytes={bytes.Length}:{string.Join(",", bytes)}");
+                            Log.Info($"[DEBUG] {GetType().Name}.Update() :: rawData={rawData.Length}:{string.Join(",", rawData)}");
 
-                        MyAPIGateway.Multiplayer.SendMessageTo(PaintGunMod.PACKET, bytes, steamId, true);
+                        MyAPIGateway.Multiplayer.SendMessageTo(PaintGunMod.PACKET, rawData, steamId, true);
                     }
                 }
             }

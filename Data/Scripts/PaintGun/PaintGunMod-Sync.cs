@@ -11,13 +11,13 @@ namespace Digi.PaintGun
     public partial class PaintGunMod
     {
         #region Receives
-        public void ReceivedPacket(byte[] bytes)
+        public void ReceivedPacket(byte[] rawData)
         {
             PacketData packet = null;
 
             try
             {
-                packet = MyAPIGateway.Utilities.SerializeFromBinary<PacketData>(bytes); // this will throw errors on invalid data
+                packet = MyAPIGateway.Utilities.SerializeFromBinary<PacketData>(rawData); // this will throw errors on invalid data
 
                 if(packet == null)
                     return;
@@ -95,7 +95,7 @@ namespace Digi.PaintGun
                         if(skipSteamId > 0 && skipSteamId == p.SteamUserId) // don't send to the skipped ID
                             continue;
 
-                        MyAPIGateway.Multiplayer.SendMessageTo(PACKET, bytes, p.SteamUserId, true);
+                        MyAPIGateway.Multiplayer.SendMessageTo(PACKET, rawData, p.SteamUserId, true);
 
                         if(DEBUG)
                             Log.Info($"relaying {packet.Type} to {p.DisplayName} ({p.SteamUserId})");
@@ -106,7 +106,7 @@ namespace Digi.PaintGun
             }
             catch(Exception e)
             {
-                Log.Info($"ReceivedPacket() :: bytes={bytes.Length}:{string.Join(",", bytes)}\nPacket: {packet}");
+                Log.Info($"ReceivedPacket() :: rawData={rawData.Length}:{string.Join(",", rawData)}\nPacket: {packet}");
                 Log.Error(e);
             }
         }
@@ -354,13 +354,13 @@ namespace Digi.PaintGun
             foreach(var kv in playerColorData)
             {
                 if(IsPlayerOnline(kv.Key))
-                    SendToPlayer_SendColorList(steamId, kv.Key, (byte)kv.Value.SelectedSlot, kv.Value.Colors);
+                    SendToPlayer_SendColorList(steamId, kv.Key, kv.Value.SelectedSlot, kv.Value.Colors);
             }
 
             if(EnsureColorDataEntry(steamId)) // send this player's colors to everyone if available, otherwise they'll be sent automatically when they are available
             {
                 var pcd = playerColorData[steamId];
-                SendToPlayer_SendColorList(0, steamId, (byte)pcd.SelectedSlot, pcd.Colors);
+                SendToPlayer_SendColorList(0, steamId, pcd.SelectedSlot, pcd.Colors);
             }
 
             return false; // don't relay to clients
@@ -422,12 +422,12 @@ namespace Digi.PaintGun
             {
                 packetConsumeAmmo.EntityId = entId;
 
-                var bytes = MyAPIGateway.Utilities.SerializeToBinary<PacketData>(packetConsumeAmmo);
+                var rawData = MyAPIGateway.Utilities.SerializeToBinary<PacketData>(packetConsumeAmmo);
 
                 if(DEBUG)
-                    Log.Info($"SendToServer_RemoveAmmo({entId}) :: bytes={bytes.Length}:{string.Join(",", bytes)}");
+                    Log.Info($"SendToServer_RemoveAmmo({entId}) :: rawData={rawData.Length}:{string.Join(",", rawData)}");
 
-                MyAPIGateway.Multiplayer.SendMessageToServer(PACKET, bytes, true);
+                MyAPIGateway.Multiplayer.SendMessageToServer(PACKET, rawData, true);
             }
             catch(Exception e)
             {
@@ -446,12 +446,12 @@ namespace Digi.PaintGun
                 packetPaint.MirrorPlanes = mirrorPlanes;
                 packetPaint.OddAxis = odd;
 
-                var bytes = MyAPIGateway.Utilities.SerializeToBinary<PacketData>(packetPaint);
+                var rawData = MyAPIGateway.Utilities.SerializeToBinary<PacketData>(packetPaint);
 
                 if(DEBUG)
-                    Log.Info($"SendToServer_PaintBlock() :: bytes={bytes.Length}:{string.Join(",", bytes)}");
+                    Log.Info($"SendToServer_PaintBlock() :: rawData={rawData.Length}:{string.Join(",", rawData)}");
 
-                MyAPIGateway.Multiplayer.SendMessageToServer(PACKET, bytes, true);
+                MyAPIGateway.Multiplayer.SendMessageToServer(PACKET, rawData, true);
 
                 // do the action locally as well
                 if(mirrorPlanes.HasValue)
@@ -475,12 +475,12 @@ namespace Digi.PaintGun
                 packetReplaceColor.Paint = new SerializedPaintMaterial(newPaint);
                 packetReplaceColor.OldPaint = new SerializedBlockMaterial(oldPaint);
 
-                var bytes = MyAPIGateway.Utilities.SerializeToBinary<PacketData>(packetReplaceColor);
+                var rawData = MyAPIGateway.Utilities.SerializeToBinary<PacketData>(packetReplaceColor);
 
                 if(DEBUG)
-                    Log.Info($"SendToServer_ReplaceColor() :: bytes={bytes.Length}:{string.Join(",", bytes)}");
+                    Log.Info($"SendToServer_ReplaceColor() :: rawData={rawData.Length}:{string.Join(",", rawData)}");
 
-                MyAPIGateway.Multiplayer.SendMessageToServer(PACKET, bytes, true);
+                MyAPIGateway.Multiplayer.SendMessageToServer(PACKET, rawData, true);
 
                 // do the action locally as well
                 ReplaceColorInGrid(grid, oldPaint, newPaint, useGridSystem, true);
@@ -491,7 +491,7 @@ namespace Digi.PaintGun
             }
         }
 
-        public void SendToServer_SelectedSlots(byte? colorSlot, byte? skinIndex)
+        public void SendToServer_SelectedSlots(int? colorSlot, int? skinIndex)
         {
             if(!colorSlot.HasValue && !skinIndex.HasValue)
                 return;
@@ -500,12 +500,12 @@ namespace Digi.PaintGun
             packetSelectedSlots.Slot = colorSlot;
             packetSelectedSlots.Paint = new SerializedPaintMaterial(null, skinIndex);
 
-            var bytes = MyAPIGateway.Utilities.SerializeToBinary<PacketData>(packetSelectedSlots);
+            var rawData = MyAPIGateway.Utilities.SerializeToBinary<PacketData>(packetSelectedSlots);
 
             if(DEBUG)
-                Log.Info($"SendToServer_SelectedSlots({colorSlot}, {skinIndex}) :: bytes={bytes.Length}:{string.Join(",", bytes)}");
+                Log.Info($"SendToServer_SelectedSlots({colorSlot}, {skinIndex}) :: rawData={rawData.Length}:{string.Join(",", rawData)}");
 
-            MyAPIGateway.Multiplayer.SendMessageToServer(PACKET, bytes, true);
+            MyAPIGateway.Multiplayer.SendMessageToServer(PACKET, rawData, true);
         }
 
         public void SendToServer_ColorPickMode(bool mode)
@@ -515,12 +515,12 @@ namespace Digi.PaintGun
                 packetColorPickMode.Type = (mode ? PacketAction.COLOR_PICK_ON : PacketAction.COLOR_PICK_OFF);
                 packetColorPickMode.SteamId = MyAPIGateway.Multiplayer.MyId;
 
-                var bytes = MyAPIGateway.Utilities.SerializeToBinary<PacketData>(packetColorPickMode);
+                var rawData = MyAPIGateway.Utilities.SerializeToBinary<PacketData>(packetColorPickMode);
 
                 if(DEBUG)
-                    Log.Info($"SendToServer_ColorPickMode({mode}) :: bytes={bytes.Length}:{string.Join(",", bytes)}");
+                    Log.Info($"SendToServer_ColorPickMode({mode}) :: rawData={rawData.Length}:{string.Join(",", rawData)}");
 
-                MyAPIGateway.Multiplayer.SendMessageToServer(PACKET, bytes, true);
+                MyAPIGateway.Multiplayer.SendMessageToServer(PACKET, rawData, true);
 
                 colorPickMode = mode;
                 prevColorMaskPreview = GetLocalBuildColorMask();
@@ -531,7 +531,7 @@ namespace Digi.PaintGun
             }
         }
 
-        public void PickColorAndSkinFromBlock(byte slot, BlockMaterial blockMaterial)
+        public void PickColorAndSkinFromBlock(int slot, BlockMaterial blockMaterial)
         {
             if(SendToServer_SetColorAndSkin(slot, blockMaterial, true))
                 PlayHudSound(SOUND_HUD_MOUSE_CLICK, 0.25f);
@@ -539,12 +539,12 @@ namespace Digi.PaintGun
                 PlayHudSound(SOUND_HUD_UNABLE, SOUND_HUD_UNABLE_VOLUME, SOUND_HUD_UNABLE_TIMEOUT);
         }
 
-        private bool SendToServer_SetColorAndSkin(byte slot, BlockMaterial blockMaterial, bool checkAndSelect = true)
+        private bool SendToServer_SetColorAndSkin(int slot, BlockMaterial blockMaterial, bool checkAndSelect = true)
         {
             try
             {
-                byte? selectedColor = null;
-                byte? selectedSkin = null;
+                int? selectedColor = null;
+                int? selectedSkin = null;
 
                 if(checkAndSelect)
                 {
@@ -556,7 +556,7 @@ namespace Digi.PaintGun
                         return false;
                     }
 
-                    for(byte i = 0; i < localColorData.Colors.Count; i++)
+                    for(int i = 0; i < localColorData.Colors.Count; i++)
                     {
                         if(ColorMaskEquals(localColorData.Colors[i], blockMaterial.ColorMask))
                         {
@@ -602,12 +602,12 @@ namespace Digi.PaintGun
                     packetSetColor.Slot = slot;
                     packetSetColor.Paint = new SerializedPaintMaterial(ColorMaskToRGB(blockMaterial.ColorMask), null);
 
-                    var bytes = MyAPIGateway.Utilities.SerializeToBinary<PacketData>(packetSetColor);
+                    var rawData = MyAPIGateway.Utilities.SerializeToBinary<PacketData>(packetSetColor);
 
                     if(DEBUG)
-                        Log.Info($"SendToServer_SetColorAndSkin({slot}, {blockMaterial}, {checkAndSelect}) :: bytes={bytes.Length}:{string.Join(",", bytes)}");
+                        Log.Info($"SendToServer_SetColorAndSkin({slot}, {blockMaterial}, {checkAndSelect}) :: rawData={rawData.Length}:{string.Join(",", rawData)}");
 
-                    MyAPIGateway.Multiplayer.SendMessageToServer(PACKET, bytes, true);
+                    MyAPIGateway.Multiplayer.SendMessageToServer(PACKET, rawData, true);
 
                     MyAPIGateway.Session.Player.ChangeOrSwitchToColor(blockMaterial.ColorMask);
                     ShowNotification(0, $"Color slot {localColorData.SelectedSlot + 1} set to {ColorMaskToString(blockMaterial.ColorMask)}", MyFontEnum.White, 2000);
@@ -629,12 +629,12 @@ namespace Digi.PaintGun
             {
                 packetRequestColorList.SteamId = steamId;
 
-                var bytes = MyAPIGateway.Utilities.SerializeToBinary<PacketData>(packetRequestColorList);
+                var rawData = MyAPIGateway.Utilities.SerializeToBinary<PacketData>(packetRequestColorList);
 
                 if(DEBUG)
-                    Log.Info($"SendToServer_RequestColorList({steamId}) :: bytes={bytes.Length}:{string.Join(",", bytes)}");
+                    Log.Info($"SendToServer_RequestColorList({steamId}) :: rawData={rawData.Length}:{string.Join(",", rawData)}");
 
-                MyAPIGateway.Multiplayer.SendMessageToServer(PACKET, bytes, true);
+                MyAPIGateway.Multiplayer.SendMessageToServer(PACKET, rawData, true);
             }
             catch(Exception e)
             {
@@ -642,7 +642,7 @@ namespace Digi.PaintGun
             }
         }
 
-        public void SendToAllPlayers_UpdateColor(ulong colorOwner, byte slot, Vector3 colorMask)
+        public void SendToAllPlayers_UpdateColor(ulong colorOwner, int slot, Vector3 colorMask)
         {
             try
             {
@@ -659,10 +659,10 @@ namespace Digi.PaintGun
                 packetUpdateColor.Slot = slot;
                 packetUpdateColor.Paint = new SerializedPaintMaterial(ColorMaskToRGB(colorMask), null);
 
-                var bytes = MyAPIGateway.Utilities.SerializeToBinary<PacketData>(packetUpdateColor);
+                var rawData = MyAPIGateway.Utilities.SerializeToBinary<PacketData>(packetUpdateColor);
 
                 if(DEBUG)
-                    Log.Info($"SendToAllPlayers_UpdateColor({colorOwner}, {slot}, {colorMask}) :: bytes={bytes.Length}:{string.Join(",", bytes)}");
+                    Log.Info($"SendToAllPlayers_UpdateColor({colorOwner}, {slot}, {colorMask}) :: rawData={rawData.Length}:{string.Join(",", rawData)}");
 
                 var myId = MyAPIGateway.Multiplayer.MyId;
 
@@ -671,7 +671,7 @@ namespace Digi.PaintGun
                     if(myId == p.SteamUserId) // don't re-send to yourself
                         continue;
 
-                    MyAPIGateway.Multiplayer.SendMessageTo(PACKET, bytes, p.SteamUserId, true);
+                    MyAPIGateway.Multiplayer.SendMessageTo(PACKET, rawData, p.SteamUserId, true);
                 }
 
                 players.Clear();
@@ -682,7 +682,7 @@ namespace Digi.PaintGun
             }
         }
 
-        public void SendToPlayer_SendColorList(ulong sendTo, ulong colorOwner, byte slot, List<Vector3> colorList)
+        public void SendToPlayer_SendColorList(ulong sendTo, ulong colorOwner, int slot, List<Vector3> colorList)
         {
             try
             {
@@ -703,10 +703,10 @@ namespace Digi.PaintGun
                     packetUpdateColorList.PackedColors[i] = ColorMaskToRGB(colorList[i]);
                 }
 
-                var bytes = MyAPIGateway.Utilities.SerializeToBinary<PacketData>(packetUpdateColorList);
+                var rawData = MyAPIGateway.Utilities.SerializeToBinary<PacketData>(packetUpdateColorList);
 
                 if(DEBUG)
-                    Log.Info($"SendToPlayer_SendColorList({sendTo}, {colorOwner}, {slot}, ...) :: bytes={bytes.Length}:{string.Join(",", bytes)}");
+                    Log.Info($"SendToPlayer_SendColorList({sendTo}, {colorOwner}, {slot}, ...) :: rawData={rawData.Length}:{string.Join(",", rawData)}");
 
                 if(sendTo == 0)
                 {
@@ -720,14 +720,14 @@ namespace Digi.PaintGun
                         if(myId == p.SteamUserId) // don't re-send to yourself
                             continue;
 
-                        MyAPIGateway.Multiplayer.SendMessageTo(PACKET, bytes, p.SteamUserId, true);
+                        MyAPIGateway.Multiplayer.SendMessageTo(PACKET, rawData, p.SteamUserId, true);
                     }
 
                     players.Clear();
                 }
                 else
                 {
-                    MyAPIGateway.Multiplayer.SendMessageTo(PACKET, bytes, sendTo, true);
+                    MyAPIGateway.Multiplayer.SendMessageTo(PACKET, rawData, sendTo, true);
                 }
             }
             catch(Exception e)
@@ -745,12 +745,12 @@ namespace Digi.PaintGun
                 packetPaintGunFiring.Type = (firing ? PacketAction.GUN_FIRING_ON : PacketAction.GUN_FIRING_OFF);
                 packetPaintGunFiring.SteamId = MyAPIGateway.Multiplayer.MyId;
 
-                var bytes = MyAPIGateway.Utilities.SerializeToBinary<PacketData>(packetPaintGunFiring);
+                var rawData = MyAPIGateway.Utilities.SerializeToBinary<PacketData>(packetPaintGunFiring);
 
                 if(DEBUG)
-                    Log.Info($"SendToServer_PaintGunFiring({item}, {firing}) :: bytes={bytes.Length}:{string.Join(",", bytes)}");
+                    Log.Info($"SendToServer_PaintGunFiring({item}, {firing}) :: rawData={rawData.Length}:{string.Join(",", rawData)}");
 
-                MyAPIGateway.Multiplayer.SendMessageToServer(PACKET, bytes, true);
+                MyAPIGateway.Multiplayer.SendMessageToServer(PACKET, rawData, true);
             }
             catch(Exception e)
             {

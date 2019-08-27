@@ -5,7 +5,6 @@ using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character.Components;
 using Sandbox.ModAPI;
 using VRage.Game;
-using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.Utils;
 using VRageMath;
@@ -14,10 +13,10 @@ namespace Digi.PaintGun
 {
     public partial class PaintGunMod
     {
-        static byte ColorPercent(Vector3 blockColor, Vector3 paintColor)
+        static int ColorPercent(Vector3 blockColor, Vector3 paintColor)
         {
             float percentScale = (Math.Abs(paintColor.X - blockColor.X) + Math.Abs(paintColor.Y - blockColor.Y) + Math.Abs(paintColor.Z - blockColor.Z)) / 3f;
-            return (byte)MathHelper.Clamp((1 - percentScale) * 99, 0, 99);
+            return (int)MathHelper.Clamp((1 - percentScale) * 99, 0, 99);
         }
 
         static float ColorScalar(Vector3 blockColor, Vector3 paintColor)
@@ -59,7 +58,7 @@ namespace Digi.PaintGun
         {
             bool changed = false;
 
-            for(byte i = 0; i < oldList.Count; i++)
+            for(int i = 0; i < oldList.Count; i++)
             {
                 if(!ColorMaskEquals(oldList[i], newList[i]))
                 {
@@ -220,7 +219,7 @@ namespace Digi.PaintGun
         {
             var blockSkins = PaintGunMod.instance.BlockSkins;
 
-            for(byte i = 0; i < blockSkins.Count; i++)
+            for(int i = 0; i < blockSkins.Count; i++)
             {
                 var skin = blockSkins[i];
 

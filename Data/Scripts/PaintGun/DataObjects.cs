@@ -73,7 +73,7 @@ namespace Digi.PaintGun
         public SerializedBlockMaterial OldPaint;
 
         [ProtoMember(13)]
-        public byte? Slot;
+        public int? Slot;
 
         [ProtoMember(20)]
         public OddAxis OddAxis;
@@ -207,9 +207,9 @@ namespace Digi.PaintGun
         public readonly Color? Color;
 
         [ProtoMember(2)]
-        public readonly byte? SkinIndex;
+        public readonly int? SkinIndex;
 
-        public SerializedPaintMaterial(Color? color, byte? skinIndex)
+        public SerializedPaintMaterial(Color? color, int? skinIndex)
         {
             Color = color;
             SkinIndex = skinIndex;
@@ -248,9 +248,9 @@ namespace Digi.PaintGun
         public readonly Color Color;
 
         [ProtoMember(2)]
-        public readonly byte SkinIndex;
+        public readonly int SkinIndex;
 
-        public SerializedBlockMaterial(Color color, byte skinIndex)
+        public SerializedBlockMaterial(Color color, int skinIndex)
         {
             Color = color;
             SkinIndex = skinIndex;
@@ -263,6 +263,7 @@ namespace Digi.PaintGun
             var skin = PaintGunMod.GetSkinInfo(material.Skin);
             SkinIndex = skin.Index;
         }
+
         public override string ToString()
         {
             return $"{Color.ToString()}/{SkinIndex.ToString()}";
