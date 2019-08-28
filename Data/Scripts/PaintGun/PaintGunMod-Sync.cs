@@ -695,15 +695,15 @@ namespace Digi.PaintGun
                     return;
                 }
 
-                packetUpdateColor.SteamId = colorOwner;
-                packetUpdateColor.Slot = slot;
+                packetUpdateColorList.SteamId = colorOwner;
+                packetUpdateColorList.Slot = slot;
 
                 for(int i = 0; i < COLOR_PALETTE_SIZE; i++)
                 {
-                    packetUpdateColor.PackedColors[i] = ColorMaskToRGB(colorList[i]);
+                    packetUpdateColorList.PackedColors[i] = ColorMaskToRGB(colorList[i]);
                 }
 
-                var bytes = MyAPIGateway.Utilities.SerializeToBinary<PacketData>(packetUpdateColor);
+                var bytes = MyAPIGateway.Utilities.SerializeToBinary<PacketData>(packetUpdateColorList);
 
                 if(DEBUG)
                     Log.Info($"SendToPlayer_SendColorList({sendTo}, {colorOwner}, {slot}, ...) :: bytes={bytes.Length}:{string.Join(",", bytes)}");
