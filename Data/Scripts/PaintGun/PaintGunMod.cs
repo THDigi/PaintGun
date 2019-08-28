@@ -1642,7 +1642,7 @@ namespace Digi.PaintGun
                 DrawBlockSelection(selectedSlimBlock, !selectedInvalid, useYellow);
 
                 // symmetry highlight
-                if(!replaceAllMode && SymmetryAccess && MyCubeBuilder.Static.UseSymmetry && (selectedGrid.XSymmetryPlane.HasValue || selectedGrid.YSymmetryPlane.HasValue || selectedGrid.ZSymmetryPlane.HasValue))
+                if(!replaceAllMode && !colorPickMode && SymmetryAccess && MyCubeBuilder.Static.UseSymmetry && (selectedGrid.XSymmetryPlane.HasValue || selectedGrid.YSymmetryPlane.HasValue || selectedGrid.ZSymmetryPlane.HasValue))
                 {
                     alreadyMirrored.Clear();
                     mirroredValid = (!selectedInvalid && !useYellow ? 1 : 0);
