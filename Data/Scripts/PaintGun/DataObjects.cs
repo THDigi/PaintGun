@@ -277,15 +277,14 @@ namespace Digi.PaintGun
 
     public class SkinInfo
     {
-        public readonly byte Index;
+        public int Index;
         public readonly MyStringHash SubtypeId;
         public readonly string Name;
         public readonly MyStringId Icon;
         public bool LocallyOwned = true;
 
-        public SkinInfo(byte index, MyStringHash subtypeId, string name, string icon)
+        public SkinInfo(MyStringHash subtypeId, string name, string icon)
         {
-            Index = index;
             SubtypeId = subtypeId;
             Name = name;
             Icon = MyStringId.GetOrCompute(icon);

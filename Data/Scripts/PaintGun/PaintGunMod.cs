@@ -30,22 +30,7 @@ namespace Digi.PaintGun
                 Log.ModName = MOD_NAME;
                 Log.AutoClose = false;
 
-                BlockSkins = new List<SkinInfo>(9)
-                {
-                    new SkinInfo(0, MyStringHash.NullOrEmpty, "Default", "PaintGun_SkinIcon_Default"),
-                    new SkinInfo(1, MyStringHash.GetOrCompute("Clean_Armor"), "Clean", "PaintGun_SkinIcon_Clean"),
-                    new SkinInfo(2, MyStringHash.GetOrCompute("CarbonFibre_Armor"), "Carbon Fiber", "PaintGun_SkinIcon_CarbonFibre"),
-                    new SkinInfo(3, MyStringHash.GetOrCompute("DigitalCamouflage_Armor"), "Digital Camouflage", "PaintGun_SkinIcon_DigitalCamouflage"),
-                    new SkinInfo(4, MyStringHash.GetOrCompute("Golden_Armor"), "Golden", "PaintGun_SkinIcon_Golden"),
-                    new SkinInfo(5, MyStringHash.GetOrCompute("Silver_Armor"), "Silver", "PaintGun_SkinIcon_Silver"),
-                    new SkinInfo(6, MyStringHash.GetOrCompute("Glamour_Armor"), "Glamour", "PaintGun_SkinIcon_Glamour"),
-                    new SkinInfo(7, MyStringHash.GetOrCompute("Disco_Armor"), "Disco", "PaintGun_SkinIcon_Disco"),
-                    new SkinInfo(8, MyStringHash.GetOrCompute("Wood_Armor"), "Wood", "PaintGun_SkinIcon_Wood"),
-                    new SkinInfo(9, MyStringHash.GetOrCompute("Mossy_Armor"), "Mossy", "PaintGun_SkinIcon_Mossy"),
-                };
-
-                    Log.Info($"TestStruct={test}; rawData={string.Join(", ", rawData)}");
-                }
+                InitBlockSkins();
             }
             catch(Exception e)
             {
@@ -54,6 +39,68 @@ namespace Digi.PaintGun
             }
         }
 
+        void InitBlockSkins()
+        {
+            const string ARMOR_SUFFIX = "_Armor";
+            const string SKIN_ICON_PREFIX = "PaintGun_SkinIcon_";
+
+            var definedIcons = new HashSet<string>();
+
+            foreach(var def in MyDefinitionManager.Static.GetTransparentMaterialDefinitions())
+            {
+                if(def.Id.SubtypeName.StartsWith(SKIN_ICON_PREFIX))
+                    definedIcons.Add(def.Id.SubtypeName);
+            }
+
+            int skins = 0;
+            foreach(var assetDef in MyDefinitionManager.Static.GetAssetModifierDefinitions())
+            {
+                if(assetDef.Id.SubtypeName.EndsWith(ARMOR_SUFFIX))
+                    skins++;
+            }
+
+            BlockSkins = new List<SkinInfo>(skins);
+            var sb = new StringBuilder(64);
+
+            foreach(var assetDef in MyDefinitionManager.Static.GetAssetModifierDefinitions())
+            {
+                if(assetDef.Id.SubtypeName.EndsWith(ARMOR_SUFFIX))
+                {
+                    sb.Clear();
+                    sb.Append(assetDef.Id.SubtypeName);
+                    sb.Length -= ARMOR_SUFFIX.Length;
+
+                    var nameId = sb.ToString();
+
+                    // skip first character
+                    for(int i = sb.Length - 1; i >= 1; --i)
+                    {
+                        var c = sb[i];
+
+                        if(char.IsUpper(c))
+                            sb.Insert(i, ' ');
+                    }
+
+                    var name = sb.ToString();
+                    var icon = SKIN_ICON_PREFIX + nameId;
+
+                    if(!definedIcons.Contains(icon))
+                        icon = SKIN_ICON_PREFIX + "Unknown";
+
+                    BlockSkins.Add(new SkinInfo(assetDef.Id.SubtypeId, name, icon));
+                }
+            }
+
+            // consistent order for network sync, also matches with what the game UI sorts them by
+            BlockSkins.Sort((a, b) => a.SubtypeId.String.CompareTo(b.SubtypeId.String));
+
+            // "no skin" is always first
+            BlockSkins.Insert(0, new SkinInfo(MyStringHash.NullOrEmpty, "No Skin", SKIN_ICON_PREFIX + "NoSkin"));
+
+            // assign final index to the value too
+            for(int i = 0; i < BlockSkins.Count; ++i)
+            {
+                BlockSkins[i].Index = i;
             }
         }
 

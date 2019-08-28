@@ -4,15 +4,36 @@
     <TransparentMaterial>
       <Id>
         <TypeId>TransparentMaterialDefinition</TypeId>
-        <SubtypeId>PaintGun_SkinIcon_Default</SubtypeId>
+        <SubtypeId>PaintGun_SkinIcon_NoSkin</SubtypeId>
       </Id>
       <AlphaMistingEnable>false</AlphaMistingEnable>
       <AlphaSaturation>1</AlphaSaturation>
       <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
       <IgnoreDepth>true</IgnoreDepth>
       <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
-      <!-- <Texture>Textures\Sprites\Cross.dds</Texture> -->
-      <Texture>Textures\UI\BlockSkin_Default.dds</Texture>
+      <Texture>Textures\Sprites\Cross.dds</Texture>
+      <UseAtlas>false</UseAtlas>
+      <Reflectivity>0</Reflectivity>
+      <UVOffset>
+        <X>0</X>
+        <Y>0</Y>
+      </UVOffset>
+      <UVSize>
+        <X>1</X>
+        <Y>1</Y>
+      </UVSize>
+    </TransparentMaterial>
+    <TransparentMaterial>
+      <Id>
+        <TypeId>TransparentMaterialDefinition</TypeId>
+        <SubtypeId>PaintGun_SkinIcon_Unknown</SubtypeId>
+      </Id>
+      <AlphaMistingEnable>false</AlphaMistingEnable>
+      <AlphaSaturation>1</AlphaSaturation>
+      <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
+      <IgnoreDepth>true</IgnoreDepth>
+      <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
+      <Texture>Textures\GUI\Controls\button_info_symbol.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
       <UVOffset>
@@ -34,8 +55,7 @@
       <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
       <IgnoreDepth>true</IgnoreDepth>
       <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
-      <!-- <Texture>Textures\GUI\Icons\Skins\Armor\CleanArmor.dds</Texture> -->
-      <Texture>Textures\UI\BlockSkin_Clean.dds</Texture>
+      <Texture>Textures\GUI\Icons\Skins\Armor\CleanArmor.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
       <UVOffset>
@@ -50,15 +70,14 @@
     <TransparentMaterial>
       <Id>
         <TypeId>TransparentMaterialDefinition</TypeId>
-        <SubtypeId>PaintGun_SkinIcon_CarbonFiber</SubtypeId>
+        <SubtypeId>PaintGun_SkinIcon_CarbonFibre</SubtypeId>
       </Id>
       <AlphaMistingEnable>false</AlphaMistingEnable>
       <AlphaSaturation>1</AlphaSaturation>
       <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
       <IgnoreDepth>true</IgnoreDepth>
       <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
-      <!-- <Texture>Textures\GUI\Icons\Skins\Armor\CarbonFiber.dds</Texture> -->
-      <Texture>Textures\UI\BlockSkin_CarbonFiber.dds</Texture>
+      <Texture>Textures\GUI\Icons\Skins\Armor\CarbonFiber.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
       <UVOffset>
@@ -80,8 +99,7 @@
       <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
       <IgnoreDepth>true</IgnoreDepth>
       <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
-      <!-- <Texture>Textures\GUI\Icons\Skins\Armor\DigitalCamouflage.dds</Texture> -->
-      <Texture>Textures\UI\BlockSkin_DigitalCamouflage.dds</Texture>
+      <Texture>Textures\GUI\Icons\Skins\Armor\DigitalCamouflage.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
       <UVOffset>
