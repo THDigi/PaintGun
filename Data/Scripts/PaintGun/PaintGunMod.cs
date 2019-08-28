@@ -2183,7 +2183,7 @@ namespace Digi.PaintGun
                 else
                     SetGUIToolStatus(0, "Click to replace material.", "lime");
 
-                SetGUIToolStatus(1, $"[{assigned}] Replace mode: {(replaceGridSystem ? "Ship-wide" : "Grid")}", (replaceGridSystem ? "yellow" : null));
+                SetGUIToolStatus(1, $"[{assigned}] {(replaceGridSystem ? "<color=yellow>" : "")}Replace mode: {(replaceGridSystem ? "Ship-wide" : "Grid")}");
 
                 return (selectedInvalid ? false : true);
             }
