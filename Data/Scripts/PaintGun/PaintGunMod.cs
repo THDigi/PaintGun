@@ -349,6 +349,8 @@ namespace Digi.PaintGun
             bool oddY = (odd & OddAxis.Y) == OddAxis.Y;
             bool oddZ = (odd & OddAxis.Z) == OddAxis.Z;
 
+            alreadyMirrored.Clear();
+
             var mirrorX = MirrorPaint(grid, 0, mirrorPlane, oddX, gridPosition, paint, executedSenderSide); // X
             var mirrorY = MirrorPaint(grid, 1, mirrorPlane, oddY, gridPosition, paint, executedSenderSide); // Y
             var mirrorZ = MirrorPaint(grid, 2, mirrorPlane, oddZ, gridPosition, paint, executedSenderSide); // Z
@@ -369,89 +371,63 @@ namespace Digi.PaintGun
 
         private Vector3I? MirrorPaint(MyCubeGrid g, int axis, Vector3I mirror, bool odd, Vector3I originalPosition, PaintMaterial paint, bool executedSenderSide)
         {
+            Vector3I? mirrorPosition = null;
+
             switch(axis)
             {
                 case 0:
                     if(mirror.X > int.MinValue)
-                    {
-                        var mirrorX = originalPosition + new Vector3I(((mirror.X - originalPosition.X) * 2) - (odd ? 1 : 0), 0, 0);
-
-                        if(g.CubeExists(mirrorX))
-                            PaintBlock(g, mirrorX, paint, executedSenderSide);
-
-                        return mirrorX;
-                    }
+                        mirrorPosition = originalPosition + new Vector3I(((mirror.X - originalPosition.X) * 2) - (odd ? 1 : 0), 0, 0);
                     break;
 
                 case 1:
                     if(mirror.Y > int.MinValue)
-                    {
-                        var mirrorY = originalPosition + new Vector3I(0, ((mirror.Y - originalPosition.Y) * 2) - (odd ? 1 : 0), 0);
-
-                        if(g.CubeExists(mirrorY))
-                            PaintBlock(g, mirrorY, paint, executedSenderSide);
-
-                        return mirrorY;
-                    }
+                        mirrorPosition = originalPosition + new Vector3I(0, ((mirror.Y - originalPosition.Y) * 2) - (odd ? 1 : 0), 0);
                     break;
 
                 case 2:
                     if(mirror.Z > int.MinValue)
-                    {
-                        var mirrorZ = originalPosition + new Vector3I(0, 0, ((mirror.Z - originalPosition.Z) * 2) + (odd ? 1 : 0)); // reversed on odd
-
-                        if(g.CubeExists(mirrorZ))
-                            PaintBlock(g, mirrorZ, paint, executedSenderSide);
-
-                        return mirrorZ;
-                    }
+                        mirrorPosition = originalPosition + new Vector3I(0, 0, ((mirror.Z - originalPosition.Z) * 2) + (odd ? 1 : 0)); // reversed on odd
                     break;
             }
 
-            return null;
+            if(mirrorPosition.HasValue && originalPosition != mirrorPosition.Value && !alreadyMirrored.Contains(mirrorPosition.Value) && g.CubeExists(mirrorPosition.Value))
+            {
+                alreadyMirrored.Add(mirrorPosition.Value);
+                PaintBlock(g, mirrorPosition.Value, paint, executedSenderSide);
+            }
+
+            return mirrorPosition;
         }
 
-        private bool MirrorCheckSameColor(MyCubeGrid g, int axis, Vector3I originalPosition, PaintMaterial paintMaterial, out Vector3I? mirror)
+        private bool MirrorCheckSameColor(MyCubeGrid g, int axis, Vector3I originalPosition, PaintMaterial paintMaterial, out Vector3I? mirrorPosition)
         {
-            mirror = null;
+            mirrorPosition = null;
 
             switch(axis)
             {
                 case 0:
                     if(g.XSymmetryPlane.HasValue)
-                    {
-                        var mirrorX = originalPosition + new Vector3I(((g.XSymmetryPlane.Value.X - originalPosition.X) * 2) - (g.XSymmetryOdd ? 1 : 0), 0, 0);
-                        var slim = ((IMyCubeGrid)g).GetCubeBlock(mirrorX);
-                        mirror = mirrorX;
-
-                        if(slim != null)
-                            return paintMaterial.PaintEquals(slim);
-                    }
+                        mirrorPosition = originalPosition + new Vector3I(((g.XSymmetryPlane.Value.X - originalPosition.X) * 2) - (g.XSymmetryOdd ? 1 : 0), 0, 0);
                     break;
 
                 case 1:
                     if(g.YSymmetryPlane.HasValue)
-                    {
-                        var mirrorY = originalPosition + new Vector3I(0, ((g.YSymmetryPlane.Value.Y - originalPosition.Y) * 2) - (g.YSymmetryOdd ? 1 : 0), 0);
-                        var slim = ((IMyCubeGrid)g).GetCubeBlock(mirrorY);
-                        mirror = mirrorY;
-
-                        if(slim != null)
-                            return paintMaterial.PaintEquals(slim);
-                    }
+                        mirrorPosition = originalPosition + new Vector3I(0, ((g.YSymmetryPlane.Value.Y - originalPosition.Y) * 2) - (g.YSymmetryOdd ? 1 : 0), 0);
                     break;
 
                 case 2:
                     if(g.ZSymmetryPlane.HasValue)
-                    {
-                        var mirrorZ = originalPosition + new Vector3I(0, 0, ((g.ZSymmetryPlane.Value.Z - originalPosition.Z) * 2) + (g.ZSymmetryOdd ? 1 : 0)); // reversed on odd
-                        var slim = ((IMyCubeGrid)g).GetCubeBlock(mirrorZ);
-                        mirror = mirrorZ;
-
-                        if(slim != null)
-                            return paintMaterial.PaintEquals(slim);
-                    }
+                        mirrorPosition = originalPosition + new Vector3I(0, 0, ((g.ZSymmetryPlane.Value.Z - originalPosition.Z) * 2) + (g.ZSymmetryOdd ? 1 : 0)); // reversed on odd
                     break;
+            }
+
+            if(mirrorPosition.HasValue)
+            {
+                var slim = g.GetCubeBlock(mirrorPosition.Value) as IMySlimBlock;
+
+                if(slim != null)
+                    return paintMaterial.PaintEquals(slim);
             }
 
             return true;
@@ -459,52 +435,47 @@ namespace Digi.PaintGun
 
         private Vector3I? MirrorHighlight(MyCubeGrid g, int axis, Vector3I originalPosition)
         {
+            Vector3I? mirrorPosition = null;
+
             switch(axis)
             {
                 case 0:
                     if(g.XSymmetryPlane.HasValue)
-                    {
-                        var mirrorX = originalPosition + new Vector3I(((g.XSymmetryPlane.Value.X - originalPosition.X) * 2) - (g.XSymmetryOdd ? 1 : 0), 0, 0);
-                        var block = g.GetCubeBlock(mirrorX) as IMySlimBlock;
-
-                        if(block != null)
-                        {
-                            // TODO: validations for drawing mirror and validations for applying paint mirrored
-                            DrawBlockSelection(block);
-                        }
-
-                        return mirrorX;
-                    }
+                        mirrorPosition = originalPosition + new Vector3I(((g.XSymmetryPlane.Value.X - originalPosition.X) * 2) - (g.XSymmetryOdd ? 1 : 0), 0, 0);
                     break;
 
                 case 1:
                     if(g.YSymmetryPlane.HasValue)
-                    {
-                        var mirrorY = originalPosition + new Vector3I(0, ((g.YSymmetryPlane.Value.Y - originalPosition.Y) * 2) - (g.YSymmetryOdd ? 1 : 0), 0);
-                        var block = g.GetCubeBlock(mirrorY) as IMySlimBlock;
-
-                        if(block != null)
-                            DrawBlockSelection(block);
-
-                        return mirrorY;
-                    }
+                        mirrorPosition = originalPosition + new Vector3I(0, ((g.YSymmetryPlane.Value.Y - originalPosition.Y) * 2) - (g.YSymmetryOdd ? 1 : 0), 0);
                     break;
 
                 case 2:
                     if(g.ZSymmetryPlane.HasValue)
-                    {
-                        var mirrorZ = originalPosition + new Vector3I(0, 0, ((g.ZSymmetryPlane.Value.Z - originalPosition.Z) * 2) + (g.ZSymmetryOdd ? 1 : 0)); // reversed on odd
-                        var block = g.GetCubeBlock(mirrorZ) as IMySlimBlock;
-
-                        if(block != null)
-                            DrawBlockSelection(block);
-
-                        return mirrorZ;
-                    }
+                        mirrorPosition = originalPosition + new Vector3I(0, 0, ((g.ZSymmetryPlane.Value.Z - originalPosition.Z) * 2) + (g.ZSymmetryOdd ? 1 : 0)); // reversed on odd
                     break;
             }
 
-            return null;
+            if(mirrorPosition.HasValue && mirrorPosition.Value != originalPosition && !alreadyMirrored.Contains(mirrorPosition.Value))
+            {
+                alreadyMirrored.Add(mirrorPosition.Value);
+
+                var block = g.GetCubeBlock(mirrorPosition.Value) as IMySlimBlock;
+
+                if(block != null)
+                {
+                    mirroredValidTotal++;
+
+                    var paintMaterial = GetLocalPaintMaterial();
+                    bool validSelection = IsMirrorBlockValid(block, paintMaterial);
+
+                    if(validSelection)
+                        mirroredValid++;
+
+                    DrawBlockSelection(block, validSelection);
+                }
+            }
+
+            return mirrorPosition; // this must be returned regardless if block exists or not
         }
         #endregion
         #endregion
@@ -1520,7 +1491,13 @@ namespace Digi.PaintGun
             }
         }
 
-        private void DrawBlockSelection()
+        bool useYellow = false;
+        int mirroredValid;
+        int mirroredValidTotal;
+        IMyHudNotification mirrorNotify;
+        List<Vector3I> alreadyMirrored = new List<Vector3I>(8);
+
+        void DrawBlockSelection()
         {
             if(selectedSlimBlock == null)
                 return;
@@ -1531,11 +1508,15 @@ namespace Digi.PaintGun
             }
             else
             {
-                DrawBlockSelection(selectedSlimBlock, !selectedInvalid);
+                DrawBlockSelection(selectedSlimBlock, !selectedInvalid, useYellow);
 
                 // symmetry highlight
                 if(!replaceAllMode && SymmetryAccess && MyCubeBuilder.Static.UseSymmetry && (selectedGrid.XSymmetryPlane.HasValue || selectedGrid.YSymmetryPlane.HasValue || selectedGrid.ZSymmetryPlane.HasValue))
                 {
+                    alreadyMirrored.Clear();
+                    mirroredValid = (!selectedInvalid && !useYellow ? 1 : 0);
+                    mirroredValidTotal = 1;
+
                     var mirrorX = MirrorHighlight(selectedGrid, 0, selectedSlimBlock.Position); // X
                     var mirrorY = MirrorHighlight(selectedGrid, 1, selectedSlimBlock.Position); // Y
                     var mirrorZ = MirrorHighlight(selectedGrid, 2, selectedSlimBlock.Position); // Z
@@ -1552,6 +1533,12 @@ namespace Digi.PaintGun
 
                     if(selectedGrid.XSymmetryPlane.HasValue && mirrorYZ.HasValue) // XYZ
                         MirrorHighlight(selectedGrid, 0, mirrorYZ.Value);
+
+                    if(mirrorNotify == null)
+                        mirrorNotify = MyAPIGateway.Utilities.CreateNotification("", 32, MyFontEnum.White);
+
+                    mirrorNotify.Text = $"Mirror paint will affect {mirroredValid} of {mirroredValidTotal} blocks.";
+                    mirrorNotify.Show();
                 }
             }
         }
@@ -1568,6 +1555,7 @@ namespace Digi.PaintGun
                 selectedPlayer = null;
                 selectedSlimBlock = null;
                 selectedInvalid = false;
+                useYellow = false;
                 symmetryInputAvailable = false;
 
                 var character = MyAPIGateway.Session.Player.Character;
@@ -1772,7 +1760,37 @@ namespace Digi.PaintGun
                     blockName = (targetBlock.FatBlock == null ? targetBlock.ToString() : targetBlock.FatBlock.DefinitionDisplayNameText);
                 }
 
-                if(!IsBlockValid(targetBlock, paintMaterial, blockMaterial, trigger))
+                // TODO testing per-armor-side paint/skin
+#if false
+                if(targetBlock != null)
+                {
+                    var def = (MyCubeBlockDefinition)targetBlock.BlockDefinition;
+
+                    if(def.BlockTopology == MyBlockTopology.Cube)
+                    {
+                        MyCube cube;
+                        if(selectedGrid.TryGetCube(targetBlock.Position, out cube) && cube.CubeBlock != null)
+                        {
+                            var part = cube.Parts[2];
+
+                            float dithering = 0;
+                            part.InstanceData.SetColorMaskHSV(new Vector4(paintMaterial.ColorMask.Value, dithering));
+                            part.SkinSubtypeId = paintMaterial.Skin.Value;
+
+                            // ISSUE: no way to update it in realtime, only thing that updates it is removing a nearby block.
+
+                            //targetBlock.CubeGrid.Render.NeedsDraw = true;
+
+                            //targetBlock.CubeGrid.Render.RemoveRenderObjects();
+                            //targetBlock.CubeGrid.Render.AddRenderObjects();
+
+                            MyAPIGateway.Utilities.ShowNotification($"Painted side as: {paintMaterial}", 160);
+                        }
+                    }
+                }
+#endif
+
+                if(!ValidateBlock(targetBlock, paintMaterial, blockMaterial, trigger))
                     return false;
 
                 selectedSlimBlock = targetBlock;
@@ -2049,7 +2067,45 @@ namespace Digi.PaintGun
             return (targetPlayer != null);
         }
 
-        private bool IsBlockValid(IMySlimBlock block, PaintMaterial paintMaterial, BlockMaterial blockMaterial, bool trigger)
+        bool IsMirrorBlockValid(IMySlimBlock block, PaintMaterial paintMaterial)
+        {
+            if(block == null)
+                return false;
+
+            if(colorPickMode)
+                return false;
+
+            if(!paintMaterial.ColorMask.HasValue && !paintMaterial.Skin.HasValue)
+                return false;
+
+            if(!AllowedToPaintGrid(block.CubeGrid, MyAPIGateway.Session.Player.IdentityId))
+            {
+                return false;
+            }
+
+            var blockMaterial = new BlockMaterial(block);
+            bool materialEquals = paintMaterial.PaintEquals(blockMaterial);
+
+            if(replaceAllMode)
+            {
+                return !materialEquals;
+            }
+
+            if(!InstantPaintAccess)
+            {
+                var def = (MyCubeBlockDefinition)block.BlockDefinition;
+                bool built = (block.BuildLevelRatio >= def.CriticalIntegrityRatio);
+
+                if(!built || block.CurrentDamage > (block.MaxIntegrity / 10.0f))
+                {
+                    return false;
+                }
+            }
+
+            return !materialEquals;
+        }
+
+        bool ValidateBlock(IMySlimBlock block, PaintMaterial paintMaterial, BlockMaterial blockMaterial, bool trigger)
         {
             if(block == null)
             {
@@ -2257,6 +2313,9 @@ namespace Digi.PaintGun
                         if(!MirrorCheckSameColor(grid, 0, mirrorYZ.Value, paintMaterial, out mirrorX))
                             symmetrySameColor = false;
                     }
+
+                    if(!symmetrySameColor)
+                        useYellow = true;
                 }
 
                 if(!symmetry || symmetrySameColor)

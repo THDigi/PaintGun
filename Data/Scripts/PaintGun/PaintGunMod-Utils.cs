@@ -316,12 +316,12 @@ namespace Digi.PaintGun
             return true;
         }
 
-        private static void DrawBlockSelection(IMySlimBlock block, bool validSelection = true)
+        private static void DrawBlockSelection(IMySlimBlock block, bool validSelection = true, bool useYellow = false)
         {
             var grid = block.CubeGrid;
             var def = (MyCubeBlockDefinition)block.BlockDefinition;
 
-            var color = (validSelection ? Color.Green : Color.Red);
+            var color = (useYellow ? Color.Yellow : (validSelection ? Color.Green : Color.Red));
             var material = PaintGunMod.instance.MATERIAL_PALETTE_COLOR;
             var lineWidth = (grid.GridSizeEnum == MyCubeSize.Large ? 0.01f : 0.008f);
 
