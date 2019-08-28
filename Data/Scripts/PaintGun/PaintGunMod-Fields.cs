@@ -81,6 +81,7 @@ namespace Digi.PaintGun
         public PaintGunItem localHeldTool = null;
         public PlayerColorData localColorData = null;
         public List<SkinInfo> BlockSkins;
+        public int OwnedSkins = 0;
         public readonly Dictionary<ulong, PlayerColorData> playerColorData = new Dictionary<ulong, PlayerColorData>();
         public readonly HashSet<ulong> playersColorPickMode = new HashSet<ulong>();
 

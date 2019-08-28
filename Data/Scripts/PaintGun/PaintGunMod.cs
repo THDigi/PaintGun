@@ -137,7 +137,12 @@ namespace Digi.PaintGun
                     EnsureColorDataEntry(MyAPIGateway.Multiplayer.MyId);
 
                     if(localColorData == null)
-                        playerColorData.TryGetValue(MyAPIGateway.Multiplayer.MyId, out localColorData);
+                    {
+                        if(!playerColorData.TryGetValue(MyAPIGateway.Multiplayer.MyId, out localColorData))
+                            throw new Exception("Can't get local color data!");
+
+                        localColorData.OnSkinSelected += OnSkinSelected;
+                    }
 
                     InitUIEdit();
                 }
@@ -570,6 +575,8 @@ namespace Digi.PaintGun
                     localColorData.ApplyColor = !localColorData.ApplyColor;
 
                     SetToolColor(localColorData.ApplyColor ? localColorData.Colors[localColorData.SelectedSlot] : DEFAULT_COLOR);
+
+                    skinLabelRedraw = true;
                 }
             }
         }
@@ -609,6 +616,9 @@ namespace Digi.PaintGun
                 ShowNotification(1, pickSkin ? $"Press [Shift] + [{assigned}] to enable" : $"Press [{assigned}] to enable", MyFontEnum.White, 1000);
                 return;
             }
+
+            if(pickSkin && OwnedSkins == 0)
+                return;
 
             if(change < 0)
             {
@@ -929,7 +939,15 @@ namespace Digi.PaintGun
 
                 DrawToolParticles();
                 DrawCharacterSelection();
+
+                drawSkinLabel = false;
                 DrawHUDPalette();
+                if(!drawSkinLabel && skinLabel != null)
+                {
+                    skinLabelVisible = false;
+                    skinLabel.Visible = false;
+                    skinLabelShadow.Visible = false;
+                }
 
                 bool controllingLocalChar = (MyAPIGateway.Session.ControlledObject == MyAPIGateway.Session.Player?.Character);
 
@@ -987,7 +1005,19 @@ namespace Digi.PaintGun
             }
         }
 
-        private readonly Color PALETTE_COLOR_BG = new Color(41, 54, 62);
+        readonly Color PALETTE_COLOR_BG = new Color(41, 54, 62);
+        HudAPIv2.HUDMessage skinLabel;
+        HudAPIv2.HUDMessage skinLabelShadow;
+        StringBuilder skinLabelSB;
+        StringBuilder skinLabelShadowSB;
+        bool drawSkinLabel = false;
+        bool skinLabelVisible = false;
+        bool skinLabelRedraw;
+
+        void OnSkinSelected(int prevIndex, int newIndex)
+        {
+            skinLabelRedraw = true;
+        }
 
         private void DrawHUDPalette()
         {
@@ -1051,25 +1081,14 @@ namespace Digi.PaintGun
                 #region Skin selector
                 if(localColorData.ApplySkin)
                 {
-                    int ownedSkins = 0;
-
-                    for(int i = 0; i < BlockSkins.Count; ++i)
+                    if(OwnedSkins > 0)
                     {
-                        var skin = BlockSkins[i];
-
-                        if(skin.LocallyOwned)
-                            ownedSkins++;
-                    }
-
-                    if(ownedSkins > 0)
-                    {
-                        float iconSize = 0.0030f * scaleFOV;
+                        float iconSize = 0.003f * scaleFOV;
+                        float selectedIconSize = iconSize; // 0.0034f * scaleFOV;
                         var selectedSkinIndex = localColorData.SelectedSkinIndex;
-                        double iconSpacingAdd = 0.0012 * scaleFOV;
+                        double iconSpacingAdd = 0; // 0.0012 * scaleFOV;
                         double iconSpacingWidth = (iconSize * 2) + iconSpacingAdd;
-                        float iconBgSpacingAddWidth = 0.0006f * scaleFOV;
-                        float iconBgSpacingAddHeight = 0.0008f * scaleFOV;
-                        double halfOwnedSkins = ownedSkins * 0.5;
+                        float iconBgSpacingAddWidth = 0.0004f * scaleFOV;
                         float iconBgSpacingAddHeight = 0.0006f * scaleFOV;
                         //float iconBgSpacingAddWidth = 0.0006f * scaleFOV;
                         //float iconBgSpacingAddHeight = 0.0008f * scaleFOV;
@@ -1079,30 +1098,142 @@ namespace Digi.PaintGun
                         if(localColorData.ApplyColor)
                             pos += camMatrix.Up * (0.0075f * scaleFOV);
 
-                        MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_BACKGROUND, PALETTE_COLOR_BG * bgAlpha, pos, camMatrix.Left, camMatrix.Up, (float)(iconSpacingWidth * halfOwnedSkins) + iconBgSpacingAddWidth, iconSize + iconBgSpacingAddHeight, Vector2.Zero, UI_BG_BLENDTYPE);
-
-                        pos += camMatrix.Left * ((iconSpacingWidth * halfOwnedSkins) - (iconSpacingWidth * 0.5));
-                        const int MAX_VIEW_SKINS_HALF = ((MAX_VIEW_SKINS - 1) / 2);
-
-                        for(int i = 0; i < BlockSkins.Count; ++i)
+                        if(TextAPIReady) // skin name text
                         {
-                            var skin = BlockSkins[i];
+                            var labelPos = settings.paletteScreenPos + new Vector2D(0, 0.07);
 
-                            if(!skin.LocallyOwned)
-                                continue;
+                            if(localColorData.ApplyColor)
+                                labelPos += new Vector2D(0, 0.08);
 
-                            if(selectedSkinIndex == i)
-                            bool ignoreDistance = false;
+                            var skin = BlockSkins[selectedSkinIndex];
+                            var text = skin.Name;
+
+                            const string SKINLABEL_COLOR = "<color=255,255,255>";
+                            const string SKINLABEL_SHADOW_COLOR = "<color=0,0,0>";
+                            const double SCALE = 0.8;
+
+                            if(skinLabel == null)
                             {
-                                MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_COLOR, Color.White, pos, camMatrix.Left, camMatrix.Up, selectedIconSize, selectedIconSize, Vector2.Zero, UI_FG_BLENDTYPE);
+                                skinLabelSB = new StringBuilder(SKINLABEL_COLOR).Append(text);
+                                skinLabelShadowSB = new StringBuilder(SKINLABEL_SHADOW_COLOR).Append(text);
+
+                                skinLabel = new HudAPIv2.HUDMessage(skinLabelSB, labelPos, Scale: SCALE, HideHud: true, Blend: BlendTypeEnum.PostPP);
+                                skinLabelShadow = new HudAPIv2.HUDMessage(skinLabelShadowSB, labelPos, Scale: SCALE, HideHud: true, Blend: BlendTypeEnum.SDR);
+
+                                skinLabelRedraw = true;
                             }
 
-                            MyTransparentGeometry.AddBillboardOriented(skin.Icon, Color.White, pos, camMatrix.Left, camMatrix.Up, iconSize, iconSize, Vector2.Zero, UI_FG_BLENDTYPE);
+                            if(skinLabelRedraw)
+                            {
+                                skinLabelRedraw = false;
 
-                            pos += camMatrix.Right * iconSpacingWidth;
+                                skinLabelSB.Clear();
+                                skinLabelSB.Append(SKINLABEL_COLOR).Append(text);
+
+                                skinLabelShadowSB.Clear();
+                                skinLabelShadowSB.Append(SKINLABEL_SHADOW_COLOR).Append(text);
+
+                                skinLabel.Origin = labelPos;
+                                skinLabelShadow.Origin = labelPos;
+
+                                var textLen = skinLabel.GetTextLength();
+                                skinLabel.Offset = new Vector2D(textLen.X * -0.5, 0);
+                                skinLabelShadow.Offset = skinLabel.Offset + new Vector2D(0.0015, -0.0015);
+                            }
+
+                            if(!skinLabelVisible)
+                            {
+                                skinLabelVisible = true;
+                                skinLabel.Visible = true;
+                                skinLabelShadow.Visible = true;
+                            }
+
+                            drawSkinLabel = true;
+                        }
+
+                        const int MAX_VIEW_SKINS = 7; // must be an odd number.
+                        const int MAX_VIEW_SKINS_HALF = ((MAX_VIEW_SKINS - 1) / 2);
+                        const double MAX_VIEW_SKINS_HALF_D = (MAX_VIEW_SKINS / 2d);
+                        const double MAX_VIEW_SKINS_HALF_D_BG = ((MAX_VIEW_SKINS - 4) / 2d);
+
+                        if(OwnedSkins > MAX_VIEW_SKINS)
+                        {
+                            //var bgPos = pos + camMatrix.Right * ((iconSpacingWidth * 0.5) - (iconSpacingWidth * 0.5));
+                            //MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_BACKGROUND, PALETTE_COLOR_BG * bgAlpha, bgPos, camMatrix.Left, camMatrix.Up, (float)(iconSpacingWidth * MAX_VIEW_SKINS_HALF_D_BG) + iconBgSpacingAddWidth, iconSize + iconBgSpacingAddHeight, Vector2.Zero, UI_BG_BLENDTYPE);
+
+                            pos += camMatrix.Left * ((iconSpacingWidth * MAX_VIEW_SKINS_HALF_D) - (iconSpacingWidth * 0.5));
+
+                            int index = selectedSkinIndex - MAX_VIEW_SKINS_HALF;
+                            bool ignoreDistance = false;
+
+                            if(index < 0)
+                            {
+                                index += BlockSkins.Count;
+                                ignoreDistance = true;
+                            }
+
+                            for(int a = 0; a < MAX_VIEW_SKINS; ++a)
+                            {
+                                // cycle through nearest owned skins
+                                while(!BlockSkins[index].LocallyOwned || (!ignoreDistance && Math.Abs(selectedSkinIndex - index) > MAX_VIEW_SKINS_HALF))
+                                {
+                                    index++;
+
+                                    if(index >= BlockSkins.Count)
+                                    {
+                                        ignoreDistance = true;
+                                        index = 0;
+                                    }
+                                }
+
+                                var skin = BlockSkins[index];
+
+                                float alpha = 1f;
+
+                                if(a == 0 || a == (MAX_VIEW_SKINS - 1))
+                                    alpha = 0.1f;
+                                else if(a == 1 || a == (MAX_VIEW_SKINS - 2))
+                                    alpha = 0.5f;
+                                //else if(a == 2 || a == (MAX_VIEW_SKINS - 3))
+                                //    alpha = 0.75f;
+
+                                if(selectedSkinIndex == index)
+                                    MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_COLOR, Color.White, pos, camMatrix.Left, camMatrix.Up, selectedIconSize, selectedIconSize, Vector2.Zero, UI_FG_BLENDTYPE);
+
+                                MyTransparentGeometry.AddBillboardOriented(skin.Icon, Color.White * alpha, pos, camMatrix.Left, camMatrix.Up, iconSize, iconSize, Vector2.Zero, UI_FG_BLENDTYPE);
+
+                                pos += camMatrix.Right * iconSpacingWidth;
+
+                                index++;
+
                                 if(index >= BlockSkins.Count)
+                                {
+                                    ignoreDistance = true;
+                                    index = 0;
+                                }
+                            }
+                        }
                         else
+                        {
+                            double halfOwnedSkins = OwnedSkins * 0.5;
 
+                            //MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_BACKGROUND, PALETTE_COLOR_BG * bgAlpha, pos, camMatrix.Left, camMatrix.Up, (float)(iconSpacingWidth * halfOwnedSkins) + iconBgSpacingAddWidth, iconSize + iconBgSpacingAddHeight, Vector2.Zero, UI_BG_BLENDTYPE);
+
+                            pos += camMatrix.Left * ((iconSpacingWidth * halfOwnedSkins) - (iconSpacingWidth * 0.5));
+
+                            for(int i = 0; i < BlockSkins.Count; ++i)
+                            {
+                                var skin = BlockSkins[i];
+
+                                if(!skin.LocallyOwned)
+                                    continue;
+
+                                if(selectedSkinIndex == i)
+                                {
+                                    MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_COLOR, Color.White, pos, camMatrix.Left, camMatrix.Up, selectedIconSize, selectedIconSize, Vector2.Zero, UI_FG_BLENDTYPE);
+                                }
+
+                                MyTransparentGeometry.AddBillboardOriented(skin.Icon, Color.White, pos, camMatrix.Left, camMatrix.Up, iconSize, iconSize, Vector2.Zero, UI_FG_BLENDTYPE);
 
                                 pos += camMatrix.Right * iconSpacingWidth;
                             }

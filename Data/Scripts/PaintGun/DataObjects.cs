@@ -13,9 +13,23 @@ namespace Digi.PaintGun
         public ulong SteamId;
         public List<Vector3> Colors;
         public int SelectedSlot = 0;
-        public int SelectedSkinIndex = 0;
+
+        int _selectedSkinIndex = 0;
+        public int SelectedSkinIndex
+        {
+            get { return _selectedSkinIndex; }
+            set
+            {
+                OnSkinSelected?.Invoke(_selectedSkinIndex, value);
+                _selectedSkinIndex = value;
+            }
+        }
+
         public bool ApplyColor = true;
         public bool ApplySkin = true;
+
+        public delegate void SkinSelectedDelegate(int prevIndex, int newIndex);
+        public event SkinSelectedDelegate OnSkinSelected;
 
         public PlayerColorData(ulong steamId, List<Vector3> colors)
         {

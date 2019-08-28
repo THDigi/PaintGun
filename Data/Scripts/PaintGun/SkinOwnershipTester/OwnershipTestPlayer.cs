@@ -138,11 +138,16 @@ namespace Digi.PaintGun.SkinOwnershipTester
         private void GotResults(bool[] ownedSkins)
         {
             var blockSkins = mod.BlockSkins;
+            mod.OwnedSkins = 0;
 
+            // skip default skin (index 0)
             for(int i = 1; i < blockSkins.Count; ++i)
             {
                 var skin = blockSkins[i];
                 skin.LocallyOwned = ownedSkins[i];
+
+                if(skin.LocallyOwned)
+                    mod.OwnedSkins++;
             }
 
             var selectedSkin = blockSkins[mod.localColorData.SelectedSkinIndex];
