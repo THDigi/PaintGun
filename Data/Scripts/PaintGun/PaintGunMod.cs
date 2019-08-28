@@ -1534,7 +1534,7 @@ namespace Digi.PaintGun
                 DrawBlockSelection(selectedSlimBlock, !selectedInvalid);
 
                 // symmetry highlight
-                if(SymmetryAccess && MyCubeBuilder.Static.UseSymmetry && (selectedGrid.XSymmetryPlane.HasValue || selectedGrid.YSymmetryPlane.HasValue || selectedGrid.ZSymmetryPlane.HasValue))
+                if(!replaceAllMode && SymmetryAccess && MyCubeBuilder.Static.UseSymmetry && (selectedGrid.XSymmetryPlane.HasValue || selectedGrid.YSymmetryPlane.HasValue || selectedGrid.ZSymmetryPlane.HasValue))
                 {
                     var mirrorX = MirrorHighlight(selectedGrid, 0, selectedSlimBlock.Position); // X
                     var mirrorY = MirrorHighlight(selectedGrid, 1, selectedSlimBlock.Position); // Y
