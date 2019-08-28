@@ -256,11 +256,7 @@ namespace Digi.PaintGun
         private void PaintBlock(MyCubeGrid grid, Vector3I gridPosition, PaintMaterial paint, bool executedSenderSide)
         {
             // HACK getting a MySlimBlock and sending it straight to arguments avoids getting prohibited errors.
-            if(!grid.ChangeColorAndSkin(grid.GetCubeBlock(gridPosition), paint.ColorMask, paint.Skin))
-            {
-                var block = (IMySlimBlock)grid.GetCubeBlock(gridPosition);
-                Log.Error($"Couldn't paint/skin! mode={(paint.ColorMask.HasValue ? "paint" : "no-paint")}&{(paint.Skin.HasValue ? "skin" : "no-skin")}; owner={block.OwnerId}; gridPos={gridPosition}; grid={grid.EntityId}");
-            }
+            grid.ChangeColorAndSkin(grid.GetCubeBlock(gridPosition), paint.ColorMask, paint.Skin);
         }
 
         private void ReplaceColorInGrid(MyCubeGrid grid, BlockMaterial oldPaint, PaintMaterial paint, bool useGridSystem, bool executedSenderSide)
