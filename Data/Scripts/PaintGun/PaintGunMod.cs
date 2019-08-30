@@ -95,7 +95,7 @@ namespace Digi.PaintGun
             BlockSkins.Sort((a, b) => a.SubtypeId.String.CompareTo(b.SubtypeId.String));
 
             // "no skin" is always first
-            BlockSkins.Insert(0, new SkinInfo(MyStringHash.NullOrEmpty, "No Skin", SKIN_ICON_PREFIX + "NoSkin"));
+            BlockSkins.Insert(0, new SkinInfo(MyStringHash.NullOrEmpty, "No Skin", SKIN_ICON_PREFIX + "NoSkin", true));
 
             // assign final index to the value too
             for(int i = 0; i < BlockSkins.Count; ++i)
