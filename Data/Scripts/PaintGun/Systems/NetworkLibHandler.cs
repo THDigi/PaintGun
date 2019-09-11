@@ -13,6 +13,7 @@ namespace Digi.PaintGun.Systems
         public PacketJoinSharePalette PacketJoinSharePalette;
 
         public PacketToolSpraying PacketToolSpraying;
+        public PacketWarningMessage PacketWarningMessage;
 
         public PacketOwnershipTestRequest PacketOwnershipTestRequest;
         public PacketOwnershipTestResults PacketOwnershipTestResults;
@@ -32,6 +33,7 @@ namespace Digi.PaintGun.Systems
             PacketJoinSharePalette = new PacketJoinSharePalette();
 
             PacketToolSpraying = new PacketToolSpraying();
+            PacketWarningMessage = new PacketWarningMessage();
 
             PacketOwnershipTestRequest = new PacketOwnershipTestRequest();
             PacketOwnershipTestResults = new PacketOwnershipTestResults();

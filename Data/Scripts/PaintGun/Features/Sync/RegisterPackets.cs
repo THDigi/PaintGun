@@ -12,6 +12,7 @@ namespace Digi.NetworkLib
     [ProtoInclude(22, typeof(PacketJoinSharePalette))]
 
     [ProtoInclude(30, typeof(PacketToolSpraying))]
+    [ProtoInclude(31, typeof(PacketWarningMessage))]
 
     [ProtoInclude(250, typeof(PacketOwnershipTestRequest))]
     [ProtoInclude(251, typeof(PacketOwnershipTestResults))]

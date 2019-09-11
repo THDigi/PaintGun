@@ -140,6 +140,7 @@
     <Compile Include="Features\SkinOwnershipTest\GridSpawner.cs" />
     <Compile Include="Features\SkinOwnershipTest\SkinTestPlayer.cs" />
     <Compile Include="Features\SkinOwnershipTest\SkinTestServer.cs" />
+    <Compile Include="Features\Sync\PacketWarningMessage.cs" />
     <Compile Include="Features\Sync\PacketJoinSharePalette.cs" />
     <Compile Include="Features\Sync\PacketOwnershipTestRequest.cs" />
     <Compile Include="Features\Sync\PacketOwnershipTestResults.cs" />

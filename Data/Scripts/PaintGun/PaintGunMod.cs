@@ -12,9 +12,6 @@ using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Components;
 
-// DEBUG TODO something to indicate that the skin wasn't applied server side?
-// DEBUG TODO test packets in MP to ensure nothing broke from new network lib.
-
 namespace Digi.PaintGun
 {
     public class PaintGunMod : ModBase<PaintGunMod>

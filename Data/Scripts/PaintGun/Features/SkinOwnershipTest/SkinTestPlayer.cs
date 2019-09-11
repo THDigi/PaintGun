@@ -108,9 +108,12 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
             {
                 if(testCount >= MAX_TEST_TRIES)
                 {
-                    Log.Error($"Ownership test failed after {MAX_TEST_TRIES.ToString()} tries, please reconnect. Bugreport if persists.", Log.PRINT_MESSAGE);
-                    SetUpdateMethods(UpdateFlags.UPDATE_AFTER_SIM, false);
                     testing = false;
+                    SetUpdateMethods(UpdateFlags.UPDATE_AFTER_SIM, false);
+
+                    Log.Error($"Ownership test failed after {MAX_TEST_TRIES.ToString()} tries, please reconnect. Bugreport if persists.", Log.PRINT_MESSAGE);
+
+                    Main.NetworkLibHandler.PacketWarningMessage.Send(0, $"Ownership test failed after {MAX_TEST_TRIES.ToString()} tries. Report with server mod log and ask client to submit theirs aswell.");
                     return;
                 }
 
