@@ -60,7 +60,7 @@ namespace Digi.PaintGun.Features.Sync
             if(!Utils.AllowedToPaintGrid(grid, identity))
             {
                 if(Constants.NETWORK_EXTRA_LOGGING)
-                    Log.Error($"Can't paint unallied grids; packet={this}", Log.PRINT_MSG);
+                    Log.Error($"Can't paint unallied grids; packet={this}", Log.PRINT_MESSAGE);
                 return;
             }
 

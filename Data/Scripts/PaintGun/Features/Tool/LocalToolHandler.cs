@@ -276,7 +276,7 @@ namespace Digi.PaintGun.Features.Tool
 
             if(pi == null)
             {
-                Log.Error($"{GetType().Name} :: PlayerInfo for {targetPlayer.DisplayName} ({targetPlayer.SteamUserId}) not found!", Log.PRINT_MSG);
+                Log.Error($"{GetType().Name} :: PlayerInfo for {targetPlayer.DisplayName} ({targetPlayer.SteamUserId}) not found!", Log.PRINT_MESSAGE);
                 return;
             }
 

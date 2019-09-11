@@ -12,7 +12,7 @@ namespace Digi.PaintGun
 
         public const int COLOR_PALETTE_SIZE = 14;
 
-        public const int SAFE_ZONE_ACCES_FOR_PAINT = 0x40; // MySafeZoneAction.Building = 0x40
+        public static readonly object SAFE_ZONE_ACCES_FOR_PAINT = (object)0x40; // MySafeZoneAction.Building = 0x40
 
         // DEBUG set these false after testing.
         public static bool DEBUGGING => true;

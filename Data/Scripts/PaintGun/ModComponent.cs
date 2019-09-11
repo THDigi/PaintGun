@@ -1,7 +1,6 @@
 ﻿using Digi.ComponentLib;
 using Digi.PaintGun.Features;
 using Digi.PaintGun.Features.Palette;
-using Digi.PaintGun.Features.Sync;
 using Digi.PaintGun.Features.Tool;
 using Digi.PaintGun.Systems;
 using Digi.PaintGun.Utilities;

@@ -49,9 +49,11 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
 
         void TestForLocalPlayer()
         {
-            SetUpdateMethods(UpdateFlags.UPDATE_AFTER_SIM, true);
             testing = true;
             testCount++;
+            Log.Info($"{GetType().Name}.Update() :: attempting test number {testCount.ToString()}...");
+
+            SetUpdateMethods(UpdateFlags.UPDATE_AFTER_SIM, true);
             NetworkLibHandler.PacketOwnershipTestRequest.Send();
         }
         #endregion Step 1 - Client asks server to spawn a grid
@@ -85,7 +87,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
                     return;
 
                 if(Constants.OWNERSHIP_TEST_EXTRA_LOGGING)
-                    Log.Info($"{GetType().Name}.EntityAdded() :: found grid for local player... inScene={grid.InScene}; phys={(grid.Physics == null ? "null" : grid.Physics.Enabled.ToString())}");
+                    Log.Info($"{GetType().Name}.EntityAdded() :: found grid for local player... inScene={grid.InScene.ToString()}; phys={(grid.Physics == null ? "null" : grid.Physics.Enabled.ToString())}");
 
                 // paint&skin after a delay
                 hiddenGrid = (MyCubeGrid)grid;
@@ -106,13 +108,12 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
             {
                 if(testCount >= MAX_TEST_TRIES)
                 {
-                    Log.Error($"Ownership test failed after {MAX_TEST_TRIES} tries, please reconnect. Bugreport if persists.", Log.PRINT_MSG);
+                    Log.Error($"Ownership test failed after {MAX_TEST_TRIES.ToString()} tries, please reconnect. Bugreport if persists.", Log.PRINT_MESSAGE);
                     SetUpdateMethods(UpdateFlags.UPDATE_AFTER_SIM, false);
                     testing = false;
                     return;
                 }
 
-                Log.Info($"{GetType().Name}.Update() :: attempting test again...");
                 TestForLocalPlayer();
 
                 cooldownReTest = RE_TEST_COOLDOWN;
@@ -148,12 +149,18 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
             Palette.OwnedSkins = 0;
 
             if(Constants.OWNERSHIP_TEST_EXTRA_LOGGING)
-                Log.Info($"{GetType().Name}.GotResults() :: got results! owned={ownedSkinIndexes.Count}/{palette.BlockSkins.Count - 1}; ids={string.Join(", ", ownedSkinIndexes)}");
+                Log.Info($"{GetType().Name}.GotResults() :: got results! owned={ownedSkinIndexes.Count.ToString()}/{(palette.BlockSkins.Count - 1).ToString()}; ids={string.Join(", ", ownedSkinIndexes)}");
 
             foreach(var index in ownedSkinIndexes)
             {
                 if(index == 0)
+                    continue; // skip default skin if that gets sent for whatever reason
+
+                if(index < 0 || index >= blockSkins.Count)
+                {
+                    Log.Error($"index={index.ToString()} out of bounds! min=0, max={(blockSkins.Count - 1).ToString()}", Log.PRINT_MESSAGE);
                     continue;
+                }
 
                 blockSkins[index].LocallyOwned = true;
                 palette.OwnedSkins++;

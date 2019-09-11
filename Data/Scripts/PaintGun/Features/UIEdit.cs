@@ -34,16 +34,9 @@ namespace Digi.PaintGun.Features
 
         public UIEdit(PaintGunMod main) : base(main)
         {
-            if(ENABLED && MyAPIGateway.Session.OnlineMode == MyOnlineModeEnum.OFFLINE)
+            if(ENABLED && MyAPIGateway.Session.OnlineMode == MyOnlineModeEnum.OFFLINE && Utils.IsLocalMod())
             {
-                foreach(var mod in MyAPIGateway.Session.Mods)
-                {
-                    if(mod.Name == "PaintGun.dev")
-                    {
-                        uiEdit = new UIEdit();
-                        break;
-                    }
-                }
+                uiEdit = new UIEdit();
             }
         }
 

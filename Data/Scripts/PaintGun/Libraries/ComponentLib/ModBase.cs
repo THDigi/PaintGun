@@ -120,7 +120,7 @@ namespace Digi.ComponentLib
                 }
                 catch(Exception e)
                 {
-                    Log.Error($"Exception during {Components[i].GetType().Name}.RegisterComponent(): {e.Message}", Log.PRINT_MSG);
+                    Log.Error($"Exception during {Components[i].GetType().Name}.RegisterComponent(): {e.Message}", Log.PRINT_MESSAGE);
                     Log.Error(e);
                 }
             }
@@ -142,7 +142,7 @@ namespace Digi.ComponentLib
                     }
                     catch(Exception e)
                     {
-                        Log.Error($"Exception during {Components[i].GetType().Name}.UnregisterComponent(): {e.Message}", Log.PRINT_MSG);
+                        Log.Error($"Exception during {Components[i].GetType().Name}.UnregisterComponent(): {e.Message}", Log.PRINT_MESSAGE);
                         Log.Error(e);
                     }
                 }

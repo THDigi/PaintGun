@@ -137,7 +137,9 @@ namespace Digi.PaintGun.Features.Palette
 
                     if(!definedIcons.Contains(icon))
                     {
-                        Log.Info($"WARNING: {icon} not found in transparent materials definitions.", Log.PRINT_MSG);
+                        if(Utils.IsLocalMod())
+                            Log.Info($"WARNING: {icon} not found in transparent materials definitions.", Log.PRINT_MESSAGE);
+
                         icon = SKIN_ICON_PREFIX + "Unknown";
                     }
 
@@ -187,7 +189,7 @@ namespace Digi.PaintGun.Features.Palette
 
             if(newColors.Count != storedColors.Count)
             {
-                Log.Error($"{GetType().Name} :: Failed to compare colors, different sizes: new={newColors.Count.ToString()} vs old={storedColors.Count.ToString()}.", Log.PRINT_MSG);
+                Log.Error($"{GetType().Name} :: Failed to compare colors, different sizes: new={newColors.Count.ToString()} vs old={storedColors.Count.ToString()}.", Log.PRINT_MESSAGE);
                 UpdatePalette();
                 return;
             }

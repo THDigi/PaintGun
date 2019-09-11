@@ -94,7 +94,7 @@ namespace Digi.PaintGun.Utilities
         public static string ColorMaskToHSVText(Vector3 colorMask)
         {
             var hsv = ColorMaskToFriendlyHSV(colorMask);
-            return $"HSV: {hsv.X:0.0}°, {hsv.Y:0.0}%, {hsv.Z:0.0}%";
+            return $"HSV: {hsv.X.ToString("0.0")}°, {hsv.Y.ToString("0.0")}%, {hsv.Z.ToString("0.0")}%";
         }
 
         public static int ColorPercent(Vector3 blockColor, Vector3 paintColor)
@@ -128,7 +128,7 @@ namespace Digi.PaintGun.Utilities
         public static string ColorMaskToString(Vector3 colorMask)
         {
             var hsv = ColorMaskToFriendlyHSV(colorMask);
-            return $"{hsv.X:0.0}°, {hsv.Y:0.0}%, {hsv.Z:0.0}%";
+            return $"{hsv.X.ToString("0.0")}°, {hsv.Y.ToString("0.0")}%, {hsv.Z.ToString("0.0")}%";
         }
 
         #region ColorMask <> HSV <> RGB conversions
@@ -285,9 +285,9 @@ namespace Digi.PaintGun.Utilities
             var player = GetPlayerBySteamId(steamId);
 
             if(player == null)
-                return $"[NotFound!] ({steamId})";
+                return $"[NotFound!] ({steamId.ToString()})";
             else
-                return $"{player.DisplayName} ({steamId})";
+                return $"{player.DisplayName} ({steamId.ToString()})";
         }
 
         #region Paint permission check
@@ -368,7 +368,7 @@ namespace Digi.PaintGun.Utilities
             var player = GetPlayerBySteamId(steamId);
 
             if(player == null)
-                Log.Error($"{caller?.GetType().Name} Player ({steamId}) not found!", Log.PRINT_MSG);
+                Log.Error($"{caller?.GetType().Name} Player ({steamId.ToString()}) not found!", Log.PRINT_MESSAGE);
 
             return player;
         }
@@ -379,7 +379,7 @@ namespace Digi.PaintGun.Utilities
                 return null;
 
             if(player.Character == null)
-                Log.Error($"{caller?.GetType().Name} Player {player.DisplayName} ({player.SteamUserId}) has no character!", Log.PRINT_MSG);
+                Log.Error($"{caller?.GetType().Name} Player {player.DisplayName} ({player.SteamUserId.ToString()}) has no character!", Log.PRINT_MESSAGE);
 
             return player.Character;
         }
@@ -392,7 +392,7 @@ namespace Digi.PaintGun.Utilities
             var inv = character.GetInventory();
 
             if(inv == null)
-                Log.Error($"{caller?.GetType().Name} Player {character.DisplayName} has no inventory (entId={character.EntityId})", Log.PRINT_MSG);
+                Log.Error($"{caller?.GetType().Name} Player {character.DisplayName} has no inventory (entId={character.EntityId.ToString()})", Log.PRINT_MESSAGE);
 
             return inv;
         }
@@ -404,7 +404,7 @@ namespace Digi.PaintGun.Utilities
             if(entityId == 0 || !MyAPIGateway.Entities.TryGetEntityById(entityId, out ent))
             {
                 if(logError)
-                    Log.Error($"{caller?.GetType().Name} :: Can't find entity from id={entityId}", Log.PRINT_MSG);
+                    Log.Error($"{caller?.GetType().Name} :: Can't find entity from id={entityId.ToString()}", Log.PRINT_MESSAGE);
                 return null;
             }
 
@@ -413,11 +413,26 @@ namespace Digi.PaintGun.Utilities
             if(casted == null)
             {
                 if(logError)
-                    Log.Error($"{caller?.GetType().Name} :: Found entity {ent} (id={entityId}) but it's not the expected type: {typeof(T).FullName}", Log.PRINT_MSG);
+                    Log.Error($"{caller?.GetType().Name} :: Found entity {ent} (id={entityId.ToString()}) but it's not the expected type: {typeof(T).FullName}", Log.PRINT_MESSAGE);
                 return null;
             }
 
             return casted;
+        }
+
+        public static bool IsLocalMod()
+        {
+            var modContext = PaintGunMod.Instance.Session.ModContext;
+
+            foreach(var mod in MyAPIGateway.Session.Mods)
+            {
+                if(mod.Name == modContext.ModId)
+                {
+                    return mod.PublishedFileId == 0;
+                }
+            }
+
+            return false;
         }
     }
 }

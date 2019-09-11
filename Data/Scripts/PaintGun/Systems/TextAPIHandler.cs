@@ -64,7 +64,7 @@ namespace Digi.PaintGun.Systems
             {
                 if(WasDetected)
                 {
-                    Log.Error("TextAPI sent the register event twice now! Please report to TextAPI author.", Log.PRINT_MSG);
+                    Log.Error("TextAPI sent the register event twice now! Please report to TextAPI author.", Log.PRINT_MESSAGE);
                     return;
                 }
 
