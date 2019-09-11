@@ -22,6 +22,16 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
 
             var spawnPos = player.GetPosition(); // + Vector3D.Up * (MyAPIGateway.Session.SessionSettings.SyncDistance * 0.25);
 
+            if(Vector3.IsZero(spawnPos, 0.01f))
+            {
+                var controlled = player.Controller?.ControlledEntity?.Entity;
+
+                if(controlled != null)
+                    spawnPos = controlled.GetPosition();
+                else
+                    Log.Error($"{GetType().Name} :: {player.DisplayName} ({player.SteamUserId.ToString()}) has GetPosition() zero and couldn't get controlled entity to get position.");
+            }
+
             var gridObj = new MyObjectBuilder_CubeGrid()
             {
                 CreatePhysics = false,
@@ -32,7 +42,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
                 Editable = true,
                 DestructibleBlocks = true,
                 IsRespawnGrid = false,
-                Name = SkinTestServer.ENT_NAME_PREFIX + steamId,
+                Name = SkinTestServer.ENT_NAME_PREFIX + steamId.ToString(),
             };
 
             var blockSkins = PaintGunMod.Instance.Palette.BlockSkins;
@@ -60,7 +70,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
 
             if(grid == null)
             {
-                Log.Error($"SkinOwnershipTester.SpawnGrind({steamId}): spawned grid turned out null");
+                Log.Error($"SkinOwnershipTester.SpawnGrind({steamId.ToString()}): spawned grid turned out null");
                 return;
             }
 

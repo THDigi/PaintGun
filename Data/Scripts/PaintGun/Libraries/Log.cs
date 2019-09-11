@@ -401,9 +401,16 @@ namespace Digi
                     if(MyAPIGateway.Utilities != null && !MyAPIGateway.Utilities.IsDedicated)
                     {
                         if(printText == PRINT_GENERIC_ERROR)
+                        {
                             printText = errorPrintText;
+                        }
                         else if(printText == PRINT_MESSAGE)
-                            printText = $"[ {modName} ERROR: {message} ]";
+                        {
+                            if(font == MyFontEnum.Red)
+                                printText = $"[{modName} ERROR: {message}]";
+                            else
+                                printText = $"[{modName} WARNING: {message}]";
+                        }
 
                         if(notify == null)
                         {

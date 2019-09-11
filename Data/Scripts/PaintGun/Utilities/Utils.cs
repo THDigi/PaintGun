@@ -444,5 +444,11 @@ namespace Digi.PaintGun.Utilities
         {
             return (obj != null ? obj.ToString() : "NULL");
         }
+
+        public static string PrintVector(Vector3 vec)
+        {
+            const string FORMAT = "0.##";
+            return $"{vec.X.ToString(FORMAT)},{vec.Y.ToString(FORMAT)},{vec.Z.ToString(FORMAT)}";
+        }
     }
 }

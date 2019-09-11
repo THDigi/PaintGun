@@ -14,7 +14,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
     {
         bool testing = false;
         int waitUntilTick = 0;
-        int cooldownReTest = RE_TEST_COOLDOWN;
+        int cooldownReTest = 0;
         int testCount = 0;
         MyCubeGrid hiddenGrid;
 
@@ -30,27 +30,23 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
 
         protected override void RegisterComponent()
         {
-            Main.CheckPlayerField.PlayerReady += PlayerReady;
+            UpdateMethods = UpdateFlags.UPDATE_AFTER_SIM;
+
             MyAPIGateway.Entities.OnEntityAdd += EntityAdded;
         }
 
         protected override void UnregisterComponent()
         {
             hiddenGrid = null;
-            Main.CheckPlayerField.PlayerReady -= PlayerReady;
             MyAPIGateway.Entities.OnEntityAdd -= EntityAdded;
         }
 
         #region Step 1 - Client asks server to spawn a grid
-        void PlayerReady()
-        {
-            TestForLocalPlayer();
-        }
-
         void TestForLocalPlayer()
         {
             testing = true;
             testCount++;
+            cooldownReTest = RE_TEST_COOLDOWN;
             Log.Info($"{GetType().Name}.Update() :: attempting test number {testCount.ToString()}...");
 
             SetUpdateMethods(UpdateFlags.UPDATE_AFTER_SIM, true);
@@ -101,9 +97,6 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
 
         protected override void UpdateAfterSim(int tick)
         {
-            if(!testing)
-                throw new Exception("why's this still updating?!");
-
             if(cooldownReTest > 0 && --cooldownReTest == 0)
             {
                 if(testCount >= MAX_TEST_TRIES)
@@ -116,10 +109,17 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
                     Main.NetworkLibHandler.PacketWarningMessage.Send(0, $"Ownership test failed after {MAX_TEST_TRIES.ToString()} tries. Report with server mod log and ask client to submit theirs aswell.");
                     return;
                 }
+            }
 
-                TestForLocalPlayer();
+            if(!testing)
+            {
+                // wait until player has a character so the grid doesn't get spawned who knows where
+                if(MyAPIGateway.Session?.Player?.Character != null)
+                {
+                    TestForLocalPlayer();
+                }
 
-                cooldownReTest = RE_TEST_COOLDOWN;
+                return;
             }
 
             if(waitUntilTick != 0 && tick >= waitUntilTick)

@@ -46,7 +46,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
 
             if(player == null)
             {
-                Log.Error($"{GetType().Name}.SpawnGrid(): steamId={steamId} does not exist!");
+                Log.Error($"{GetType().Name}.SpawnGrid(): steamId={steamId.ToString()} does not exist!");
                 return;
             }
 
@@ -58,10 +58,13 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
             {
                 tempGrids.Remove(steamId);
                 tempGrids.Add(steamId, new GridInfo(gridInfo.Grid, Main.Tick + TEMP_GRID_EXPIRE));
+
                 SetUpdateMethods(UpdateFlags.UPDATE_AFTER_SIM, true);
 
+                gridInfo.Grid.Teleport(MatrixD.CreateWorld(player.GetPosition()));
+
                 if(Constants.OWNERSHIP_TEST_LOGGING)
-                    Log.Info($"{GetType().Name}.SpawnGrid() :: already spawned, updating expiry...");
+                    Log.Info($"{GetType().Name}.SpawnGrid() :: already spawned, updating expiry and teleporting to player...");
 
                 return;
             }
@@ -81,7 +84,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
             SetUpdateMethods(UpdateFlags.UPDATE_AFTER_SIM, true);
 
             if(Constants.OWNERSHIP_TEST_LOGGING)
-                Log.Info($"{GetType().Name}.GridSpawned() :: spawned and monitoring for paint changes...");
+                Log.Info($"{GetType().Name}.GridSpawned() :: spawned at {Utils.PrintVector(grid.GetPosition())} and monitoring for paint changes...");
         }
         #endregion Step 2 - Server spawns a hidden grid for specified steamId
 
@@ -118,7 +121,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
                     removeKeys.Add(steamId);
 
                     if(Constants.OWNERSHIP_TEST_LOGGING)
-                        Log.Info($"{GetType().Name}.Update() - temp grid for {steamId} got removed as client script didn't paint it within {TEMP_GRID_EXPIRE / (float)Constants.TICKS_PER_SECOND:0.##} seconds.");
+                        Log.Info($"{GetType().Name}.Update() - temp grid for {steamId.ToString()} got removed as client script didn't paint it within {(TEMP_GRID_EXPIRE / (float)Constants.TICKS_PER_SECOND).ToString("0.##")} seconds.");
                 }
                 else
                 {
@@ -139,7 +142,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
                         if(block == null)
                         {
                             if(Constants.OWNERSHIP_TEST_LOGGING)
-                                Log.Info($"{GetType().Name}.Update() :: grid for {steamId} has no blocks, yet...");
+                                Log.Info($"{GetType().Name}.Update() :: grid for {steamId.ToString()} has no blocks, yet...");
 
                             ignore = true;
                             break;
@@ -149,7 +152,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
                         if(!Vector3.IsZero(block.ColorMaskHSV, 0.01f))
                         {
                             if(Constants.OWNERSHIP_TEST_LOGGING)
-                                Log.Info($"{GetType().Name}.Update() :: grid for {steamId} was not painted, yet...");
+                                Log.Info($"{GetType().Name}.Update() :: grid for {steamId.ToString()} was not painted, yet...");
 
                             ignore = true;
                             break;
@@ -162,7 +165,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
                     if(!ignore)
                     {
                         if(Constants.OWNERSHIP_TEST_LOGGING)
-                            Log.Info($"{GetType().Name}.Update() :: grid for {steamId} was found painted, sending results!");
+                            Log.Info($"{GetType().Name}.Update() :: grid for {steamId.ToString()} was found painted, sending results!");
 
                         // grid's done its job, get rid of it
                         gridInfo.Grid.Close();
