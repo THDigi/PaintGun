@@ -44,21 +44,21 @@ namespace Digi.PaintGun.Features.Sync
 
             if(!Utils.ValidateSkinOwnership(SteamId, NewPaint))
             {
-                Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to apply skin server side! Reason: skin not owned.");
+                Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to apply skin server side, skin not owned.");
                 NewPaint = new SerializedPaintMaterial(NewPaint.ColorMaskPacked, null);
             }
 
             var grid = Utils.GetEntityOrError<MyCubeGrid>(this, GridEntId, Constants.NETWORK_DESYNC_ERROR_LOGGING);
             if(grid == null)
             {
-                Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side! Reason: can't find grid.");
+                Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side, can't find grid.");
                 return;
             }
 
             // ensure server side if safezone permissions are respected
             if(MyAPIGateway.Session.IsServer && !Utils.SafeZoneCanPaint(grid, SteamId))
             {
-                Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side! Reason: denied by safe zone.");
+                Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side, denied by safe zone.");
                 return;
             }
 
@@ -69,7 +69,7 @@ namespace Digi.PaintGun.Features.Sync
                 if(Constants.NETWORK_DESYNC_ERROR_LOGGING)
                     Log.Error($"Can't paint unallied grids; packet={this}", Log.PRINT_MESSAGE);
 
-                Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side! Reason: ship not allied.");
+                Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side, ship not allied.");
                 return;
             }
 

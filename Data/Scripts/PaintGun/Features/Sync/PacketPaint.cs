@@ -74,7 +74,7 @@ namespace Digi.PaintGun.Features.Sync
                     Log.Error($"{GetType().Name} :: Can't paint inside no-build safe zone! Sender={SteamId.ToString()}; Grid={grid} ({grid.EntityId.ToString()}); block={block.BlockDefinition.Id.ToString()} ({block.Position.ToString()})", Log.PRINT_MESSAGE);
                 }
 
-                Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side! Reason: denied by safe zone.");
+                Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side, denied by safe zone.");
                 return;
             }
 
@@ -85,7 +85,7 @@ namespace Digi.PaintGun.Features.Sync
                 if(Constants.NETWORK_DESYNC_ERROR_LOGGING)
                     Log.Error($"{GetType().Name} :: Can't paint non-allied grids! Sender={SteamId.ToString()}; Grid={grid} ({grid.EntityId.ToString()})", Log.PRINT_MESSAGE);
 
-                Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side! Reason: ship not allied.");
+                Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side, ship not allied.");
                 return;
             }
 
@@ -94,7 +94,7 @@ namespace Digi.PaintGun.Features.Sync
                 if(Constants.NETWORK_DESYNC_ERROR_LOGGING)
                     Log.Error($"{GetType().Name} :: Can't paint inexistent blocks! Sender={SteamId.ToString()}; Grid={grid} ({grid.EntityId.ToString()}) at GridPosition={GridPosition.ToString()}", Log.PRINT_MESSAGE);
 
-                Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side! Reason: block no longer exists.");
+                Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side, block no longer exists.");
                 return;
             }
 
@@ -120,7 +120,7 @@ namespace Digi.PaintGun.Features.Sync
         {
             if(!Utils.ValidateSkinOwnership(SteamId, Paint))
             {
-                Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to apply skin server side! Reason: skin not owned.");
+                Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to apply skin server side, skin not owned.");
                 Paint = new SerializedPaintMaterial(Paint.ColorMaskPacked, null);
             }
 

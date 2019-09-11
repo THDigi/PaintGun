@@ -54,8 +54,7 @@ namespace Digi.PaintGun
 
         public PaintGunMod(PaintGun_GameSession session) : base(MOD_NAME, session)
         {
-            // DEBUG version check for quicktesting
-            var msg = "### [PaintGun DEBUG] :: v16 test init";
+            var msg = "### PaintGun v17";
             VRage.Utils.MyLog.Default.WriteLineAndConsole(msg);
             Log.Info(msg);
 

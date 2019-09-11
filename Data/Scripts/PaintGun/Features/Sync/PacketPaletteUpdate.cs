@@ -47,10 +47,11 @@ namespace Digi.PaintGun.Features.Sync
             //    }
             //}
 
-            if(Constants.NETWORK_ACTION_LOGGING)
-            {
-                Log.Info($@"{GetType().Name} :: Sending pallete update: SelectedColorIndex={Utils.PrintNullable(SelectedColorIndex)}, SelectedSkinIndex={Utils.PrintNullable(SelectedSkinIndex)}, ApplyColor={Utils.PrintNullable(ApplyColor)}, ApplySkin={Utils.PrintNullable(ApplySkin)}, ColorPickMode={Utils.PrintNullable(ColorPickMode)}");
-            }
+            // too frequent
+            //if(Constants.NETWORK_ACTION_LOGGING)
+            //{
+            //    Log.Info($@"{GetType().Name} :: Sending pallete update: SelectedColorIndex={Utils.PrintNullable(SelectedColorIndex)}, SelectedSkinIndex={Utils.PrintNullable(SelectedSkinIndex)}, ApplyColor={Utils.PrintNullable(ApplyColor)}, ApplySkin={Utils.PrintNullable(ApplySkin)}, ColorPickMode={Utils.PrintNullable(ColorPickMode)}");
+            //}
 
             Network.SendToServer(this);
             //PackedColorMasks = null;
@@ -58,10 +59,11 @@ namespace Digi.PaintGun.Features.Sync
 
         public override void Received(ref bool relay)
         {
-            if(Constants.NETWORK_ACTION_LOGGING)
-            {
-                Log.Info($@"{GetType().Name} :: Received pallete update for {Utils.PrintPlayerName(SteamId)}; SelectedColorIndex={Utils.PrintNullable(SelectedColorIndex)}, SelectedSkinIndex={Utils.PrintNullable(SelectedSkinIndex)}, ApplyColor={Utils.PrintNullable(ApplyColor)}, ApplySkin={Utils.PrintNullable(ApplySkin)}, ColorPickMode={Utils.PrintNullable(ColorPickMode)}");
-            }
+            // too frequent
+            //if(Constants.NETWORK_ACTION_LOGGING)
+            //{
+            //    Log.Info($@"{GetType().Name} :: Received pallete update for {Utils.PrintPlayerName(SteamId)}; SelectedColorIndex={Utils.PrintNullable(SelectedColorIndex)}, SelectedSkinIndex={Utils.PrintNullable(SelectedSkinIndex)}, ApplyColor={Utils.PrintNullable(ApplyColor)}, ApplySkin={Utils.PrintNullable(ApplySkin)}, ColorPickMode={Utils.PrintNullable(ColorPickMode)}");
+            //}
 
             relay = true;
 
