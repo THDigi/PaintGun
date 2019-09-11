@@ -18,7 +18,7 @@ namespace Digi.PaintGun.Features.Palette
         const int PLAYER_INFO_CLEANUP_TICKS = Constants.TICKS_PER_SECOND * 60 * 5;
 
         public List<SkinInfo> BlockSkins;
-        public int OwnedSkins = 0;
+        public int OwnedSkins { get; private set; } = 0;
 
         public PlayerInfo LocalInfo;
         public bool ReplaceMode = false;
@@ -143,7 +143,15 @@ namespace Digi.PaintGun.Features.Palette
                         icon = SKIN_ICON_PREFIX + "Unknown";
                     }
 
-                    BlockSkins.Add(new SkinInfo(assetDef.Id.SubtypeId, name, icon));
+                    var skinInfo = new SkinInfo(assetDef.Id.SubtypeId, name, icon);
+                    BlockSkins.Add(skinInfo);
+
+                    // likely mod-added skin
+                    if(!assetDef.Context.IsBaseGame && (assetDef.DLCs == null || assetDef.DLCs.Length == 0))
+                    {
+                        skinInfo.LocallyOwned = true;
+                        skinInfo.Mod = assetDef.Context;
+                    }
                 }
             }
 
@@ -383,6 +391,21 @@ namespace Digi.PaintGun.Features.Palette
             }
 
             return pi;
+        }
+
+        /// <summary>
+        /// Assigns <see cref="OwnedSkins"/>.
+        /// </summary>
+        public void ComputeOwnedSkins()
+        {
+            OwnedSkins = 0;
+
+            // skipping default skin at index 0
+            for(int i = 1; i < BlockSkins.Count; ++i)
+            {
+                if(BlockSkins[i].LocallyOwned)
+                    OwnedSkins++;
+            }
         }
     }
 }

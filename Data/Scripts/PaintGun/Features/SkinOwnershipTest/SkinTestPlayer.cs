@@ -146,7 +146,6 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
         {
             var palette = Main.Palette;
             var blockSkins = palette.BlockSkins;
-            Palette.OwnedSkins = 0;
 
             if(Constants.OWNERSHIP_TEST_EXTRA_LOGGING)
                 Log.Info($"{GetType().Name}.GotResults() :: got results! owned={ownedSkinIndexes.Count.ToString()}/{(palette.BlockSkins.Count - 1).ToString()}; ids={string.Join(", ", ownedSkinIndexes)}");
@@ -163,8 +162,9 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
                 }
 
                 blockSkins[index].LocallyOwned = true;
-                palette.OwnedSkins++;
             }
+
+            palette.ComputeOwnedSkins();
 
             var selectedSkin = palette.GetSkinInfo(palette.LocalInfo.SelectedSkinIndex);
 

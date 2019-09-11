@@ -169,8 +169,15 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
                         removeKeys.Add(steamId);
 
                         var pi = Palette.GetOrAddPlayerInfo(steamId);
-                        pi.OwnedSkinIndexes = new List<int>(NetworkLibHandler.PacketOwnershipTestResults.OwnedSkinIndexes.Count);
+                        pi.OwnedSkinIndexes = new List<int>(blockSkins.Count);
                         pi.OwnedSkinIndexes.AddRange(NetworkLibHandler.PacketOwnershipTestResults.OwnedSkinIndexes);
+
+                        // also add mod-added skins as they are always owned
+                        foreach(var skin in blockSkins)
+                        {
+                            if(skin.Mod != null)
+                                pi.OwnedSkinIndexes.Add(skin.Index);
+                        }
 
                         // tell player their owned skins
                         NetworkLibHandler.PacketOwnershipTestResults.Send(steamId);

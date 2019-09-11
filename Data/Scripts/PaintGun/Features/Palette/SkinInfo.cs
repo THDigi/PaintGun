@@ -1,4 +1,5 @@
-﻿using VRage.Utils;
+﻿using VRage.Game;
+using VRage.Utils;
 
 namespace Digi.PaintGun.Features.Palette
 {
@@ -9,6 +10,7 @@ namespace Digi.PaintGun.Features.Palette
         public readonly string Name;
         public readonly MyStringId Icon;
         public bool LocallyOwned;
+        public MyModContext Mod;
 
         public SkinInfo(MyStringHash subtypeId, string name, string icon, bool locallyOwned = false)
         {
