@@ -86,7 +86,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
                 if(steamId != MyAPIGateway.Multiplayer.MyId)
                     return;
 
-                if(Constants.OWNERSHIP_TEST_EXTRA_LOGGING)
+                if(Constants.OWNERSHIP_TEST_LOGGING)
                     Log.Info($"{GetType().Name}.EntityAdded() :: found grid for local player... inScene={grid.InScene.ToString()}; phys={(grid.Physics == null ? "null" : grid.Physics.Enabled.ToString())}");
 
                 // paint&skin after a delay
@@ -133,7 +133,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
                     hiddenGrid.SkinBlocks(pos, pos, color, blockSkins[i].SubtypeId, playSound: false, validateOwnership: true);
                 }
 
-                if(Constants.OWNERSHIP_TEST_EXTRA_LOGGING)
+                if(Constants.OWNERSHIP_TEST_LOGGING)
                     Log.Info($"{GetType().Name}.Update() :: grid painted");
             }
         }
@@ -147,7 +147,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
             var palette = Main.Palette;
             var blockSkins = palette.BlockSkins;
 
-            if(Constants.OWNERSHIP_TEST_EXTRA_LOGGING)
+            if(Constants.OWNERSHIP_TEST_LOGGING)
                 Log.Info($"{GetType().Name}.GotResults() :: got results! owned={ownedSkinIndexes.Count.ToString()}/{(palette.BlockSkins.Count - 1).ToString()}; ids={string.Join(", ", ownedSkinIndexes)}");
 
             foreach(var index in ownedSkinIndexes)

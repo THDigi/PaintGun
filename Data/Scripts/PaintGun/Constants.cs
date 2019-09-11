@@ -14,10 +14,10 @@ namespace Digi.PaintGun
 
         public static readonly object SAFE_ZONE_ACCES_FOR_PAINT = (object)0x40; // MySafeZoneAction.Building = 0x40
 
-        // DEBUG set these false after testing.
-        public static bool DEBUGGING => true;
-        public static bool OWNERSHIP_TEST_EXTRA_LOGGING => true;
-        public static bool NETWORK_EXTRA_LOGGING => true;
+        public static bool DEBUGGING => false;
+        public static bool OWNERSHIP_TEST_LOGGING => true;
+        public static bool NETWORK_ACTION_LOGGING => true;
+        public static bool NETWORK_DESYNC_ERROR_LOGGING => true;
 
         public readonly MyObjectBuilder_AmmoMagazine PAINT_MAG_ITEM = new MyObjectBuilder_AmmoMagazine()
         {

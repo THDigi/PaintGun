@@ -280,16 +280,6 @@ namespace Digi.PaintGun.Utilities
             return player;
         }
 
-        public static string GetPlayerNameForLogging(ulong steamId)
-        {
-            var player = GetPlayerBySteamId(steamId);
-
-            if(player == null)
-                return $"[NotFound!] ({steamId.ToString()})";
-            else
-                return $"{player.DisplayName} ({steamId.ToString()})";
-        }
-
         #region Paint permission check
         // NOTE copied from Sandbox.Game.Entities.MyCubeGrid because it's private
         public static bool AllowedToPaintGrid(IMyCubeGrid grid, long identityId)
@@ -433,6 +423,26 @@ namespace Digi.PaintGun.Utilities
             }
 
             return false;
+        }
+
+        public static string PrintPlayerName(ulong steamId)
+        {
+            var player = GetPlayerBySteamId(steamId);
+
+            if(player == null)
+                return $"[NotFound!] ({steamId.ToString()})";
+            else
+                return $"{player.DisplayName} ({steamId.ToString()})";
+        }
+
+        public static string PrintNullable<T>(Nullable<T> nullable) where T : struct
+        {
+            return (nullable.HasValue ? nullable.ToString() : "NULL");
+        }
+
+        public static string PrintObject<T>(T obj) where T : class
+        {
+            return (obj != null ? obj.ToString() : "NULL");
         }
     }
 }

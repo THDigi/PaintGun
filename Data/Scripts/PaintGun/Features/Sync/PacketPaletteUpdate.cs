@@ -1,7 +1,6 @@
-﻿using System.Collections.Generic;
-using Digi.NetworkLib;
+﻿using Digi.NetworkLib;
+using Digi.PaintGun.Utilities;
 using ProtoBuf;
-using VRageMath;
 
 namespace Digi.PaintGun.Features.Sync
 {
@@ -23,37 +22,47 @@ namespace Digi.PaintGun.Features.Sync
         [ProtoMember(5)]
         bool? ColorPickMode;
 
-        [ProtoMember(6)]
-        List<uint> PackedColorMasks;
+        //[ProtoMember(6)]
+        //List<uint> PackedColorMasks;
 
         public PacketPaletteUpdate() { } // Empty constructor required for deserialization
 
-        public void Send(int? selectedColorIndex = null, int? selectedSkinIndex = null, bool? applyColor = null, bool? applySkin = null, bool? colorPickMode = null, List<Vector3> colorMasks = null)
+        public void Send(int? selectedColorIndex = null, int? selectedSkinIndex = null, bool? applyColor = null, bool? applySkin = null, bool? colorPickMode = null) //, List<Vector3> colorMasks = null)
         {
             SelectedColorIndex = selectedColorIndex;
             SelectedSkinIndex = selectedSkinIndex;
             ApplyColor = applyColor;
             ApplySkin = applySkin;
             ColorPickMode = colorPickMode;
-            PackedColorMasks = null;
+            //PackedColorMasks = null;
+            //
+            //if(colorMasks != null)
+            //{
+            //    PackedColorMasks = Main.Caches.PackedColors;
+            //    PackedColorMasks.Clear();
+            //
+            //    foreach(var colorMask in colorMasks)
+            //    {
+            //        PackedColorMasks.Add(colorMask.PackHSVToUint());
+            //    }
+            //}
 
-            if(colorMasks != null)
+            if(Constants.NETWORK_ACTION_LOGGING)
             {
-                PackedColorMasks = Main.Caches.PackedColors;
-                PackedColorMasks.Clear();
-
-                foreach(var colorMask in colorMasks)
-                {
-                    PackedColorMasks.Add(colorMask.PackHSVToUint());
-                }
+                Log.Info($@"{GetType().Name} :: Sending pallete update: SelectedColorIndex={Utils.PrintNullable(SelectedColorIndex)}, SelectedSkinIndex={Utils.PrintNullable(SelectedSkinIndex)}, ApplyColor={Utils.PrintNullable(ApplyColor)}, ApplySkin={Utils.PrintNullable(ApplySkin)}, ColorPickMode={Utils.PrintNullable(ColorPickMode)}");
             }
 
             Network.SendToServer(this);
-            PackedColorMasks = null;
+            //PackedColorMasks = null;
         }
 
         public override void Received(ref bool relay)
         {
+            if(Constants.NETWORK_ACTION_LOGGING)
+            {
+                Log.Info($@"{GetType().Name} :: Received pallete update for {Utils.PrintPlayerName(SteamId)}; SelectedColorIndex={Utils.PrintNullable(SelectedColorIndex)}, SelectedSkinIndex={Utils.PrintNullable(SelectedSkinIndex)}, ApplyColor={Utils.PrintNullable(ApplyColor)}, ApplySkin={Utils.PrintNullable(ApplySkin)}, ColorPickMode={Utils.PrintNullable(ColorPickMode)}");
+            }
+
             relay = true;
 
             var pi = Main.Palette.GetOrAddPlayerInfo(SteamId);
@@ -72,6 +81,9 @@ namespace Digi.PaintGun.Features.Sync
 
             if(ColorPickMode.HasValue)
                 pi.ColorPickMode = ColorPickMode.Value;
+
+            //if(PackedColorMasks != null)
+            //    pi.SetColors(PackedColorMasks);
         }
     }
 }

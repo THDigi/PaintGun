@@ -47,7 +47,7 @@ namespace Digi.PaintGun.Features.Sync
                 NewPaint = new SerializedPaintMaterial(NewPaint.ColorMaskPacked, null);
             }
 
-            var grid = Utils.GetEntityOrError<MyCubeGrid>(this, GridEntId, Constants.NETWORK_EXTRA_LOGGING);
+            var grid = Utils.GetEntityOrError<MyCubeGrid>(this, GridEntId, Constants.NETWORK_DESYNC_ERROR_LOGGING);
             if(grid == null)
                 return;
 
@@ -59,7 +59,7 @@ namespace Digi.PaintGun.Features.Sync
 
             if(!Utils.AllowedToPaintGrid(grid, identity))
             {
-                if(Constants.NETWORK_EXTRA_LOGGING)
+                if(Constants.NETWORK_DESYNC_ERROR_LOGGING)
                     Log.Error($"Can't paint unallied grids; packet={this}", Log.PRINT_MESSAGE);
                 return;
             }

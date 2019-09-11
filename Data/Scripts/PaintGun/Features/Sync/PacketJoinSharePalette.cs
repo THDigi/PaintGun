@@ -53,16 +53,16 @@ namespace Digi.PaintGun.Features.Sync
 
             if(sendTo != 0)
             {
-                if(Constants.NETWORK_EXTRA_LOGGING)
-                    Log.Info($"{GetType().Name} :: sending {Utils.GetPlayerNameForLogging(SteamId)}'s palette to={sendTo}.");
+                if(Constants.NETWORK_ACTION_LOGGING)
+                    Log.Info($"{GetType().Name} :: sending {Utils.PrintPlayerName(SteamId)}'s palette to={sendTo.ToString()}.");
 
                 Reply = false;
                 Network.SendToPlayer(this, sendTo);
             }
             else
             {
-                if(Constants.NETWORK_EXTRA_LOGGING)
-                    Log.Info($"{GetType().Name} :: broadcasting {Utils.GetPlayerNameForLogging(SteamId)}'s palette.");
+                if(Constants.NETWORK_ACTION_LOGGING)
+                    Log.Info($"{GetType().Name} :: broadcasting {Utils.PrintPlayerName(SteamId)}'s palette.");
 
                 Reply = true;
                 Network.SendToServer(this);
@@ -75,8 +75,8 @@ namespace Digi.PaintGun.Features.Sync
 
             if(SteamId != MyAPIGateway.Multiplayer.MyId)
             {
-                if(Constants.NETWORK_EXTRA_LOGGING)
-                    Log.Info($"{GetType().Name} :: received {Utils.GetPlayerNameForLogging(SteamId)}'s palette; Reply={Reply}");
+                if(Constants.NETWORK_ACTION_LOGGING)
+                    Log.Info($"{GetType().Name} :: received {Utils.PrintPlayerName(SteamId)}'s palette; Reply={Reply.ToString()}");
 
                 var player = Utils.GetPlayerBySteamId(SteamId);
 
@@ -95,7 +95,7 @@ namespace Digi.PaintGun.Features.Sync
 
             if(Reply && MyAPIGateway.Multiplayer.IsServer)
             {
-                if(Constants.NETWORK_EXTRA_LOGGING)
+                if(Constants.NETWORK_ACTION_LOGGING)
                     Log.Info($"+ sending all players' palettes back to original sender.");
 
                 foreach(var kv in Main.Palette.PlayerInfo)

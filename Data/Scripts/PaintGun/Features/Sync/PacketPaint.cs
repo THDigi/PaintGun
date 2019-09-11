@@ -61,14 +61,14 @@ namespace Digi.PaintGun.Features.Sync
 
         public override void Received(ref bool relay)
         {
-            var grid = Utils.GetEntityOrError<MyCubeGrid>(this, GridEntId, Constants.NETWORK_EXTRA_LOGGING);
+            var grid = Utils.GetEntityOrError<MyCubeGrid>(this, GridEntId, Constants.NETWORK_DESYNC_ERROR_LOGGING);
             if(grid == null)
                 return;
 
             // ensure server side if safezone permissions are respected
             if(Main.IsServer && !Utils.SafeZoneCanPaint(grid.GetCubeBlock(GridPosition), SteamId))
             {
-                if(Constants.NETWORK_EXTRA_LOGGING)
+                if(Constants.NETWORK_DESYNC_ERROR_LOGGING)
                 {
                     var block = (IMySlimBlock)grid.GetCubeBlock(GridPosition);
                     Log.Error($"{GetType().Name} :: Can't paint inside no-build safe zone! Sender={SteamId.ToString()}; Grid={grid} ({grid.EntityId.ToString()}); block={block.BlockDefinition.Id.ToString()} ({block.Position.ToString()})", Log.PRINT_MESSAGE);
@@ -80,14 +80,14 @@ namespace Digi.PaintGun.Features.Sync
 
             if(!Utils.AllowedToPaintGrid(grid, identity))
             {
-                if(Constants.NETWORK_EXTRA_LOGGING)
+                if(Constants.NETWORK_DESYNC_ERROR_LOGGING)
                     Log.Error($"{GetType().Name} :: Can't paint non-allied grids! Sender={SteamId.ToString()}; Grid={grid} ({grid.EntityId.ToString()})", Log.PRINT_MESSAGE);
                 return;
             }
 
             if(!grid.CubeExists(GridPosition))
             {
-                if(Constants.NETWORK_EXTRA_LOGGING)
+                if(Constants.NETWORK_DESYNC_ERROR_LOGGING)
                     Log.Error($"{GetType().Name} :: Can't paint inexistent blocks! Sender={SteamId.ToString()}; Grid={grid} ({grid.EntityId.ToString()}) at GridPosition={GridPosition.ToString()}", Log.PRINT_MESSAGE);
                 return;
             }
