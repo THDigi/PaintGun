@@ -159,6 +159,10 @@ namespace Digi.PaintGun.Features.Palette
             if(material.Skin.HasValue)
             {
                 var skin = PaintGunMod.Instance.Palette.GetSkinInfo(material.Skin.Value);
+
+                if(skin == null)
+                    throw new ArgumentException($"Skin {material.Skin.ToString()} does not exist!");
+
                 SkinIndex = skin.Index;
             }
         }
@@ -189,6 +193,10 @@ namespace Digi.PaintGun.Features.Palette
             ColorMaskPacked = material.ColorMask.PackHSVToUint();
 
             var skin = PaintGunMod.Instance.Palette.GetSkinInfo(material.Skin);
+
+            if(skin == null)
+                throw new ArgumentException($"Skin {material.Skin.ToString()} does not exist!");
+
             SkinIndex = skin.Index;
         }
 

@@ -502,14 +502,24 @@ namespace Digi.PaintGun.Features.Tool
                 if(targetMaterial.Skin.HasValue)
                 {
                     var targetSkin = Palette.GetSkinInfo(targetMaterial.Skin.Value);
-                    if(!targetSkin.LocallyOwned)
-                        text.Append("<color=red>");
-                    else if(targetSkin.Index == 0)
-                        text.Append("<color=gray>");
-                    text.Append(targetSkin.Name);
+
+                    if(targetSkin != null)
+                    {
+                        if(!targetSkin.LocallyOwned)
+                            text.Append("<color=red>");
+                        else if(targetSkin.Index == 0)
+                            text.Append("<color=gray>");
+                        text.Append(targetSkin.Name);
+                    }
+                    else
+                    {
+                        text.Append("<color=gray>").Append(targetMaterial.Skin.Value.ToString()).Append(" <color=red>(uninstalled)");
+                    }
                 }
                 else
+                {
                     text.Append("(N/A)");
+                }
                 text.Append('\n');
             }
 
@@ -542,19 +552,23 @@ namespace Digi.PaintGun.Features.Tool
             }
 
             {
-                text.Append("        ");
                 if(paint.Skin.HasValue)
                 {
+                    text.Append("        <color=white>Skin: ");
+
                     var skin = Palette.GetSkinInfo(paint.Skin.Value);
-                    text.Append("<color=white>Skin: ");
-                    if(skin.Index == 0)
-                        text.Append("<color=gray>");
-                    text.Append(skin.Name).Append('\n');
+                    if(skin != null)
+                    {
+                        if(skin.Index == 0)
+                            text.Append("<color=gray>");
+                        text.Append(skin.Name);
+                    }
+                    else
+                    {
+                        text.Append("<color=gray>").Append(paint.Skin.Value.ToString()).Append(" <color=red>(uninstalled)");
+                    }
                 }
-                else
-                {
-                    text.Append('\n');
-                }
+                text.Append('\n');
             }
 
             text.Append("<color=white>");

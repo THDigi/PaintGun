@@ -238,7 +238,7 @@ namespace Digi.PaintGun.Features.Palette
                     return skin;
             }
 
-            throw new ArgumentException($"Given skin subtype='{skinSubtypeId.ToString()}' is not known by this mod.");
+            return null;
         }
 
         public SkinInfo GetSkinInfo(int index)
@@ -345,7 +345,7 @@ namespace Digi.PaintGun.Features.Palette
                             LocalInfo.SelectedSkinIndex = skin.Index;
                             success = true;
 
-                            Notifications.Show(1, $"Selected skin: [{GetSkinInfo(pickedMaterial.Skin.Value).Name}]", MyFontEnum.White, 2000);
+                            Notifications.Show(1, $"Selected skin: [{skin.Name}]", MyFontEnum.White, 2000);
                         }
                     }
                 }
