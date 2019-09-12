@@ -58,6 +58,7 @@ namespace Digi.PaintGun.Features.Tool
         readonly MyStringId SPRAY_MATERIAL = MyStringId.GetOrCompute("PaintGun_Spray");
         const BlendTypeEnum SPRAY_BLEND_TYPE = BlendTypeEnum.SDR;
 
+        public const int SPRAY_COOLDOWN_COLORPICKMODE = Constants.TICKS_PER_SECOND * 1;
         const int SPRAY_MAX_VIEW_DISTANCE_SQ = 100 * 100;
         const double NOZZLE_POSITION_Y = 0.06525;
         const double NOZZLE_POSITION_Z = 0.16;

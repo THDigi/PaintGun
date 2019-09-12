@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Digi.PaintGun.Features.Tool;
 using Digi.PaintGun.Utilities;
 using Sandbox.ModAPI;
 using VRage.Utils;
@@ -155,8 +156,15 @@ namespace Digi.PaintGun.Features.Palette
                     _colorPickMode = value;
                     OnColorPickModeChanged?.Invoke(this);
 
-                    if(Main.IsPlayer && SteamId == MyAPIGateway.Multiplayer.MyId)
-                        Main.NetworkLibHandler.PacketPaletteUpdate.Send(colorPickMode: ColorPickMode);
+                    if(Main.IsPlayer)
+                    {
+                        if(SteamId == MyAPIGateway.Multiplayer.MyId)
+                            Main.NetworkLibHandler.PacketPaletteUpdate.Send(colorPickMode: ColorPickMode);
+
+                        var tool = Main.ToolHandler.GetToolHeldBy(SteamId);
+                        if(tool != null)
+                            tool.SprayCooldown = PaintGunItem.SPRAY_COOLDOWN_COLORPICKMODE;
+                    }
                 }
             }
         }

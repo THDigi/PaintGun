@@ -47,6 +47,19 @@ namespace Digi.PaintGun.Features.Tool
             }
         }
 
+        public PaintGunItem GetToolHeldBy(ulong steamId)
+        {
+            for(int i = Tools.Count - 1; i >= 0; --i)
+            {
+                var tool = Tools[i];
+
+                if(tool.OwnerSteamId == steamId)
+                    return tool;
+            }
+
+            return null;
+        }
+
         public Particle GetPooledParticle()
         {
             return particlePool.Get();
