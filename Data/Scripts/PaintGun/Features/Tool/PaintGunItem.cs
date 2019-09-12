@@ -46,8 +46,8 @@ namespace Digi.PaintGun.Features.Tool
         public bool OwnerIsLocalPlayer = false;
         public PlayerInfo OwnerInfo;
 
-        List<Particle> particles = new List<Particle>(30);
-        MyEntity3DSoundEmitter soundEmitter = new MyEntity3DSoundEmitter(null)
+        readonly List<Particle> particles = new List<Particle>(30);
+        readonly MyEntity3DSoundEmitter soundEmitter = new MyEntity3DSoundEmitter(null)
         {
             CustomMaxDistance = 30f,
         };
@@ -77,7 +77,10 @@ namespace Digi.PaintGun.Features.Tool
         public bool Init(IMyAutomaticRifleGun entity)
         {
             if(entity == null)
-                throw new ArgumentException($"{GetType().Name} got created with null entity!");
+                throw new ArgumentException($"{GetType().Name} :: got created with null entity!");
+
+            if(soundEmitter == null)
+                throw new NullReferenceException($"{GetType().Name} :: soundEmitter is null");
 
             Rifle = entity;
             soundEmitter.Entity = (MyEntity)Rifle;
@@ -89,6 +92,12 @@ namespace Digi.PaintGun.Features.Tool
                 return false;
             }
 
+            if(MyAPIGateway.Multiplayer == null)
+                throw new NullReferenceException($"{GetType().Name} :: MyAPIGateway.Multiplayer == null");
+
+            if(MyAPIGateway.Session == null)
+                throw new NullReferenceException($"{GetType().Name} :: MyAPIGateway.Session == null");
+
             var charEnt = MyAPIGateway.Session.ControlledObject as IMyCharacter;
 
             if(charEnt != null && charEnt == Rifle.Owner)
@@ -99,13 +108,20 @@ namespace Digi.PaintGun.Features.Tool
 
             if(OwnerSteamId == 0)
             {
-                var players = Main.Caches.Players;
+                var players = Main.Caches?.Players;
+
+                if(players == null)
+                    throw new NullReferenceException($"{GetType().Name} :: players cache is null");
+
+                if(MyAPIGateway.Players == null)
+                    throw new NullReferenceException($"{GetType().Name} :: MyAPIGateway.Players == null");
+
                 players.Clear();
                 MyAPIGateway.Players.GetPlayers(players);
 
                 foreach(var player in players)
                 {
-                    if(player.Character.EntityId == Rifle.Owner.EntityId)
+                    if(player?.Character != null && player.Character.EntityId == Rifle.Owner.EntityId)
                     {
                         OwnerSteamId = player.SteamUserId;
                         break;
@@ -121,7 +137,14 @@ namespace Digi.PaintGun.Features.Tool
                 return false;
             }
 
-            OwnerInfo = Main.Palette.GetPlayerInfo(OwnerSteamId);
+            if(Main.Palette == null)
+                throw new NullReferenceException($"{GetType().Name} :: Palette == null");
+
+            OwnerInfo = Main.Palette.GetOrAddPlayerInfo(OwnerSteamId);
+
+            if(OwnerInfo == null)
+                throw new NullReferenceException($"{GetType().Name} :: OwnerInfo == null");
+
             OwnerInfo.OnColorSlotSelected += OwnerColorSlotSelected;
             OwnerInfo.OnColorListChanged += OwnerColorListChanged;
             OwnerInfo.OnApplyColorChanged += OwnerPaletteUpdated;
@@ -162,7 +185,6 @@ namespace Digi.PaintGun.Features.Tool
         {
             soundEmitter.Cleanup();
             Clear(false);
-            soundEmitter = null;
             particles.Clear();
 
             Main.Settings.SettingsLoaded -= UpdateSprayVolume;
