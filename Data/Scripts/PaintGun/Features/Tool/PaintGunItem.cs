@@ -85,7 +85,7 @@ namespace Digi.PaintGun.Features.Tool
 
             if(Rifle.Owner == null)
             {
-                Log.Error($"Can't find holder of a PaintGun entity because it's null! OwnerIdentityId={Rifle.OwnerIdentityId} entId={Rifle.EntityId}", Log.PRINT_MESSAGE);
+                Log.Error($"Can't find holder of a PaintGun entity because it's null! OwnerIdentityId={Rifle.OwnerIdentityId.ToString()} entId={Rifle.EntityId.ToString()}", Log.PRINT_MESSAGE);
                 return false;
             }
 
@@ -117,7 +117,7 @@ namespace Digi.PaintGun.Features.Tool
 
             if(OwnerSteamId == 0)
             {
-                Log.Error($"Can't find holder of a PaintGun entity! entId={Rifle.EntityId}", Log.PRINT_MESSAGE);
+                Log.Error($"Can't find holder of a PaintGun entity! entId={Rifle.EntityId.ToString()}", Log.PRINT_MESSAGE);
                 return false;
             }
 
@@ -175,7 +175,7 @@ namespace Digi.PaintGun.Features.Tool
 
             if(soundEmitter == null)
             {
-                Log.Error($"{GetType().Name} :: SoundEmitter for PaintGunItem entId={Rifle.EntityId} is null for some reason.", Log.PRINT_MESSAGE);
+                Log.Error($"{GetType().Name} :: SoundEmitter for PaintGunItem entId={Rifle.EntityId.ToString()} is null for some reason.", Log.PRINT_MESSAGE);
                 return false;
             }
 
