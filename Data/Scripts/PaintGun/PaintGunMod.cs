@@ -4,6 +4,7 @@ using Digi.PaintGun.Features.ChatCommands;
 using Digi.PaintGun.Features.Debug;
 using Digi.PaintGun.Features.Palette;
 using Digi.PaintGun.Features.SkinOwnershipTest;
+using Digi.PaintGun.Features.Sync;
 using Digi.PaintGun.Features.Tool;
 using Digi.PaintGun.Systems;
 using Digi.PaintGun.Utilities;

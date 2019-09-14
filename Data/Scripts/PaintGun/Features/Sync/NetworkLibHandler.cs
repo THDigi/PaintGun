@@ -1,7 +1,6 @@
 ﻿using Digi.NetworkLib;
-using Digi.PaintGun.Features.Sync;
 
-namespace Digi.PaintGun.Systems
+namespace Digi.PaintGun.Features.Sync
 {
     public class NetworkLibHandler : ModComponent
     {

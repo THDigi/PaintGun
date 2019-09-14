@@ -175,7 +175,7 @@
     <Compile Include="PaintGunMod.cs" />
     <Compile Include="ModComponent.cs" />
     <Compile Include="Systems\GameConfig.cs" />
-    <Compile Include="Systems\NetworkLibHandler.cs" />
+    <Compile Include="Features\Sync\NetworkLibHandler.cs" />
     <Compile Include="Systems\TextAPIHandler.cs" />
     <Compile Include="Utilities\Caches.cs" />
     <Compile Include="Utilities\DrawUtils.cs" />
