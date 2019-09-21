@@ -30,6 +30,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
 
         protected override void RegisterComponent()
         {
+            NetworkLibHandler.PacketOwnershipTestResults.OwnedSkinIndexes = new List<int>(Palette.BlockSkins.Count - 1); // index 0 is not being sent.
         }
 
         protected override void UnregisterComponent()
@@ -108,6 +109,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
             waitUntilTick = tick + GRID_CHECK_FREQUENCY;
 
             var blockSkins = Palette.BlockSkins;
+            var packetSkinIndexes = NetworkLibHandler.PacketOwnershipTestResults.OwnedSkinIndexes;
 
             foreach(var kv in tempGrids)
             {
@@ -125,10 +127,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
                 }
                 else
                 {
-                    if(NetworkLibHandler.PacketOwnershipTestResults.OwnedSkinIndexes == null)
-                        NetworkLibHandler.PacketOwnershipTestResults.OwnedSkinIndexes = new List<int>(blockSkins.Count - 1);
-                    else
-                        NetworkLibHandler.PacketOwnershipTestResults.OwnedSkinIndexes.Clear();
+                    packetSkinIndexes.Clear();
 
                     bool ignore = false;
 
@@ -159,13 +158,13 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
                         }
 
                         if(block.SkinSubtypeId == skin.SubtypeId)
-                            NetworkLibHandler.PacketOwnershipTestResults.OwnedSkinIndexes.Add(skin.Index); // skin was applied therefore is owned
+                            packetSkinIndexes.Add(skin.Index); // skin was applied therefore is owned
                     }
 
                     if(!ignore)
                     {
                         if(Constants.OWNERSHIP_TEST_LOGGING)
-                            Log.Info($"{GetType().Name}.Update() :: grid for {steamId.ToString()} was found painted, sending results!");
+                            Log.Info($"{GetType().Name}.Update() :: grid for {Utils.PrintPlayerName(steamId)} was found painted, sending results...");
 
                         // grid's done its job, get rid of it
                         gridInfo.Grid.Close();
@@ -173,7 +172,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
 
                         var pi = Palette.GetOrAddPlayerInfo(steamId);
                         pi.OwnedSkinIndexes = new List<int>(blockSkins.Count);
-                        pi.OwnedSkinIndexes.AddRange(NetworkLibHandler.PacketOwnershipTestResults.OwnedSkinIndexes);
+                        pi.OwnedSkinIndexes.AddRange(packetSkinIndexes);
 
                         // also add mod-added skins as they are always owned
                         foreach(var skin in blockSkins)
@@ -181,6 +180,9 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
                             if(skin.Mod != null)
                                 pi.OwnedSkinIndexes.Add(skin.Index);
                         }
+
+                        if(Constants.OWNERSHIP_TEST_LOGGING)
+                            Log.Info($"... sending skin indexes (count={pi.OwnedSkinIndexes.Count.ToString()}) = {string.Join(", ", pi.OwnedSkinIndexes)}");
 
                         // tell player their owned skins
                         NetworkLibHandler.PacketOwnershipTestResults.Send(steamId);

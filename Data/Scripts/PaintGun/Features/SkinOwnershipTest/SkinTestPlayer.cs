@@ -148,10 +148,20 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
         internal void GotResults(List<int> ownedSkinIndexes)
         {
             var palette = Main.Palette;
+
+            if(palette == null)
+                throw new NullReferenceException("palette = null");
+
             var blockSkins = palette.BlockSkins;
 
+            if(blockSkins == null)
+                throw new NullReferenceException("blockSkins is null");
+
+            if(ownedSkinIndexes == null)
+                throw new NullReferenceException("ownedSkinIndexes is null, does that mean no skins are owned?");
+
             if(Constants.OWNERSHIP_TEST_LOGGING)
-                Log.Info($"{GetType().Name}.GotResults() :: got results! owned={ownedSkinIndexes.Count.ToString()}/{(palette.BlockSkins.Count - 1).ToString()}; ids={string.Join(", ", ownedSkinIndexes)}");
+                Log.Info($"{GetType().Name}.GotResults() :: got results! owned={ownedSkinIndexes.Count.ToString()}/{(blockSkins.Count - 1).ToString()}; ids={string.Join(", ", ownedSkinIndexes)}");
 
             foreach(var index in ownedSkinIndexes)
             {
@@ -160,7 +170,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
 
                 if(index < 0 || index >= blockSkins.Count)
                 {
-                    Log.Error($"index={index.ToString()} out of bounds! min=0, max={(blockSkins.Count - 1).ToString()}", Log.PRINT_MESSAGE);
+                    Log.Error($"{GetType().Name}.GotResults() :: index={index.ToString()} out of bounds! min=0, max={(blockSkins.Count - 1).ToString()}", Log.PRINT_MESSAGE);
                     continue;
                 }
 
@@ -169,8 +179,8 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
 
             palette.ComputeOwnedSkins();
 
+            // change selection if for some reason it was selected
             var selectedSkin = palette.GetSkinInfo(palette.LocalInfo.SelectedSkinIndex);
-
             if(!selectedSkin.LocallyOwned)
             {
                 Notifications.Show(3, $"Skin [{selectedSkin.Name}] not owned, switching to default.", MyFontEnum.Red, 3000);

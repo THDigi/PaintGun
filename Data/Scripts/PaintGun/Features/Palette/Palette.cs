@@ -36,12 +36,12 @@ namespace Digi.PaintGun.Features.Palette
         public Palette(PaintGunMod main) : base(main)
         {
             UpdateMethods = UpdateFlags.UPDATE_AFTER_SIM;
+
+            InitBlockSkins();
         }
 
         protected override void RegisterComponent()
         {
-            InitBlockSkins();
-
             if(Main.IsPlayer)
             {
                 LocalInfo = GetOrAddPlayerInfo(MyAPIGateway.Multiplayer.MyId);
@@ -93,8 +93,12 @@ namespace Digi.PaintGun.Features.Palette
 
         void InitBlockSkins()
         {
+            if(Constants.SKIN_INIT_LOGGING)
+                Log.Info("Finding for block skins...");
+
             const string ARMOR_SUFFIX = "_Armor";
             const string SKIN_ICON_PREFIX = "PaintGun_SkinIcon_";
+            const string SKIN_ICON_UNKNOWN = SKIN_ICON_PREFIX + "Unknown";
 
             var definedIcons = new HashSet<string>();
             foreach(var def in MyDefinitionManager.Static.GetTransparentMaterialDefinitions())
@@ -103,14 +107,14 @@ namespace Digi.PaintGun.Features.Palette
                     definedIcons.Add(def.Id.SubtypeName);
             }
 
-            int skins = 0;
+            int foundSkins = 0;
             foreach(var assetDef in MyDefinitionManager.Static.GetAssetModifierDefinitions())
             {
                 if(assetDef.Id.SubtypeName.EndsWith(ARMOR_SUFFIX))
-                    skins++;
+                    foundSkins++;
             }
 
-            BlockSkins = new List<SkinInfo>(skins);
+            BlockSkins = new List<SkinInfo>(foundSkins + 1); // include "No Skin" too.
             var sb = new StringBuilder(64);
 
             foreach(var assetDef in MyDefinitionManager.Static.GetAssetModifierDefinitions())
@@ -140,7 +144,7 @@ namespace Digi.PaintGun.Features.Palette
                         if(Utils.IsLocalMod())
                             Log.Info($"WARNING: {icon} not found in transparent materials definitions.", Log.PRINT_MESSAGE);
 
-                        icon = SKIN_ICON_PREFIX + "Unknown";
+                        icon = SKIN_ICON_UNKNOWN;
                     }
 
                     var skinInfo = new SkinInfo(assetDef.Id.SubtypeId, name, icon);
@@ -165,6 +169,12 @@ namespace Digi.PaintGun.Features.Palette
             for(int i = 0; i < BlockSkins.Count; ++i)
             {
                 BlockSkins[i].Index = i;
+
+                if(Constants.SKIN_INIT_LOGGING)
+                {
+                    var skin = BlockSkins[i];
+                    Log.Info($"Defined skin #{i.ToString()} - {skin.Name} ({skin.SubtypeId.String}){(skin.Icon.String == SKIN_ICON_UNKNOWN ? "; No Icon!" : "")}{(skin.Mod != null ? $"; Mod={skin.Mod.ModName}" : "")}");
+                }
             }
         }
 
