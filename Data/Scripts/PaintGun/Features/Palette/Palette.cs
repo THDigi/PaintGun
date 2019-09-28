@@ -7,6 +7,7 @@ using Sandbox.Definitions;
 using Sandbox.Game;
 using Sandbox.ModAPI;
 using VRage.Game;
+using VRage.Game.ModAPI;
 using VRage.Utils;
 using VRageMath;
 
@@ -46,8 +47,7 @@ namespace Digi.PaintGun.Features.Palette
             {
                 LocalInfo = GetOrAddPlayerInfo(MyAPIGateway.Multiplayer.MyId);
                 Main.CheckPlayerField.PlayerReady += PlayerReady;
-
-                MyVisualScriptLogicProvider.PlayerDisconnected += PlayerDisconnected;
+                Main.PlayerHandler.PlayerDisconnected += PlayerDisconnected;
             }
         }
 
@@ -56,29 +56,13 @@ namespace Digi.PaintGun.Features.Palette
             if(Main.IsPlayer)
             {
                 Main.CheckPlayerField.PlayerReady -= PlayerReady;
-
-                MyVisualScriptLogicProvider.PlayerDisconnected -= PlayerDisconnected;
+                Main.PlayerHandler.PlayerDisconnected -= PlayerDisconnected;
             }
         }
 
-        void PlayerDisconnected(long identityId)
+        void PlayerDisconnected(IMyPlayer player)
         {
-            try
-            {
-                var player = Utils.GetPlayerByIdentityId(identityId);
-
-                if(player == null)
-                {
-                    Log.Error($"Unknown player disconnected! IdentityId={identityId.ToString()}");
-                    return;
-                }
-
-                PlayerInfo.Remove(player.SteamUserId);
-            }
-            catch(Exception e)
-            {
-                Log.Error(e);
-            }
+            PlayerInfo.Remove(player.SteamUserId);
         }
 
         void PlayerReady()

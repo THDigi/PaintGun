@@ -25,6 +25,7 @@ namespace Digi.PaintGun
         public TextAPI TextAPI;
         public DrawUtils DrawUtils;
         public GameConfig GameConfig;
+        public PlayerHandler PlayerHandler;
         public NetworkLibHandler NetworkLibHandler;
 
         // Features
@@ -66,6 +67,7 @@ namespace Digi.PaintGun
             // Systems
             Caches = new Caches(this);
             Constants = new Constants(this);
+            PlayerHandler = new PlayerHandler(this);
             NetworkLibHandler = new NetworkLibHandler(this);
 
             if(IsPlayer)
