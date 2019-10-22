@@ -62,40 +62,49 @@ namespace Digi.PaintGun.Features.Sync
         public override void Received(ref bool relay)
         {
             var grid = Utils.GetEntityOrError<MyCubeGrid>(this, GridEntId, Constants.NETWORK_DESYNC_ERROR_LOGGING);
-            if(grid == null)
-                return;
 
-            // ensure server side if safezone permissions are respected
-            if(Main.IsServer && !Utils.SafeZoneCanPaint(grid.GetCubeBlock(GridPosition), SteamId))
+            if(grid == null)
             {
-                if(Constants.NETWORK_DESYNC_ERROR_LOGGING)
+                if(Main.IsServer)
+                    Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side, grid no longer exists.");
+
+                return;
+            }
+
+            if(Main.IsServer)
+            {
+                // ensure server side if safezone permissions are respected
+                if(!Utils.SafeZoneCanPaint(grid.GetCubeBlock(GridPosition), SteamId))
                 {
-                    var block = (IMySlimBlock)grid.GetCubeBlock(GridPosition);
-                    Log.Error($"{GetType().Name} :: Can't paint inside no-build safe zone! Sender={SteamId.ToString()}; Grid={grid} ({grid.EntityId.ToString()}); block={block.BlockDefinition.Id.ToString()} ({block.Position.ToString()})", Log.PRINT_MESSAGE);
+                    if(Constants.NETWORK_DESYNC_ERROR_LOGGING)
+                    {
+                        var block = (IMySlimBlock)grid.GetCubeBlock(GridPosition);
+                        Log.Error($"{GetType().Name} :: Can't paint inside no-build safe zone! Sender={SteamId.ToString()}; Grid={grid} ({grid.EntityId.ToString()}); block={block.BlockDefinition.Id.ToString()} ({block.Position.ToString()})", Log.PRINT_MESSAGE);
+                    }
+
+                    Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side, denied by safe zone.");
+                    return;
                 }
 
-                Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side, denied by safe zone.");
-                return;
-            }
+                var identity = MyAPIGateway.Players.TryGetIdentityId(SteamId);
 
-            var identity = MyAPIGateway.Players.TryGetIdentityId(SteamId);
+                if(!Utils.AllowedToPaintGrid(grid, identity))
+                {
+                    if(Constants.NETWORK_DESYNC_ERROR_LOGGING)
+                        Log.Error($"{GetType().Name} :: Can't paint non-allied grids! Sender={SteamId.ToString()}; Grid={grid} ({grid.EntityId.ToString()})", Log.PRINT_MESSAGE);
 
-            if(!Utils.AllowedToPaintGrid(grid, identity))
-            {
-                if(Constants.NETWORK_DESYNC_ERROR_LOGGING)
-                    Log.Error($"{GetType().Name} :: Can't paint non-allied grids! Sender={SteamId.ToString()}; Grid={grid} ({grid.EntityId.ToString()})", Log.PRINT_MESSAGE);
+                    Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side, ship not allied.");
+                    return;
+                }
 
-                Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side, ship not allied.");
-                return;
-            }
+                if(!grid.CubeExists(GridPosition))
+                {
+                    if(Constants.NETWORK_DESYNC_ERROR_LOGGING)
+                        Log.Error($"{GetType().Name} :: Can't paint inexistent blocks! Sender={SteamId.ToString()}; Grid={grid} ({grid.EntityId.ToString()}) at GridPosition={GridPosition.ToString()}", Log.PRINT_MESSAGE);
 
-            if(!grid.CubeExists(GridPosition))
-            {
-                if(Constants.NETWORK_DESYNC_ERROR_LOGGING)
-                    Log.Error($"{GetType().Name} :: Can't paint inexistent blocks! Sender={SteamId.ToString()}; Grid={grid} ({grid.EntityId.ToString()}) at GridPosition={GridPosition.ToString()}", Log.PRINT_MESSAGE);
-
-                Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side, block no longer exists.");
-                return;
+                    Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side, block no longer exists.");
+                    return;
+                }
             }
 
             if(Reverted)

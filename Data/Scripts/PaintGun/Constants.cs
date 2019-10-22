@@ -18,7 +18,7 @@ namespace Digi.PaintGun
         public static bool SKIN_INIT_LOGGING => true;
         public static bool OWNERSHIP_TEST_LOGGING => true;
         public static bool NETWORK_ACTION_LOGGING => true;
-        public static bool NETWORK_DESYNC_ERROR_LOGGING => true;
+        public static bool NETWORK_DESYNC_ERROR_LOGGING => false; // NOTE: this shows for everyone, needs tweaking to only show server side
 
         public readonly MyObjectBuilder_AmmoMagazine PAINT_MAG_ITEM = new MyObjectBuilder_AmmoMagazine()
         {

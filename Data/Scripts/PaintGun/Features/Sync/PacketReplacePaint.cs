@@ -49,32 +49,38 @@ namespace Digi.PaintGun.Features.Sync
             }
 
             var grid = Utils.GetEntityOrError<MyCubeGrid>(this, GridEntId, Constants.NETWORK_DESYNC_ERROR_LOGGING);
+
             if(grid == null)
             {
-                Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side, can't find grid.");
+                if(Main.IsServer)
+                    Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side, grid no longer exists.");
+
                 return;
             }
 
-            // ensure server side if safezone permissions are respected
-            if(MyAPIGateway.Session.IsServer && !Utils.SafeZoneCanPaint(grid, SteamId))
+            if(Main.IsServer)
             {
-                Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side, denied by safe zone.");
-                return;
-            }
+                // ensure server side if safezone permissions are respected
+                if(!Utils.SafeZoneCanPaint(grid, SteamId))
+                {
+                    Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side, denied by safe zone.");
+                    return;
+                }
 
-            var identity = MyAPIGateway.Players.TryGetIdentityId(SteamId);
+                var identity = MyAPIGateway.Players.TryGetIdentityId(SteamId);
 
-            if(!Utils.AllowedToPaintGrid(grid, identity))
-            {
-                if(Constants.NETWORK_DESYNC_ERROR_LOGGING)
-                    Log.Error($"Can't paint unallied grids; packet={this}", Log.PRINT_MESSAGE);
+                if(!Utils.AllowedToPaintGrid(grid, identity))
+                {
+                    if(Constants.NETWORK_DESYNC_ERROR_LOGGING)
+                        Log.Error($"Can't paint unallied grids; packet={this}", Log.PRINT_MESSAGE);
 
-                Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side, ship not allied.");
-                return;
+                    Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side, ship not allied.");
+                    return;
+                }
             }
 
             // sent by server to itself, ignore action but do the relaying
-            if(MyAPIGateway.Multiplayer.IsServer && SteamId == MyAPIGateway.Multiplayer.MyId)
+            if(Main.IsServer && SteamId == MyAPIGateway.Multiplayer.MyId)
             {
                 relay = true;
                 return;
