@@ -153,10 +153,10 @@ namespace Digi.PaintGun.Features.Palette
                 #region Skin selector
                 if(localInfo.ApplySkin && Palette.OwnedSkins > 0)
                 {
-                    float iconSize = 0.003f * scaleFOVf;
-                    float selectedIconSize = iconSize; // 0.0034f * scaleFOV;
+                    float iconSize = 0.0024f * scaleFOVf;
+                    float selectedIconSize = 0.003f * scaleFOVf;
                     var selectedSkinIndex = localInfo.SelectedSkinIndex;
-                    double iconSpacingAdd = 0; // 0.0012 * scaleFOV;
+                    double iconSpacingAdd = (selectedIconSize - iconSize); // 0.0012 * scaleFOV;
                     double iconSpacingWidth = (iconSize * 2) + iconSpacingAdd;
                     float iconBgSpacingAddWidth = 0.0004f * scaleFOVf;
                     float iconBgSpacingAddHeight = 0.0006f * scaleFOVf;
