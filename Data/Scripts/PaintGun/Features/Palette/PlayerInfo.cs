@@ -20,7 +20,7 @@ namespace Digi.PaintGun.Features.Palette
 
         /// <summary>
         /// Owned skins for this player server-side.
-        /// NOTE: Does not include no-skin.
+        /// NOTE: Does not include index 0 (default skin).
         /// </summary>
         public List<int> OwnedSkinIndexes;
 

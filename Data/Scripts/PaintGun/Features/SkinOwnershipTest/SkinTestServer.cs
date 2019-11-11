@@ -123,7 +123,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
                     removeKeys.Add(steamId);
 
                     if(Constants.OWNERSHIP_TEST_LOGGING)
-                        Log.Info($"{GetType().Name}.Update() - temp grid for {steamId.ToString()} got removed as client script didn't paint it within {(TEMP_GRID_EXPIRE / (float)Constants.TICKS_PER_SECOND).ToString("0.##")} seconds.");
+                        Log.Info($"{GetType().Name}.Update() - temp grid for {Utils.PrintPlayerName(steamId)} got removed as client script didn't paint it within {(TEMP_GRID_EXPIRE / (float)Constants.TICKS_PER_SECOND).ToString("0.##")} seconds.");
                 }
                 else
                 {
@@ -141,7 +141,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
                         if(block == null)
                         {
                             if(Constants.OWNERSHIP_TEST_LOGGING)
-                                Log.Info($"{GetType().Name}.Update() :: grid for {steamId.ToString()} has no blocks, yet...");
+                                Log.Info($"{GetType().Name}.Update() :: grid for {Utils.PrintPlayerName(steamId)} has no blocks, yet...");
 
                             ignore = true;
                             break;
@@ -151,7 +151,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
                         if(!Vector3.IsZero(block.ColorMaskHSV, 0.01f))
                         {
                             if(Constants.OWNERSHIP_TEST_LOGGING)
-                                Log.Info($"{GetType().Name}.Update() :: grid for {steamId.ToString()} was not painted, yet...");
+                                Log.Info($"{GetType().Name}.Update() :: grid for {Utils.PrintPlayerName(steamId)} was not painted, yet...");
 
                             ignore = true;
                             break;
