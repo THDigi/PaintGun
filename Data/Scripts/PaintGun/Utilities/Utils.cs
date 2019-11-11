@@ -6,6 +6,7 @@ using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character.Components;
 using Sandbox.ModAPI;
+using SpaceEngineers.Game.ModAPI;
 using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
@@ -53,15 +54,40 @@ namespace Digi.PaintGun.Utilities
             {
                 var pi = PaintGunMod.Instance.Palette.GetPlayerInfo(steamId);
 
-                if(pi?.OwnedSkinIndexes == null)
+                if(pi == null)
                 {
-                    //Log.Error($"{steamId} tried to skin a block before skin test ownership finished!");
+                    // DEBUG <<<
+                    if(MyAPIGateway.Session.OnlineMode == MyOnlineModeEnum.OFFLINE)
+                    {
+                        Log.Info($"ValidateSkinOwnership() DEBUG: {steamId.ToString()} has no PlayerInfo!");
+                    }
+
+                    return false;
+                }
+
+                if(pi.OwnedSkinIndexes == null)
+                {
+                    // DEBUG <<<
+                    if(MyAPIGateway.Session.OnlineMode == MyOnlineModeEnum.OFFLINE)
+                    {
+                        Log.Info($"ValidateSkinOwnership() DEBUG: {steamId.ToString()} has no OwnedSkinIndexes list, is it before ownership testing was completed?");
+                    }
+
                     return false;
                 }
 
                 if(!pi.OwnedSkinIndexes.Contains(paint.SkinIndex.Value))
                 {
-                    //Log.Error($"{steamId} tried to paint with a skin (id={paint.SkinIndex.Value}) they don't own.");
+                    // DEBUG <<<
+                    if(MyAPIGateway.Session.OnlineMode == MyOnlineModeEnum.OFFLINE)
+                    {
+                        var skin = PaintGunMod.Instance.Palette.GetSkinInfo(paint.SkinIndex.Value);
+                        string skinName = (skin != null ? skin.SubtypeId.ToString() : $"UnknownId#{paint.SkinIndex.Value.ToString()}");
+                        Log.Info($"ValidateSkinOwnership() DEBUG: {steamId.ToString()} tried to paint with a skin ({skinName}) they don't own... ?");
+                        Log.Info($"ValidateSkinOwnership() DEBUG: ownedIds={string.Join(", ", pi.OwnedSkinIndexes)}");
+                        Log.Info($"ValidateSkinOwnership() DEBUG: MyId={MyAPIGateway.Multiplayer.MyId.ToString()}; players={MyAPIGateway.Multiplayer.Players.Count.ToString()}; PlayerInfos={PaintGunMod.Instance.Palette.PlayerInfo.Count.ToString()}");
+                    }
+
                     return false;
                 }
             }

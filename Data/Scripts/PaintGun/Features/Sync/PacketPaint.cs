@@ -129,8 +129,17 @@ namespace Digi.PaintGun.Features.Sync
         {
             if(!Utils.ValidateSkinOwnership(SteamId, Paint))
             {
-                Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to apply skin server side, skin not owned.");
-                Paint = new SerializedPaintMaterial(Paint.ColorMaskPacked, null);
+                if(MyAPIGateway.Session.OnlineMode == VRage.Game.MyOnlineModeEnum.OFFLINE)
+                {
+                    var p = new PaintMaterial(Paint);
+                    grid.SkinBlocks(GridPosition, GridPosition, p.ColorMask, p.Skin.Value.String);
+                    Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to apply skin server side, skin not owned.");
+                }
+                else
+                {
+                    Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to apply skin server side, skin not owned.");
+                    Paint = new SerializedPaintMaterial(Paint.ColorMaskPacked, null);
+                }
             }
 
             var paint = new PaintMaterial(Paint);
