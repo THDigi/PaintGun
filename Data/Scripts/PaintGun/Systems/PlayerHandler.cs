@@ -47,6 +47,9 @@ namespace Digi.PaintGun.Systems
 
             foreach(var player in connectedPlayers.Values)
             {
+                if(player.IsBot)
+                    continue;
+
                 if(!players.Contains(player))
                 {
                     removeKeys.Add(player.SteamUserId);
@@ -66,6 +69,9 @@ namespace Digi.PaintGun.Systems
 
             foreach(var player in players)
             {
+                if(player.IsBot)
+                    continue;
+
                 if(!connectedPlayers.ContainsKey(player.SteamUserId))
                 {
                     connectedPlayers.Add(player.SteamUserId, player);
