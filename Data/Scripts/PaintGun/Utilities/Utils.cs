@@ -201,7 +201,7 @@ namespace Digi.PaintGun.Utilities
 
         public static bool ColorMaskEquals(Vector3 colorMask1, Vector3 colorMask2)
         {
-            return ColorMaskToRGB(colorMask1) == ColorMaskToRGB(colorMask2);
+            return colorMask1.PackHSVToUint() == colorMask2.PackHSVToUint();
         }
 
         public static Vector3 ColorMaskNormalize(Vector3 colorMask)
