@@ -26,23 +26,26 @@ namespace Digi.PaintGun.Features
         public void Show(int line, string text, string font = MyFontEnum.White, int aliveTime = DEFAULT_TIMEOUT_MS)
         {
             if(line < 0 || line >= notifications.Length)
-                throw new ArgumentException($"Notification line ({line}) is either negative or above max of {notifications.Length - 1}.");
+                throw new ArgumentException($"Notification line ({line.ToString()}) is either negative or above max of {(notifications.Length - 1).ToString()}.");
+
+            var notify = notifications[line];
 
             if(text == null)
             {
-                if(notifications[line] != null)
-                    notifications[line].Hide();
+                if(notify != null)
+                    notify.Hide();
 
                 return;
             }
 
-            if(notifications[line] == null)
-                notifications[line] = MyAPIGateway.Utilities.CreateNotification(string.Empty);
+            if(notify == null)
+                notify = notifications[line] = MyAPIGateway.Utilities.CreateNotification(string.Empty);
 
-            notifications[line].Font = font;
-            notifications[line].Text = text;
-            notifications[line].AliveTime = aliveTime;
-            notifications[line].Show();
+            notify.Hide(); // required since SE v1.194
+            notify.Font = font;
+            notify.Text = text;
+            notify.AliveTime = aliveTime;
+            notify.Show();
         }
 
         public void Hide(int id)
