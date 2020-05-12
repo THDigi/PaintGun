@@ -77,9 +77,6 @@ namespace Digi.NetworkLib
 
             foreach(var player in players)
             {
-                if(player.IsBot)
-                    continue;
-
                 if(player.SteamUserId == MyAPIGateway.Multiplayer.ServerId)
                     continue;
 

@@ -474,9 +474,6 @@ namespace Digi.PaintGun.Features.Tool
 
             foreach(var p in players)
             {
-                if(p.IsBot)
-                    continue;
-
                 var c = p.Character;
 
                 if(c == null || c == character)
