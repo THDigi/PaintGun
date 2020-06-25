@@ -75,14 +75,14 @@ namespace Digi.PaintGun.Features.Palette
             NetworkLibHandler.PacketJoinSharePalette.Send(LocalInfo, MyAPIGateway.Multiplayer.MyId);
         }
 
+        const string ARMOR_SUFFIX = "_Armor";
+        const string SKIN_ICON_PREFIX = "PaintGun_SkinIcon_";
+        const string SKIN_ICON_UNKNOWN = SKIN_ICON_PREFIX + "Unknown";
+
         void InitBlockSkins()
         {
             if(Constants.SKIN_INIT_LOGGING)
                 Log.Info("Finding for block skins...");
-
-            const string ARMOR_SUFFIX = "_Armor";
-            const string SKIN_ICON_PREFIX = "PaintGun_SkinIcon_";
-            const string SKIN_ICON_UNKNOWN = SKIN_ICON_PREFIX + "Unknown";
 
             var definedIcons = new HashSet<string>();
             foreach(var def in MyDefinitionManager.Static.GetTransparentMaterialDefinitions())
@@ -94,33 +94,40 @@ namespace Digi.PaintGun.Features.Palette
             int foundSkins = 0;
             foreach(var assetDef in MyDefinitionManager.Static.GetAssetModifierDefinitions())
             {
-                if(assetDef.Id.SubtypeName.EndsWith(ARMOR_SUFFIX))
+                if(IsSkinAsset(assetDef))
                     foundSkins++;
             }
 
             BlockSkins = new List<SkinInfo>(foundSkins + 1); // include "No Skin" too.
-            var sb = new StringBuilder(64);
+            var sb = new StringBuilder(128);
 
             foreach(var assetDef in MyDefinitionManager.Static.GetAssetModifierDefinitions())
             {
-                if(assetDef.Id.SubtypeName.EndsWith(ARMOR_SUFFIX))
+                if(IsSkinAsset(assetDef))
                 {
+                    string name = assetDef.Id.SubtypeName;
                     sb.Clear();
-                    sb.Append(assetDef.Id.SubtypeName);
-                    sb.Length -= ARMOR_SUFFIX.Length;
+                    sb.Append(name);
+
+                    if(name.EndsWith(ARMOR_SUFFIX))
+                        sb.Length -= ARMOR_SUFFIX.Length;
 
                     var nameId = sb.ToString();
 
-                    // skip first character
-                    for(int i = sb.Length - 1; i >= 1; --i)
+                    // Add spaces before upper case letters except first.
+                    // Or replace _ with space.
+                    for(int i = 1; i < sb.Length; ++i)
                     {
                         var c = sb[i];
 
-                        if(char.IsUpper(c))
+                        if(c == '_')
+                            sb[i] = ' ';
+
+                        if(char.IsUpper(c) && sb[i - 1] != ' ')
                             sb.Insert(i, ' ');
                     }
 
-                    var name = sb.ToString();
+                    name = sb.ToString();
                     var icon = SKIN_ICON_PREFIX + nameId;
 
                     if(!definedIcons.Contains(icon))
@@ -160,6 +167,36 @@ namespace Digi.PaintGun.Features.Palette
                     Log.Info($"Defined skin #{i.ToString()} - {skin.Name} ({skin.SubtypeId.String}){(skin.Icon.String == SKIN_ICON_UNKNOWN ? "; No Icon!" : "")}{(skin.Mod != null ? $"; Mod={skin.Mod.ModName}" : "")}");
                 }
             }
+        }
+
+        static bool IsSkinAsset(MyAssetModifierDefinition assetDef)
+        {
+            if(assetDef.Id.SubtypeName.EndsWith(ARMOR_SUFFIX))
+                return true;
+
+            // HACK extra checks for vanilla definitions because of inconsistent naming
+            if(assetDef.Context.IsBaseGame)
+            {
+                if(assetDef.Icons != null)
+                {
+                    foreach(var icon in assetDef.Icons)
+                    {
+                        if(icon.IndexOf("armor", StringComparison.OrdinalIgnoreCase) != -1)
+                            return true;
+                    }
+                }
+
+                if(assetDef.Textures != null)
+                {
+                    foreach(var texture in assetDef.Textures)
+                    {
+                        if(texture.Location == "SquarePlate")
+                            return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         void UpdatePalette()
