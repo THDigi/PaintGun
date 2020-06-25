@@ -14,14 +14,6 @@
       <Texture>Textures\Sprites\Cross.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
-      <UVOffset>
-        <X>0</X>
-        <Y>0</Y>
-      </UVOffset>
-      <UVSize>
-        <X>1</X>
-        <Y>1</Y>
-      </UVSize>
     </TransparentMaterial>
     <TransparentMaterial>
       <Id>
@@ -36,14 +28,6 @@
       <Texture>Textures\GUI\Controls\button_info_symbol.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
-      <UVOffset>
-        <X>0</X>
-        <Y>0</Y>
-      </UVOffset>
-      <UVSize>
-        <X>1</X>
-        <Y>1</Y>
-      </UVSize>
     </TransparentMaterial>
     <TransparentMaterial>
       <Id>
@@ -58,14 +42,6 @@
       <Texture>Textures\GUI\Icons\Skins\Armor\CleanArmor.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
-      <UVOffset>
-        <X>0</X>
-        <Y>0</Y>
-      </UVOffset>
-      <UVSize>
-        <X>1</X>
-        <Y>1</Y>
-      </UVSize>
     </TransparentMaterial>
     <TransparentMaterial>
       <Id>
@@ -80,14 +56,6 @@
       <Texture>Textures\GUI\Icons\Skins\Armor\CarbonFiberArmor.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
-      <UVOffset>
-        <X>0</X>
-        <Y>0</Y>
-      </UVOffset>
-      <UVSize>
-        <X>1</X>
-        <Y>1</Y>
-      </UVSize>
     </TransparentMaterial>
     <TransparentMaterial>
       <Id>
@@ -102,14 +70,6 @@
       <Texture>Textures\GUI\Icons\Skins\Armor\DigitalCamouflageArmor.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
-      <UVOffset>
-        <X>0</X>
-        <Y>0</Y>
-      </UVOffset>
-      <UVSize>
-        <X>1</X>
-        <Y>1</Y>
-      </UVSize>
     </TransparentMaterial>
     <TransparentMaterial>
       <Id>
@@ -124,14 +84,6 @@
       <Texture>Textures\GUI\Icons\Skins\Armor\GoldenArmor.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
-      <UVOffset>
-        <X>0</X>
-        <Y>0</Y>
-      </UVOffset>
-      <UVSize>
-        <X>1</X>
-        <Y>1</Y>
-      </UVSize>
     </TransparentMaterial>
     <TransparentMaterial>
       <Id>
@@ -146,14 +98,6 @@
       <Texture>Textures\GUI\Icons\Skins\Armor\SilverArmor.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
-      <UVOffset>
-        <X>0</X>
-        <Y>0</Y>
-      </UVOffset>
-      <UVSize>
-        <X>1</X>
-        <Y>1</Y>
-      </UVSize>
     </TransparentMaterial>
     <TransparentMaterial>
       <Id>
@@ -168,14 +112,6 @@
       <Texture>Textures\GUI\Icons\Skins\Armor\GlamourArmor.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
-      <UVOffset>
-        <X>0</X>
-        <Y>0</Y>
-      </UVOffset>
-      <UVSize>
-        <X>1</X>
-        <Y>1</Y>
-      </UVSize>
     </TransparentMaterial>
     <TransparentMaterial>
       <Id>
@@ -190,14 +126,6 @@
       <Texture>Textures\GUI\Icons\Skins\Armor\DiscoArmor.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
-      <UVOffset>
-        <X>0</X>
-        <Y>0</Y>
-      </UVOffset>
-      <UVSize>
-        <X>1</X>
-        <Y>1</Y>
-      </UVSize>
     </TransparentMaterial>
     <TransparentMaterial>
       <Id>
@@ -212,14 +140,6 @@
       <Texture>Textures\GUI\Icons\Skins\Armor\WoodArmor.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
-      <UVOffset>
-        <X>0</X>
-        <Y>0</Y>
-      </UVOffset>
-      <UVSize>
-        <X>1</X>
-        <Y>1</Y>
-      </UVSize>
     </TransparentMaterial>
     <TransparentMaterial>
       <Id>
@@ -234,14 +154,6 @@
       <Texture>Textures\GUI\Icons\Skins\Armor\MossArmor.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
-      <UVOffset>
-        <X>0</X>
-        <Y>0</Y>
-      </UVOffset>
-      <UVSize>
-        <X>1</X>
-        <Y>1</Y>
-      </UVSize>
     </TransparentMaterial>
     <TransparentMaterial>
       <Id>
@@ -256,14 +168,6 @@
       <Texture>Textures\GUI\Icons\Skins\Armor\Battered.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
-      <UVOffset>
-        <X>0</X>
-        <Y>0</Y>
-      </UVOffset>
-      <UVSize>
-        <X>1</X>
-        <Y>1</Y>
-      </UVSize>
     </TransparentMaterial>
     <TransparentMaterial>
       <Id>
@@ -278,14 +182,6 @@
       <Texture>Textures\GUI\Icons\Skins\Armor\CowMooFlage.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
-      <UVOffset>
-        <X>0</X>
-        <Y>0</Y>
-      </UVOffset>
-      <UVSize>
-        <X>1</X>
-        <Y>1</Y>
-      </UVSize>
     </TransparentMaterial>
     <TransparentMaterial>
       <Id>
@@ -300,14 +196,6 @@
       <Texture>Textures\GUI\Icons\Skins\Armor\RustNonColorable.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
-      <UVOffset>
-        <X>0</X>
-        <Y>0</Y>
-      </UVOffset>
-      <UVSize>
-        <X>1</X>
-        <Y>1</Y>
-      </UVSize>
     </TransparentMaterial>
     <TransparentMaterial>
       <Id>
@@ -322,14 +210,6 @@
       <Texture>Textures\GUI\Icons\Skins\Armor\RustColorable.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
-      <UVOffset>
-        <X>0</X>
-        <Y>0</Y>
-      </UVOffset>
-      <UVSize>
-        <X>1</X>
-        <Y>1</Y>
-      </UVSize>
     </TransparentMaterial>
     <TransparentMaterial>
       <Id>
@@ -344,14 +224,48 @@
       <Texture>Textures\GUI\Icons\Skins\Armor\Frozen.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
-      <UVOffset>
-        <X>0</X>
-        <Y>0</Y>
-      </UVOffset>
-      <UVSize>
-        <X>1</X>
-        <Y>1</Y>
-      </UVSize>
+    </TransparentMaterial>
+    <TransparentMaterial>
+      <Id>
+        <TypeId>TransparentMaterialDefinition</TypeId>
+        <SubtypeId>PaintGun_SkinIcon_SciFi</SubtypeId>
+      </Id>
+      <AlphaMistingEnable>false</AlphaMistingEnable>
+      <AlphaSaturation>1</AlphaSaturation>
+      <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
+      <IgnoreDepth>true</IgnoreDepth>
+      <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
+      <Texture>Textures\GUI\Icons\Skins\Armor\SciFi.DDS</Texture>
+      <UseAtlas>false</UseAtlas>
+      <Reflectivity>0</Reflectivity>
+    </TransparentMaterial>
+    <TransparentMaterial>
+      <Id>
+        <TypeId>TransparentMaterialDefinition</TypeId>
+        <SubtypeId>PaintGun_SkinIcon_Neon_Colorable_Surface</SubtypeId>
+      </Id>
+      <AlphaMistingEnable>false</AlphaMistingEnable>
+      <AlphaSaturation>1</AlphaSaturation>
+      <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
+      <IgnoreDepth>true</IgnoreDepth>
+      <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
+      <Texture>Textures\GUI\Icons\Skins\Armor\NeonColorableSurface.dds</Texture>
+      <UseAtlas>false</UseAtlas>
+      <Reflectivity>0</Reflectivity>
+    </TransparentMaterial>
+    <TransparentMaterial>
+      <Id>
+        <TypeId>TransparentMaterialDefinition</TypeId>
+        <SubtypeId>PaintGun_SkinIcon_Neon_Colorable_Lights</SubtypeId>
+      </Id>
+      <AlphaMistingEnable>false</AlphaMistingEnable>
+      <AlphaSaturation>1</AlphaSaturation>
+      <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
+      <IgnoreDepth>true</IgnoreDepth>
+      <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
+      <Texture>Textures\GUI\Icons\Skins\Armor\NeonColorableLights.dds</Texture>
+      <UseAtlas>false</UseAtlas>
+      <Reflectivity>0</Reflectivity>
     </TransparentMaterial>
   </TransparentMaterials>
 </Definitions>
