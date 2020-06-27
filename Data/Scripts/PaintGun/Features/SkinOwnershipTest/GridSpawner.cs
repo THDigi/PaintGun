@@ -20,7 +20,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
             steamId = player.SteamUserId;
             this.callback = callback;
 
-            var spawnPos = player.GetPosition(); // + Vector3D.Up * (MyAPIGateway.Session.SessionSettings.SyncDistance * 0.25);
+            var spawnPos = player.GetPosition();
 
             if(Vector3.IsZero(spawnPos, 0.01f))
             {

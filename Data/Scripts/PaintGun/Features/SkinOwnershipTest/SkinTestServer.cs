@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using Digi.ComponentLib;
+using Digi.PaintGun.Features.Palette;
 using Digi.PaintGun.Utilities;
-using Sandbox.Definitions;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.ModAPI;
+using VRage.Utils;
 using VRageMath;
 
 namespace Digi.PaintGun.Features.SkinOwnershipTest
@@ -16,9 +17,9 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
         public const string ENT_NAME_PREFIX = "PaintGun_SkinOwnershipTest_";
         public const int TEMP_GRID_EXPIRE = Constants.TICKS_PER_SECOND * 60;
         public const int GRID_CHECK_FREQUENCY = Constants.TICKS_PER_SECOND * 3;
+        public readonly MyDefinitionId SpawnBlockDefId = new MyDefinitionId(typeof(MyObjectBuilder_CubeBlock), "PaintGun_TempBlock");
 
         int waitUntilTick;
-        MyDefinitionId? anyBlockDefId = null;
         Dictionary<ulong, GridInfo> tempGrids = new Dictionary<ulong, GridInfo>();
         List<ulong> removeKeys = new List<ulong>();
 
@@ -51,9 +52,6 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
                 return;
             }
 
-            if(!GetAnyBlockDef())
-                return;
-
             GridInfo gridInfo;
             if(tempGrids.TryGetValue(steamId, out gridInfo))
             {
@@ -72,7 +70,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
 
             // spawns grid and calls the specified callback when it fully spawns
             MyCubeGrid grid;
-            new PaintTestGridSpawner(player, anyBlockDefId.Value, out grid, GridSpawned);
+            new PaintTestGridSpawner(player, SpawnBlockDefId, out grid, GridSpawned);
 
             if(Constants.OWNERSHIP_TEST_LOGGING)
                 Log.Info($"{GetType().Name}.SpawnGrid() :: spawning...");
@@ -131,27 +129,35 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
 
                     bool ignore = false;
 
-                    // ignore skin 0 as it's always owned
+                    // skip skin 0 as it's always owned
                     for(int i = 1; i < blockSkins.Count; ++i)
                     {
-                        var skin = blockSkins[i];
-                        var pos = new Vector3I(i, 0, 0);
-                        var block = gridInfo.Grid.GetCubeBlock(pos) as IMySlimBlock;
+                        SkinInfo skin = blockSkins[i];
+                        Vector3I pos = new Vector3I(i, 0, 0);
+                        IMySlimBlock block = gridInfo.Grid.GetCubeBlock(pos);
 
                         if(block == null)
                         {
                             if(Constants.OWNERSHIP_TEST_LOGGING)
-                                Log.Info($"{GetType().Name}.Update() :: grid for {Utils.PrintPlayerName(steamId)} has no blocks, yet...");
+                            {
+                                var internalGrid = (MyCubeGrid)gridInfo.Grid;
+                                Log.Info($"{GetType().Name}.Update() :: grid for {Utils.PrintPlayerName(steamId)} has no blocks yet?" +
+                                         $"\nskin query={skin.SubtypeId.ToString()} ({skin.Index.ToString()}); position={pos.ToString()}; blocks={internalGrid.BlocksCount.ToString()}");
+                            }
 
                             ignore = true;
                             break;
                         }
 
-                        // block not yet painted, will recheck next cycle
-                        if(!Vector3.IsZero(block.ColorMaskHSV, 0.01f))
+                        // block not colored and not skinned, therefore recheck next cycle
+                        // NOTE: must also check skin because some skins override the color (e.g. Silver)
+                        if(block.SkinSubtypeId == MyStringHash.NullOrEmpty && !Vector3.IsZero(block.ColorMaskHSV, 0.01f))
                         {
                             if(Constants.OWNERSHIP_TEST_LOGGING)
-                                Log.Info($"{GetType().Name}.Update() :: grid for {Utils.PrintPlayerName(steamId)} was not painted, yet...");
+                            {
+                                Log.Info($"{GetType().Name}.Update() :: grid for {Utils.PrintPlayerName(steamId)} was not painted yet?" +
+                                         $"\nskin query={skin.SubtypeId.ToString()} ({skin.Index.ToString()}); position={block.Position.ToString()}; color={block.ColorMaskHSV.ToString()}; skin={block.SkinSubtypeId.ToString()}");
+                            }
 
                             ignore = true;
                             break;
@@ -204,30 +210,5 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
             }
         }
         #endregion Step 4 - Server checks grids for paint changes, then checks if skin was applied and tells client the results
-
-        bool GetAnyBlockDef()
-        {
-            if(anyBlockDefId.HasValue)
-                return true;
-
-            foreach(var def in MyDefinitionManager.Static.GetAllDefinitions())
-            {
-                var blockDef = def as MyCubeBlockDefinition;
-
-                if(blockDef != null && blockDef.Enabled && blockDef.Public && blockDef.CubeSize == MyCubeSize.Small && blockDef.Id.TypeId == typeof(MyObjectBuilder_CubeBlock) && blockDef.IsStandAlone && blockDef.HasPhysics && blockDef.Size == Vector3I.One)
-                {
-                    anyBlockDefId = blockDef.Id;
-                    break;
-                }
-            }
-
-            if(!anyBlockDefId.HasValue)
-            {
-                Log.Error($"{GetType().Name} - Couldn't find any decorative block!");
-                return false;
-            }
-
-            return true;
-        }
     }
 }

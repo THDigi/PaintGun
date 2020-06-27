@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <CubeBlocks>
+    <!-- This block only exists to be skinned for ownership testing.
+        The model has no skinnable materials so it avoids pointlessly loading RAM. -->
+    <Definition>
+      <Id>
+        <TypeId>CubeBlock</TypeId>
+        <SubtypeId>PaintGun_TempBlock</SubtypeId>
+      </Id>
+      <Public>false</Public>
+      <BlockPairName>PaintGun_TempBlock</BlockPairName>
+      <DisplayName>PaintGun_TempBlock</DisplayName>
+      <Icon>Textures\FAKE.dds</Icon>
+      <BlockTopology>TriangleMesh</BlockTopology>
+      <CubeSize>Small</CubeSize>
+      <Size x="1" y="1" z="1" />
+      <ModelOffset x="0" y="0" z="0" />
+      <Model>Models\TempBlock.mwm</Model>
+      <Components>
+        <Component Subtype="SteelPlate" Count="1" />
+      </Components>
+      <CriticalComponent Subtype="SteelPlate" Index="0" />
+      <BuildTimeSeconds>1</BuildTimeSeconds>
+      <IsAirTight>false</IsAirTight>
+    </Definition>
+  </CubeBlocks>
+</Definitions>

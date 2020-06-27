@@ -54,9 +54,10 @@ namespace Digi.PaintGun.Utilities
             {
                 var pi = PaintGunMod.Instance.Palette.GetPlayerInfo(steamId);
 
+                // DEBUG some debugging info in here
+
                 if(pi == null)
                 {
-                    // DEBUG <<<
                     if(MyAPIGateway.Session.OnlineMode == MyOnlineModeEnum.OFFLINE)
                     {
                         Log.Info($"ValidateSkinOwnership() DEBUG: {steamId.ToString()} has no PlayerInfo!");
@@ -67,7 +68,6 @@ namespace Digi.PaintGun.Utilities
 
                 if(pi.OwnedSkinIndexes == null)
                 {
-                    // DEBUG <<<
                     if(MyAPIGateway.Session.OnlineMode == MyOnlineModeEnum.OFFLINE)
                     {
                         Log.Info($"ValidateSkinOwnership() DEBUG: {steamId.ToString()} has no OwnedSkinIndexes list, is it before ownership testing was completed?");
@@ -78,7 +78,6 @@ namespace Digi.PaintGun.Utilities
 
                 if(!pi.OwnedSkinIndexes.Contains(paint.SkinIndex.Value))
                 {
-                    // DEBUG <<<
                     if(MyAPIGateway.Session.OnlineMode == MyOnlineModeEnum.OFFLINE)
                     {
                         var skin = PaintGunMod.Instance.Palette.GetSkinInfo(paint.SkinIndex.Value);
