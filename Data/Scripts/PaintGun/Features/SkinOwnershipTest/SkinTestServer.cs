@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Digi.ComponentLib;
 using Digi.PaintGun.Features.Palette;
 using Digi.PaintGun.Utilities;
+using Sandbox.Definitions;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game;
@@ -27,6 +28,10 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
         {
             if(!MyAPIGateway.Multiplayer.IsServer)
                 throw new Exception("Why is OwnershipTestServer initialized for MP clients?");
+
+            MyCubeBlockDefinition def;
+            if(!MyDefinitionManager.Static.TryGetCubeBlockDefinition(SpawnBlockDefId, out def))
+                throw new Exception($"Couldn't find required block: {SpawnBlockDefId.ToString()} - force Steam to redownload the mod.");
         }
 
         protected override void RegisterComponent()
