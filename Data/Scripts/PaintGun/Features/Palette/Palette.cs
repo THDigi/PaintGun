@@ -4,7 +4,6 @@ using System.Text;
 using Digi.ComponentLib;
 using Digi.PaintGun.Utilities;
 using Sandbox.Definitions;
-using Sandbox.Game;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.ModAPI;
@@ -76,6 +75,8 @@ namespace Digi.PaintGun.Features.Palette
         }
 
         const string ARMOR_SUFFIX = "_Armor";
+        const string TEST_ARMOR_SUBTYPE = "TestArmor";
+
         const string SKIN_ICON_PREFIX = "PaintGun_SkinIcon_";
         const string SKIN_ICON_UNKNOWN = SKIN_ICON_PREFIX + "Unknown";
 
@@ -171,6 +172,9 @@ namespace Digi.PaintGun.Features.Palette
 
         static bool IsSkinAsset(MyAssetModifierDefinition assetDef)
         {
+            if(assetDef.Id.SubtypeName == TEST_ARMOR_SUBTYPE)
+                return false; // skip unusable vanilla test armor
+
             if(assetDef.Id.SubtypeName.EndsWith(ARMOR_SUFFIX))
                 return true;
 
