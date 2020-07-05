@@ -91,6 +91,13 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
         {
             var grid = (IMyCubeGrid)ent;
             callback?.Invoke(grid, steamId);
+
+            // fatblocks need more specific hiding...
+            var internalGrid = (MyCubeGrid)grid;
+            foreach(var block in internalGrid.GetFatBlocks())
+            {
+                block.Render.Visible = false;
+            }
         }
     }
 }

@@ -77,6 +77,13 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
                     grid.Physics = null;
                 }
 
+                // fatblocks need more specific hiding...
+                var internalGrid = (MyCubeGrid)grid;
+                foreach(var block in internalGrid.GetFatBlocks())
+                {
+                    block.Render.Visible = false;
+                }
+
                 var steamId = ulong.Parse(grid.Name.Substring(SkinTestServer.ENT_NAME_PREFIX.Length));
 
                 if(steamId != MyAPIGateway.Multiplayer.MyId)
