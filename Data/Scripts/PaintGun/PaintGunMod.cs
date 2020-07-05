@@ -56,7 +56,7 @@ namespace Digi.PaintGun
 
         public PaintGunMod(PaintGun_GameSession session) : base(MOD_NAME, session)
         {
-            var msg = "### PaintGun v19";
+            var msg = "### PaintGun v20";
             VRage.Utils.MyLog.Default.WriteLineAndConsole(msg);
             Log.Info(msg);
 
