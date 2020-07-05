@@ -83,7 +83,7 @@ namespace Digi.PaintGun.Features.Palette
         void InitBlockSkins()
         {
             if(Constants.SKIN_INIT_LOGGING)
-                Log.Info("Finding for block skins...");
+                Log.Info("Finding block skins...");
 
             var definedIcons = new HashSet<string>();
             foreach(var def in MyDefinitionManager.Static.GetTransparentMaterialDefinitions())
@@ -178,25 +178,21 @@ namespace Digi.PaintGun.Features.Palette
             if(assetDef.Id.SubtypeName.EndsWith(ARMOR_SUFFIX))
                 return true;
 
-            // HACK extra checks for vanilla definitions because of inconsistent naming
-            if(assetDef.Context.IsBaseGame)
+            if(assetDef.Icons != null)
             {
-                if(assetDef.Icons != null)
+                foreach(var icon in assetDef.Icons)
                 {
-                    foreach(var icon in assetDef.Icons)
-                    {
-                        if(icon.IndexOf("armor", StringComparison.OrdinalIgnoreCase) != -1)
-                            return true;
-                    }
+                    if(icon.IndexOf("armor", StringComparison.OrdinalIgnoreCase) != -1)
+                        return true;
                 }
+            }
 
-                if(assetDef.Textures != null)
+            if(assetDef.Textures != null)
+            {
+                foreach(var texture in assetDef.Textures)
                 {
-                    foreach(var texture in assetDef.Textures)
-                    {
-                        if(texture.Location == "SquarePlate")
-                            return true;
-                    }
+                    if(texture.Location.Equals("SquarePlate", StringComparison.OrdinalIgnoreCase))
+                        return true;
                 }
             }
 
