@@ -174,28 +174,55 @@ namespace Digi.PaintGun.Features.Palette
 
         static bool IsSkinAsset(MyAssetModifierDefinition assetDef)
         {
-            if(assetDef.Id.SubtypeName == TEST_ARMOR_SUBTYPE)
-                return false; // skip unusable vanilla test armor
+            // DEBUG temporary aggressive error catching
 
-            if(assetDef.Id.SubtypeName.EndsWith(ARMOR_SUFFIX))
-                return true;
-
-            if(assetDef.Icons != null)
+            if(assetDef == null)
             {
-                foreach(var icon in assetDef.Icons)
-                {
-                    if(icon.IndexOf("armor", StringComparison.OrdinalIgnoreCase) != -1)
-                        return true;
-                }
+                Log.Error($"IsSkinAsset() got called with null assetDef param!");
+                return false;
             }
 
-            if(assetDef.Textures != null)
+            try
             {
-                foreach(var texture in assetDef.Textures)
+                if(assetDef.Id.SubtypeName == TEST_ARMOR_SUBTYPE)
+                    return false; // skip unusable vanilla test armor
+
+                if(assetDef.Id.SubtypeName.EndsWith(ARMOR_SUFFIX))
+                    return true;
+
+                if(assetDef.Icons != null)
                 {
-                    if(texture.Location.Equals("SquarePlate", StringComparison.OrdinalIgnoreCase))
-                        return true;
+                    foreach(var icon in assetDef.Icons)
+                    {
+                        if(icon == null)
+                        {
+                            Log.Error($"{assetDef.Id} has null Icon in a valid icon array!");
+                            continue;
+                        }
+
+                        if(icon.IndexOf("armor", StringComparison.OrdinalIgnoreCase) != -1)
+                            return true;
+                    }
                 }
+
+                if(assetDef.Textures != null)
+                {
+                    foreach(var texture in assetDef.Textures)
+                    {
+                        if(texture.Location == null)
+                        {
+                            Log.Error($"{assetDef.Id} has null Location for texture {texture.Filepath} / {texture.Type}");
+                            continue;
+                        }
+
+                        if(texture.Location.Equals("SquarePlate", StringComparison.OrdinalIgnoreCase))
+                            return true;
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+                Log.Error($"Error in IsSkinAsset() for asset={assetDef.Id}\n{e}");
             }
 
             return false;
