@@ -127,7 +127,7 @@ namespace Digi.PaintGun.Features.Palette
                 return;
             }
 
-            if(pickSkin && Palette.OwnedSkins == 0)
+            if(pickSkin && Palette.OwnedSkinsCount == 0)
                 return;
 
             if(change < 0)

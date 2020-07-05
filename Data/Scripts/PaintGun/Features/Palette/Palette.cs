@@ -18,7 +18,8 @@ namespace Digi.PaintGun.Features.Palette
         const int PLAYER_INFO_CLEANUP_TICKS = Constants.TICKS_PER_SECOND * 60 * 5;
 
         public List<SkinInfo> BlockSkins;
-        public int OwnedSkins { get; private set; } = 0;
+        public List<SkinInfo> OwnedSkins;
+        public int OwnedSkinsCount => (OwnedSkins == null ? 0 : OwnedSkins.Count);
 
         public PlayerInfo LocalInfo;
         public bool ReplaceMode = false;
@@ -100,6 +101,7 @@ namespace Digi.PaintGun.Features.Palette
             }
 
             BlockSkins = new List<SkinInfo>(foundSkins + 1); // include "No Skin" too.
+            OwnedSkins = new List<SkinInfo>(BlockSkins.Capacity);
             var sb = new StringBuilder(128);
 
             foreach(var assetDef in MyDefinitionManager.Static.GetAssetModifierDefinitions())
@@ -155,7 +157,7 @@ namespace Digi.PaintGun.Features.Palette
             BlockSkins.Sort((a, b) => a.SubtypeId.String.CompareTo(b.SubtypeId.String));
 
             // "no skin" is always first
-            BlockSkins.Insert(0, new SkinInfo(MyStringHash.NullOrEmpty, "No Skin", SKIN_ICON_PREFIX + "NoSkin", true));
+            BlockSkins.Insert(0, new SkinInfo(MyStringHash.NullOrEmpty, "No Skin", SKIN_ICON_PREFIX + "NoSkin", locallyOwned: true));
 
             // assign final index to the value too
             for(int i = 0; i < BlockSkins.Count; ++i)
@@ -429,13 +431,13 @@ namespace Digi.PaintGun.Features.Palette
         /// </summary>
         public void ComputeOwnedSkins()
         {
-            OwnedSkins = 0;
+            OwnedSkins.Clear();
 
-            // skipping default skin at index 0
-            for(int i = 1; i < BlockSkins.Count; ++i)
+            for(int i = 0; i < BlockSkins.Count; ++i)
             {
-                if(BlockSkins[i].LocallyOwned)
-                    OwnedSkins++;
+                SkinInfo skin = BlockSkins[i];
+                if(skin.LocallyOwned)
+                    OwnedSkins.Add(skin);
             }
         }
     }
