@@ -159,28 +159,37 @@ namespace Digi.PaintGun.Features.Palette
             // "no skin" is always first
             BlockSkins.Insert(0, new SkinInfo(MyStringHash.NullOrEmpty, "No Skin", SKIN_ICON_PREFIX + "NoSkin", locallyOwned: true));
 
+            bool neonSkinExists = false;
+
             // assign final index to the value too
             for(int i = 0; i < BlockSkins.Count; ++i)
             {
-                BlockSkins[i].Index = i;
+                var skin = BlockSkins[i];
+                skin.Index = i;
+
+                if(skin.SubtypeId.String == "Neon_Colorable_Surface")
+                    neonSkinExists = true;
 
                 if(Constants.SKIN_INIT_LOGGING)
                 {
-                    var skin = BlockSkins[i];
                     Log.Info($"Defined skin #{i.ToString()} - {skin.Name} ({skin.SubtypeId.String}){(skin.Icon.String == SKIN_ICON_UNKNOWN ? "; No Icon!" : "")}{(skin.Mod != null ? $"; Mod={skin.Mod.ModName}" : "")}");
                 }
+            }
+
+            if(!neonSkinExists)
+            {
+                Log.Error("WARNING: Expected to find 'Neon_Colorable_Surface' but did not!" +
+                    "\nCheck the skins list in the mod's log to ensure all of them are there." +
+                    "\nSkin index is what gets sent by clients and if skin number mismatches it will cause issues." +
+                    "\nThis skin (and few others) do not have the '_Armor' suffix, therefore this mod looks for 'armor' in icons or 'SquarePlate' in textures, and it didn't find it by that criteria either."
+                );
             }
         }
 
         static bool IsSkinAsset(MyAssetModifierDefinition assetDef)
         {
-            // DEBUG temporary aggressive error catching
-
             if(assetDef == null)
-            {
-                Log.Error($"IsSkinAsset() got called with null assetDef param!");
                 return false;
-            }
 
             try
             {
@@ -195,10 +204,7 @@ namespace Digi.PaintGun.Features.Palette
                     foreach(var icon in assetDef.Icons)
                     {
                         if(icon == null)
-                        {
-                            Log.Error($"{assetDef.Id} has null Icon in a valid icon array!");
                             continue;
-                        }
 
                         if(icon.IndexOf("armor", StringComparison.OrdinalIgnoreCase) != -1)
                             return true;
@@ -210,10 +216,7 @@ namespace Digi.PaintGun.Features.Palette
                     foreach(var texture in assetDef.Textures)
                     {
                         if(texture.Location == null)
-                        {
-                            Log.Error($"{assetDef.Id} has null Location for texture {texture.Filepath} / {texture.Type}");
                             continue;
-                        }
 
                         if(texture.Location.Equals("SquarePlate", StringComparison.OrdinalIgnoreCase))
                             return true;
