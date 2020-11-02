@@ -37,7 +37,7 @@ namespace Digi.PaintGun.Features.ChatCommands
 
             sb.Append("##### Hotkeys #####").Append('\n');
             sb.Append('\n');
-            sb.Append("MouseScroll or ").Append(assignedColorPrev).Append("/").Append(assignedColorNext).Append('\n');
+            sb.Append(PaintGunMod.Instance.Settings.requireCtrlForColorCycle ? "Ctrl+" : "").Append("MouseScroll or ").Append(assignedColorPrev).Append("/").Append(assignedColorNext).Append('\n');
             sb.Append("  Change selected color slot.").Append('\n');
             sb.Append('\n');
             sb.Append("Shift+MouseScroll or Shift+").Append(assignedColorPrev).Append("/Shift+").Append(assignedColorNext).Append('\n');

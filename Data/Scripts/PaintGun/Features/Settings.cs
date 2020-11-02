@@ -1,7 +1,10 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using Sandbox.Definitions;
 using Sandbox.ModAPI;
+using VRage.Game;
+using VRage.Utils;
 using VRageMath;
 
 namespace Digi.PaintGun.Features
@@ -26,6 +29,7 @@ namespace Digi.PaintGun.Features
         public Vector2D aimInfoScreenPos = aimInfoScreenPosDefault;
         public float aimInfoScale = aimInfoScaleDefault;
         public float aimInfoBackgroundOpacity = -1;
+        public bool requireCtrlForColorCycle = false;
         public ControlCombination colorPickMode1;
         public ControlCombination colorPickMode2;
         public ControlCombination instantColorPick1;
@@ -59,6 +63,7 @@ namespace Digi.PaintGun.Features
             aimInfoScreenPos = aimInfoScreenPosDefault;
             aimInfoScale = aimInfoScaleDefault;
             aimInfoBackgroundOpacity = -1;
+            requireCtrlForColorCycle = false;
 
             colorPickMode1 = default_colorPickMode1;
             colorPickMode2 = default_colorPickMode2;
@@ -132,7 +137,43 @@ namespace Digi.PaintGun.Features
                 file?.Dispose();
             }
 
+            UpdateToolDescription();
+
             return success;
+        }
+
+        private void UpdateToolDescription()
+        {
+            try
+            {
+                var defId = new MyDefinitionId(typeof(MyObjectBuilder_PhysicalGunObject), "PhysicalPaintGun");
+                var itemDef = MyDefinitionManager.Static.GetPhysicalItemDefinition(defId);
+
+                if(itemDef == null)
+                    throw new Exception($"Can't find '{defId.ToString()}' hand item definition!");
+
+                if(string.IsNullOrEmpty(itemDef.DescriptionText))
+                    return;
+
+                if(requireCtrlForColorCycle)
+                {
+                    if(itemDef.DescriptionEnum.HasValue)
+                        itemDef.DescriptionEnum = MyStringId.GetOrCompute(itemDef.DescriptionEnum.Value.String.Replace("[Scroll]", "[Ctrl+Scroll]"));
+                    else if(!string.IsNullOrEmpty(itemDef.DescriptionString))
+                        itemDef.DescriptionString = itemDef.DescriptionString.Replace("[Scroll]", "[Ctrl+Scroll]");
+                }
+                else
+                {
+                    if(itemDef.DescriptionEnum.HasValue)
+                        itemDef.DescriptionEnum = MyStringId.GetOrCompute(itemDef.DescriptionEnum.Value.String.Replace("[Ctrl+Scroll]", "[Scroll]"));
+                    else if(!string.IsNullOrEmpty(itemDef.DescriptionString))
+                        itemDef.DescriptionString = itemDef.DescriptionString.Replace("[Ctrl+Scroll]", "[Scroll]");
+                }
+            }
+            catch(Exception e)
+            {
+                Log.Error(e);
+            }
         }
 
         private void ReadSettings(TextReader file)
@@ -254,83 +295,89 @@ namespace Digi.PaintGun.Features
                             continue;
                         case "palettebackgroundopacity":
                         case "aiminfobackgroundopacity":
+                        {
+                            if(value.Trim().Equals("hud", StringComparison.CurrentCultureIgnoreCase))
                             {
-                                if(value.Trim().Equals("hud", StringComparison.CurrentCultureIgnoreCase))
-                                {
-                                    f = -1;
-                                }
-                                else if(float.TryParse(value, out f))
-                                {
-                                    f = MathHelper.Clamp(f, 0, 1);
-                                }
-                                else
-                                {
-                                    Log.Error("Invalid " + key + " value: " + value);
-                                    continue;
-                                }
-
-                                if(key == "aiminfoscale")
-                                {
-                                    aimInfoScale = f;
-                                }
-                                else
-                                {
-                                    if(prevConfigVersion < CFG_VERSION_HUDBKOPACITYDEFAULTS)
-                                        paletteBackgroundOpacity = -1;
-                                    else
-                                        paletteBackgroundOpacity = f;
-                                }
+                                f = -1;
+                            }
+                            else if(float.TryParse(value, out f))
+                            {
+                                f = MathHelper.Clamp(f, 0, 1);
+                            }
+                            else
+                            {
+                                Log.Error("Invalid " + key + " value: " + value);
                                 continue;
                             }
+
+                            if(key == "aiminfoscale")
+                            {
+                                aimInfoScale = f;
+                            }
+                            else
+                            {
+                                if(prevConfigVersion < CFG_VERSION_HUDBKOPACITYDEFAULTS)
+                                    paletteBackgroundOpacity = -1;
+                                else
+                                    paletteBackgroundOpacity = f;
+                            }
+                            continue;
+                        }
+                        case "requirectrlforcolorcycle":
+                            if(bool.TryParse(value, out b))
+                                requireCtrlForColorCycle = b;
+                            else
+                                Log.Error("Invalid " + key + " value: " + value);
+                            continue;
                         case "pickcolorinput1": // backwards compatibility
                         case "pickcolorinput2": // backwards compatibility
                         case "pickcolormode-input1":
                         case "pickcolormode-input2":
+                        {
+                            var obj = ControlCombination.CreateFrom(value, true);
+                            if(value.Length == 0 || obj != null)
                             {
-                                var obj = ControlCombination.CreateFrom(value, true);
-                                if(value.Length == 0 || obj != null)
-                                {
-                                    if(key.EndsWith("1"))
-                                        colorPickMode1 = obj;
-                                    else
-                                        colorPickMode2 = obj;
-                                }
+                                if(key.EndsWith("1"))
+                                    colorPickMode1 = obj;
                                 else
-                                    Log.Error("Invalid " + key + " value: " + value);
-                                continue;
+                                    colorPickMode2 = obj;
                             }
+                            else
+                                Log.Error("Invalid " + key + " value: " + value);
+                            continue;
+                        }
                         case "instantpickcolor-input1":
                         case "instantpickcolor-input2":
+                        {
+                            var obj = ControlCombination.CreateFrom(value, true);
+                            if(value.Length == 0 || obj != null)
                             {
-                                var obj = ControlCombination.CreateFrom(value, true);
-                                if(value.Length == 0 || obj != null)
-                                {
-                                    if(key.EndsWith("1"))
-                                        instantColorPick1 = obj;
-                                    else
-                                        instantColorPick2 = obj;
-                                }
+                                if(key.EndsWith("1"))
+                                    instantColorPick1 = obj;
                                 else
-                                    Log.Error("Invalid " + key + " value: " + value);
-                                continue;
+                                    instantColorPick2 = obj;
                             }
+                            else
+                                Log.Error("Invalid " + key + " value: " + value);
+                            continue;
+                        }
                         case "replacecolormode-input1":
                         case "replacecolormode-input2":
                         case "replacemodeinput1": // backwards compatibility
                         case "replacemodeinput2": // backwards compatibility
+                        {
+                            var obj = ControlCombination.CreateFrom(value, true);
+                            if(value.Length == 0 || obj != null)
                             {
-                                var obj = ControlCombination.CreateFrom(value, true);
-                                if(value.Length == 0 || obj != null)
-                                {
-                                    if(key.EndsWith("1"))
-                                        replaceColorMode1 = obj;
-                                    else
-                                        replaceColorMode2 = obj;
-                                }
+                                if(key.EndsWith("1"))
+                                    replaceColorMode1 = obj;
                                 else
-                                    Log.Error("Invalid " + key + " value: " + value);
-                                continue;
+                                    replaceColorMode2 = obj;
                             }
+                            else
+                                Log.Error("Invalid " + key + " value: " + value);
+                            continue;
+                        }
                     }
                 }
 
@@ -389,6 +436,8 @@ namespace Digi.PaintGun.Features
             // TODO: make it work with scale?
             //str.Append("AimInfoScale=").Append(Math.Round(aimInfoScale, 5)).AppendLine(comments ? $" // aiming info box overall scale. Default: {aimInfoScaleDefault:0.#####}" : "");
             sb.Append("AimInfoBackgroundOpacity=").Append(aimInfoBackgroundOpacity < 0 ? "HUD" : Math.Round(aimInfoBackgroundOpacity, 5).ToString()).AppendLine(comments ? " // aim info's background opacity percent scalar (0 to 1 value) or set to HUD to use the game's HUD opacity. Default: HUD" : "");
+
+            sb.Append("RequireCtrlForColorCycle=").Append(requireCtrlForColorCycle).AppendLine(comments ? " // Whether color cycling requires ctrl+scroll (true) or just scroll (false). Skin cycling (shift+scroll) is unaffected. Default: false" : "");
 
             if(comments)
             {

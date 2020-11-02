@@ -23,6 +23,7 @@
         <SubtypeId>PhysicalPaintGun</SubtypeId>
       </Id>
       <DisplayName>Paint Gun</DisplayName>
+      <!-- Settings.cs@UpdateToolDescription() modifies the below text depending on the 'RequireCtrlForColorCycle' setting -->
       <Description>Paints blocks.
 {0} paint
 {1} deep paint mode

@@ -115,6 +115,14 @@ namespace Digi.PaintGun.Features.Palette
                 return;
 
             bool pickSkin = MyAPIGateway.Input.IsAnyShiftKeyPressed();
+            bool ctrl = MyAPIGateway.Input.IsAnyCtrlKeyPressed();
+
+            if(pickSkin && ctrl)
+                return;
+
+            // color cycling requires it pressed or explicitly requires it not pressed depending on user pref
+            if(!pickSkin && Settings.requireCtrlForColorCycle != ctrl)
+                return;
 
             if(pickSkin ? !LocalInfo.ApplySkin : !LocalInfo.ApplyColor)
             {
