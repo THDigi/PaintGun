@@ -632,8 +632,8 @@ namespace Digi.PaintGun.Features.Tool
             uiText.Offset = new Vector2D(0.07 * aspectRatioMod, -0.09) * scale;
             uiTextBg.Offset = new Vector2D(uiTextBg.Width * 0.5, uiTextBg.Height * -0.5) + (uiTextBgPosition * scale);
 
-            uiTargetColor.Offset = new Vector2D(0.09 * aspectRatioMod, -0.214) * scale;
-            uiPaintColor.Offset = new Vector2D(0.09 * aspectRatioMod, -0.335) * scale;
+            uiTargetColor.Offset = new Vector2D(0.09 * aspectRatioMod, -0.195) * scale;
+            uiPaintColor.Offset = new Vector2D(0.09 * aspectRatioMod, -0.295) * scale;
 
             uiProgressBar.Offset = new Vector2D(uiProgressBar.Width * 0.5, uiProgressBar.Height * -0.5) + (uiProgressBarPosition * scale);
             uiProgressBarBg.Offset = new Vector2D(uiProgressBarBg.Width * 0.5, uiProgressBarBg.Height * -0.5) + (uiProgressBarPosition * scale);
