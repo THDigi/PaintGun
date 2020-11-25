@@ -21,6 +21,8 @@ namespace Digi.PaintGun.Features.Sync
 
         public NetworkLibHandler(PaintGunMod main) : base(main)
         {
+            // DEBUG TODO change to new network registers?
+
             Lib = new Network(Constants.NETWORK_CHANNEL);
 
             // needed here because they call an API method on creation
