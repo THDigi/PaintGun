@@ -354,7 +354,6 @@ namespace Digi
                 {CONTROL_PREFIX+"cuberotatez-", MyControlsSpace.CUBE_ROTATE_ROLL_NEGATIVE},
                 {CONTROL_PREFIX+"togglehud", MyControlsSpace.TOGGLE_HUD},
                 {CONTROL_PREFIX+"togglesignals", MyControlsSpace.TOGGLE_SIGNALS},
-                {CONTROL_PREFIX+"missionsettings", MyControlsSpace.MISSION_SETTINGS},
                 {CONTROL_PREFIX+"suicide", MyControlsSpace.SUICIDE},
                 {CONTROL_PREFIX+"chat", MyControlsSpace.CHAT_SCREEN},
                 {CONTROL_PREFIX+"pause", MyControlsSpace.PAUSE_GAME},
