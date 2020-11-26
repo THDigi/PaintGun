@@ -235,7 +235,7 @@
       <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
       <IgnoreDepth>true</IgnoreDepth>
       <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
-      <Texture>Textures\GUI\Icons\Skins\Armor\SciFi.DDS</Texture>
+      <Texture>Textures\GUI\Icons\Skins\Armor\SciFi.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
     </TransparentMaterial>
@@ -264,6 +264,62 @@
       <IgnoreDepth>true</IgnoreDepth>
       <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
       <Texture>Textures\GUI\Icons\Skins\Armor\NeonColorableLights.dds</Texture>
+      <UseAtlas>false</UseAtlas>
+      <Reflectivity>0</Reflectivity>
+    </TransparentMaterial>
+    <TransparentMaterial>
+      <Id>
+        <TypeId>TransparentMaterialDefinition</TypeId>
+        <SubtypeId>PaintGun_SkinIcon_Heavy_Rust</SubtypeId>
+      </Id>
+      <AlphaMistingEnable>false</AlphaMistingEnable>
+      <AlphaSaturation>1</AlphaSaturation>
+      <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
+      <IgnoreDepth>true</IgnoreDepth>
+      <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
+      <Texture>Textures\GUI\Icons\Skins\Armor\HeavyRust.dds</Texture>
+      <UseAtlas>false</UseAtlas>
+      <Reflectivity>0</Reflectivity>
+    </TransparentMaterial>
+    <TransparentMaterial>
+      <Id>
+        <TypeId>TransparentMaterialDefinition</TypeId>
+        <SubtypeId>PaintGun_SkinIcon_Dust</SubtypeId>
+      </Id>
+      <AlphaMistingEnable>false</AlphaMistingEnable>
+      <AlphaSaturation>1</AlphaSaturation>
+      <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
+      <IgnoreDepth>true</IgnoreDepth>
+      <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
+      <Texture>Textures\GUI\Icons\Skins\Armor\Dust.dds</Texture>
+      <UseAtlas>false</UseAtlas>
+      <Reflectivity>0</Reflectivity>
+    </TransparentMaterial>
+    <TransparentMaterial>
+      <Id>
+        <TypeId>TransparentMaterialDefinition</TypeId>
+        <SubtypeId>PaintGun_SkinIcon_Concrete</SubtypeId>
+      </Id>
+      <AlphaMistingEnable>false</AlphaMistingEnable>
+      <AlphaSaturation>1</AlphaSaturation>
+      <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
+      <IgnoreDepth>true</IgnoreDepth>
+      <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
+      <Texture>Textures\GUI\Icons\Skins\Armor\Concrete.dds</Texture>
+      <UseAtlas>false</UseAtlas>
+      <Reflectivity>0</Reflectivity>
+    </TransparentMaterial>
+    <TransparentMaterial>
+      <Id>
+        <TypeId>TransparentMaterialDefinition</TypeId>
+        <SubtypeId>PaintGun_SkinIcon_Retrofuture</SubtypeId>
+      </Id>
+      <AlphaMistingEnable>false</AlphaMistingEnable>
+      <AlphaSaturation>1</AlphaSaturation>
+      <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
+      <IgnoreDepth>true</IgnoreDepth>
+      <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
+      <Texture>Textures\GUI\Icons\Skins\Armor\RetrofutureArmor.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
     </TransparentMaterial>
