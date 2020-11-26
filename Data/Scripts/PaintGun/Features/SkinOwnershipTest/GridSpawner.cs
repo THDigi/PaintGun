@@ -42,7 +42,6 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
                 Editable = true,
                 DestructibleBlocks = true,
                 IsRespawnGrid = false,
-                Name = SkinTestServer.ENT_NAME_PREFIX + steamId.ToString(),
             };
 
             var blockSkins = PaintGunMod.Instance.Palette.BlockSkins;
@@ -64,6 +63,9 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
             }
 
             MyAPIGateway.Entities.RemapObjectBuilder(gridObj);
+
+            // Name needed to be set after RemapObjectBuilder() because it overwrites Name.
+            gridObj.Name = SkinTestServer.ENT_NAME_PREFIX + steamId.ToString();
 
             grid = (MyCubeGrid)MyAPIGateway.Entities.CreateFromObjectBuilderParallel(gridObj, true, EntitySpawned);
             //grid = (MyCubeGrid)MyAPIGateway.Entities.CreateFromObjectBuilderParallel(gridObj, true);
