@@ -225,7 +225,7 @@ namespace Digi.PaintGun.Features.Palette
             }
             catch(Exception e)
             {
-                Log.Error($"Error in IsSkinAsset() for asset={assetDef.Id}\n{e}");
+                Log.Error($"Error in IsSkinAsset() for asset={assetDef.Id.ToString()}\n{e}");
             }
 
             return false;

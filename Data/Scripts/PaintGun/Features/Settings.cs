@@ -75,7 +75,8 @@ namespace Digi.PaintGun.Features
             replaceColorMode2 = default_replaceColorMode2;
         }
 
-        private char[] CHARS = new char[] { '=' };
+        private char[] CHARS = { '=' };
+        private char[] SEPARATOR = { ',' };
 
         public bool firstLoad = false;
 
@@ -251,7 +252,7 @@ namespace Digi.PaintGun.Features
                             continue;
                         case "palettescreenpos":
                         case "aiminfoscreenpos":
-                            var vars = value.Split(',');
+                            var vars = value.Split(SEPARATOR);
                             double x, y;
                             if(vars.Length == 2 && double.TryParse(vars[0], out x) && double.TryParse(vars[1], out y))
                             {
@@ -428,11 +429,11 @@ namespace Digi.PaintGun.Features
             sb.Append("SelectColorZigZag=").Append(selectColorZigZag).AppendLine(comments ? " // type of scrolling through colors in the palette, false is each row at a time, true is in zig-zag. Default: false" : "");
             sb.Append("HidePaletteWithHUD=").Append(hidePaletteWithHUD).AppendLine(comments ? " // wether to hide the color palette and aim info along with the HUD. Set to false to always show regardless of the HUD being visible or not. Default: true" : "");
 
-            sb.Append("PaletteScreenPos=").Append(Math.Round(paletteScreenPos.X, 5)).Append(", ").Append(Math.Round(paletteScreenPos.Y, 5)).AppendLine(comments ? $" // color palette screen position in X and Y coordinates where 0,0 is the screen center. Positive values are right and up and negative ones are opposite of that. Default: {paletteScreenPos.X:0.#####}, {paletteScreenPos.Y:0.#####}" : "");
-            sb.Append("PaletteScale=").Append(Math.Round(paletteScale, 5)).AppendLine(comments ? $" // color palette overall scale. Default: {paletteScaleDefault:0.#####}" : "");
+            sb.Append("PaletteScreenPos=").Append(Math.Round(paletteScreenPos.X, 5)).Append(", ").Append(Math.Round(paletteScreenPos.Y, 5)).AppendLine(comments ? $" // color palette screen position in X and Y coordinates where 0,0 is the screen center. Positive values are right and up and negative ones are opposite of that. Default: {paletteScreenPos.X.ToString("0.#####")}, {paletteScreenPos.Y.ToString("0.#####")}" : "");
+            sb.Append("PaletteScale=").Append(Math.Round(paletteScale, 5)).AppendLine(comments ? $" // color palette overall scale. Default: {paletteScaleDefault.ToString("0.#####")}" : "");
             sb.Append("PaletteBackgroundOpacity=").Append(paletteBackgroundOpacity < 0 ? "HUD" : Math.Round(paletteBackgroundOpacity, 5).ToString()).AppendLine(comments ? " // palette's background opacity percent scalar (0 to 1 value) or set to HUD to use the game's HUD opacity. Default: HUD" : "");
 
-            sb.Append("AimInfoScreenPos=").Append(Math.Round(aimInfoScreenPos.X, 5)).Append(", ").Append(Math.Round(aimInfoScreenPos.Y, 5)).AppendLine(comments ? $" // aim info's screen position in X and Y coordinates where 0,0 is the screen center. Positive values are right and up and negative ones are opposite of that. Default: {aimInfoScreenPos.X:0.#####}, {aimInfoScreenPos.Y:0.#####}" : "");
+            sb.Append("AimInfoScreenPos=").Append(Math.Round(aimInfoScreenPos.X, 5)).Append(", ").Append(Math.Round(aimInfoScreenPos.Y, 5)).AppendLine(comments ? $" // aim info's screen position in X and Y coordinates where 0,0 is the screen center. Positive values are right and up and negative ones are opposite of that. Default: {aimInfoScreenPos.X.ToString("0.#####")}, {aimInfoScreenPos.Y.ToString("0.#####")}" : "");
             // TODO: make it work with scale?
             //str.Append("AimInfoScale=").Append(Math.Round(aimInfoScale, 5)).AppendLine(comments ? $" // aiming info box overall scale. Default: {aimInfoScaleDefault:0.#####}" : "");
             sb.Append("AimInfoBackgroundOpacity=").Append(aimInfoBackgroundOpacity < 0 ? "HUD" : Math.Round(aimInfoBackgroundOpacity, 5).ToString()).AppendLine(comments ? " // aim info's background opacity percent scalar (0 to 1 value) or set to HUD to use the game's HUD opacity. Default: HUD" : "");

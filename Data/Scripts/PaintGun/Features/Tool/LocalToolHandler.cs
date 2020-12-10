@@ -276,7 +276,7 @@ namespace Digi.PaintGun.Features.Tool
 
             if(pi == null)
             {
-                Log.Error($"{GetType().Name} :: PlayerInfo for {targetPlayer.DisplayName} ({targetPlayer.SteamUserId}) not found!", Log.PRINT_MESSAGE);
+                Log.Error($"{GetType().Name} :: PlayerInfo for {targetPlayer.DisplayName} ({targetPlayer.SteamUserId.ToString()}) not found!", Log.PRINT_MESSAGE);
                 return;
             }
 
@@ -814,7 +814,7 @@ namespace Digi.PaintGun.Features.Tool
                 {
                     var percent = Utils.ColorPercent(blockColorMask, paintColorMask);
 
-                    SelectionGUI.SetGUIStatus(0, $"Painting {percent}%...");
+                    SelectionGUI.SetGUIStatus(0, $"Painting {percent.ToString()}%...");
                 }
             }
             else // if hue is too far off, first "remove" the paint.
@@ -853,7 +853,7 @@ namespace Digi.PaintGun.Features.Tool
                 {
                     var percent = Utils.ColorPercent(blockColorMask, defaultColorMask);
 
-                    SelectionGUI.SetGUIStatus(0, $"Removing paint {percent}%...");
+                    SelectionGUI.SetGUIStatus(0, $"Removing paint {percent.ToString()}%...");
                 }
             }
 

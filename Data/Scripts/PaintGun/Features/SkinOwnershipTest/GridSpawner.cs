@@ -67,6 +67,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
             // Name needed to be set after RemapObjectBuilder() because it overwrites Name.
             gridObj.Name = SkinTestServer.ENT_NAME_PREFIX + steamId.ToString();
 
+            // FIXME Struct instance method being used for delegate creation, this will result in a boxing instruction
             grid = (MyCubeGrid)MyAPIGateway.Entities.CreateFromObjectBuilderParallel(gridObj, true, EntitySpawned);
             //grid = (MyCubeGrid)MyAPIGateway.Entities.CreateFromObjectBuilderParallel(gridObj, true);
 
