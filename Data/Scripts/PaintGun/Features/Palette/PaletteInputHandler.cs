@@ -1,7 +1,9 @@
 ﻿using Digi.ComponentLib;
 using Sandbox.Game;
+using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game;
+using VRageMath;
 
 namespace Digi.PaintGun.Features.Palette
 {
@@ -239,6 +241,8 @@ namespace Digi.PaintGun.Features.Palette
                 {
                     colorPickModeInputPressed = true;
 
+                    PreventIronSight();
+
                     if(LocalInfo.ColorPickMode)
                         Notifications.Show(0, "Color pick mode turned off.", MyFontEnum.White, 2000);
 
@@ -265,6 +269,8 @@ namespace Digi.PaintGun.Features.Palette
                 if(!colorPickInputPressed)
                 {
                     colorPickInputPressed = true;
+
+                    PreventIronSight();
 
                     if(LocalToolHandler.AimedBlock != null || LocalToolHandler.AimedBlock != null)
                     {
@@ -300,6 +306,8 @@ namespace Digi.PaintGun.Features.Palette
                 {
                     replaceAllModeInputPressed = true;
 
+                    PreventIronSight();
+
                     if(Main.ReplaceColorAccess)
                     {
                         Palette.ReplaceMode = !Palette.ReplaceMode;
@@ -320,6 +328,22 @@ namespace Digi.PaintGun.Features.Palette
             else if(replaceAllModeInputPressed)
             {
                 replaceAllModeInputPressed = false;
+            }
+        }
+
+        private void PreventIronSight()
+        {
+            var holdingTool = LocalToolHandler?.LocalTool?.Rifle;
+            if(holdingTool == null)
+                return;
+
+            // if the bind involves pressing rifle aim then revert action by doing it again.
+            if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.SECONDARY_TOOL_ACTION))
+            {
+                holdingTool.EndShoot(MyShootActionEnum.SecondaryAction);
+
+                holdingTool.Shoot(MyShootActionEnum.SecondaryAction, Vector3.Forward, null, null);
+                holdingTool.EndShoot(MyShootActionEnum.SecondaryAction);
             }
         }
     }
