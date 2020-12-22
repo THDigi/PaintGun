@@ -6,7 +6,6 @@ using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character.Components;
 using Sandbox.ModAPI;
-using SpaceEngineers.Game.ModAPI;
 using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
@@ -20,6 +19,8 @@ namespace Digi.PaintGun.Utilities
     /// </summary>
     public static class Utils
     {
+        private static PaintGunMod Main => PaintGunMod.Instance;
+
         // NOTE Session.EnableCopyPaste used as spacemaster check
         public static bool CreativeToolsEnabled => MyAPIGateway.Session.CreativeMode || (MyAPIGateway.Session.HasCreativeRights && MyAPIGateway.Session.EnableCopyPaste);
 
@@ -52,7 +53,7 @@ namespace Digi.PaintGun.Utilities
             // PlayerInfo.OwnedSkinIndexes is only assigned and filled server-side
             if(MyAPIGateway.Session.IsServer && paint.SkinIndex.HasValue && paint.SkinIndex.Value != 0)
             {
-                var pi = PaintGunMod.Instance.Palette.GetPlayerInfo(steamId);
+                var pi = Main.Palette.GetPlayerInfo(steamId);
 
                 // DEBUG ValidateSkinOwnership
 
@@ -74,7 +75,7 @@ namespace Digi.PaintGun.Utilities
                 {
                     Log.Info($"DEBUG: ValidateSkinOwnership() :: {steamId.ToString()} tried to paint with a skin ({Utils.PrintSkinName(paint.SkinIndex)}) they don't own... ?");
                     Log.Info($"DEBUG: ValidateSkinOwnership() :: ownedIds={string.Join(", ", pi.OwnedSkinIndexes)}");
-                    Log.Info($"DEBUG: ValidateSkinOwnership() :: MyId={MyAPIGateway.Multiplayer.MyId.ToString()}; players={MyAPIGateway.Multiplayer.Players.Count.ToString()}; PlayerInfos={PaintGunMod.Instance.Palette.PlayerInfo.Count.ToString()}");
+                    Log.Info($"DEBUG: ValidateSkinOwnership() :: MyId={MyAPIGateway.Multiplayer.MyId.ToString()}; players={MyAPIGateway.Multiplayer.Players.Count.ToString()}; PlayerInfos={Main.Palette.PlayerInfo.Count.ToString()}");
 
                     return false;
                 }
@@ -121,7 +122,7 @@ namespace Digi.PaintGun.Utilities
         {
             var blockHSV = ColorMaskToHSV(blockColor);
             var paintHSV = ColorMaskToHSV(paintColor);
-            var defaultHSV = ColorMaskToHSV(PaintGunMod.Instance.Palette.DefaultColorMask);
+            var defaultHSV = ColorMaskToHSV(Main.Palette.DefaultColorMask);
 
             float addPaint = 1 - ((Math.Abs(paintHSV.X - blockHSV.X) + Math.Abs(paintHSV.Y - blockHSV.Y) + Math.Abs(paintHSV.Z - blockHSV.Z)) / 3f);
             float removePaint = 1 - ((Math.Abs(defaultHSV.Y - blockHSV.Y) + Math.Abs(defaultHSV.Z - blockHSV.Z)) * 0.5f);
@@ -256,8 +257,7 @@ namespace Digi.PaintGun.Utilities
 
         public static IMyPlayer GetPlayerBySteamId(ulong steamId)
         {
-            var players = PaintGunMod.Instance.Caches.Players;
-            players.Clear();
+            var players = Main.Caches.Players.Get();
             MyAPIGateway.Players.GetPlayers(players);
             IMyPlayer player = null;
 
@@ -270,14 +270,13 @@ namespace Digi.PaintGun.Utilities
                 }
             }
 
-            players.Clear();
+            Main.Caches.Players.Return(players);
             return player;
         }
 
         public static IMyPlayer GetPlayerByIdentityId(long identityId)
         {
-            var players = PaintGunMod.Instance.Caches.Players;
-            players.Clear();
+            var players = Main.Caches.Players.Get();
             MyAPIGateway.Players.GetPlayers(players);
             IMyPlayer player = null;
 
@@ -290,7 +289,7 @@ namespace Digi.PaintGun.Utilities
                 }
             }
 
-            players.Clear();
+            Main.Caches.Players.Return(players);
             return player;
         }
 
@@ -426,7 +425,7 @@ namespace Digi.PaintGun.Utilities
 
         public static bool IsLocalMod()
         {
-            var modContext = PaintGunMod.Instance.Session.ModContext;
+            var modContext = Main.Session.ModContext;
 
             foreach(var mod in MyAPIGateway.Session.Mods)
             {
@@ -454,7 +453,7 @@ namespace Digi.PaintGun.Utilities
             if(!id.HasValue)
                 return $"(NoSkinId)";
 
-            var skin = PaintGunMod.Instance.Palette.GetSkinInfo(id.Value);
+            var skin = Main.Palette.GetSkinInfo(id.Value);
             if(skin != null)
                 return $"{skin.SubtypeId.ToString()} (idx={id.Value.ToString()})";
 

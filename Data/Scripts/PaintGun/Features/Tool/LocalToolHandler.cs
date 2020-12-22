@@ -466,8 +466,7 @@ namespace Digi.PaintGun.Features.Tool
 
         bool GetTargetCharacter(Vector3D rayFrom, Vector3D rayDir, double rayLength, IMyCharacter character, ref IMyPlayer targetPlayer)
         {
-            var players = Main.Caches.Players;
-            players.Clear();
+            var players = Main.Caches.Players.Get();
             MyAPIGateway.Players.GetPlayers(players);
 
             var ray = new RayD(rayFrom, rayDir);
@@ -493,7 +492,7 @@ namespace Digi.PaintGun.Features.Tool
                 break;
             }
 
-            players.Clear();
+            Main.Caches.Players.Return(players);
 
             return (targetPlayer != null);
         }

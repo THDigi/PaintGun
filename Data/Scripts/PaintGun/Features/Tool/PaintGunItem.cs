@@ -108,7 +108,7 @@ namespace Digi.PaintGun.Features.Tool
 
             if(OwnerSteamId == 0)
             {
-                var players = Main.Caches?.Players;
+                var players = Main.Caches?.Players.Get();
 
                 if(players == null)
                     throw new NullReferenceException($"{GetType().Name} :: players cache is null");
@@ -116,7 +116,6 @@ namespace Digi.PaintGun.Features.Tool
                 if(MyAPIGateway.Players == null)
                     throw new NullReferenceException($"{GetType().Name} :: MyAPIGateway.Players == null");
 
-                players.Clear();
                 MyAPIGateway.Players.GetPlayers(players);
 
                 foreach(var player in players)
@@ -128,7 +127,7 @@ namespace Digi.PaintGun.Features.Tool
                     }
                 }
 
-                players.Clear();
+                Main.Caches.Players.Return(players);
             }
 
             if(OwnerSteamId == 0)
