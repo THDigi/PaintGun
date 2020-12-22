@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Digi.PaintGun.Utilities;
+using Sandbox.Game;
 using Sandbox.ModAPI;
 using VRage.Game.ModAPI;
 
@@ -14,17 +16,23 @@ namespace Digi.PaintGun.Systems
         public event PlayerEventDel PlayerDisconnected;
         public delegate void PlayerEventDel(IMyPlayer player);
 
-        private readonly Dictionary<ulong, IMyPlayer> connectedPlayers;
-        private readonly List<ulong> removeKeys;
+        private readonly Dictionary<ulong, IMyPlayer> ConnectedPlayers;
+        private readonly List<ulong> RemoveConnected;
+        private readonly List<IMyPlayer> Players;
 
         private const int SKIP_TICKS = Constants.TICKS_PER_SECOND * 1;
 
         public PlayerHandler(PaintGunMod main) : base(main)
         {
-            connectedPlayers = new Dictionary<ulong, IMyPlayer>(MyAPIGateway.Session.SessionSettings.MaxPlayers);
-            removeKeys = new List<ulong>(MyAPIGateway.Session.SessionSettings.MaxPlayers);
+            int maxPlayers = MyAPIGateway.Session.SessionSettings.MaxPlayers;
+            ConnectedPlayers = new Dictionary<ulong, IMyPlayer>(maxPlayers);
+            RemoveConnected = new List<ulong>(maxPlayers);
+            Players = new List<IMyPlayer>(maxPlayers);
 
             UpdateMethods = ComponentLib.UpdateFlags.UPDATE_AFTER_SIM;
+
+            MyVisualScriptLogicProvider.PlayerConnected += ViScPlayerConnected;
+            MyVisualScriptLogicProvider.PlayerDisconnected += ViScPlayerDisconnected;
         }
 
         protected override void RegisterComponent()
@@ -33,6 +41,20 @@ namespace Digi.PaintGun.Systems
 
         protected override void UnregisterComponent()
         {
+            MyVisualScriptLogicProvider.PlayerConnected -= ViScPlayerConnected;
+            MyVisualScriptLogicProvider.PlayerDisconnected -= ViScPlayerDisconnected;
+        }
+
+        void ViScPlayerConnected(long identityId)
+        {
+            ulong steamId = MyAPIGateway.Players.TryGetSteamId(identityId);
+            Log.Info($"DEBUG: PlayerHandler :: ViSc triggered join: '{Utils.GetPlayerByIdentityId(identityId)}' (steamId={steamId.ToString()})");
+        }
+
+        void ViScPlayerDisconnected(long identityId)
+        {
+            ulong steamId = MyAPIGateway.Players.TryGetSteamId(identityId);
+            Log.Info($"DEBUG: PlayerHandler :: ViSc triggered disconnect: '{Utils.GetPlayerByIdentityId(identityId)}' (steamId={steamId.ToString()})");
         }
 
         protected override void UpdateAfterSim(int tick)
@@ -40,47 +62,60 @@ namespace Digi.PaintGun.Systems
             if(tick % SKIP_TICKS != 0)
                 return;
 
-            var players = PaintGunMod.Instance.Caches.Players;
-            players.Clear();
-            MyAPIGateway.Players.GetPlayers(players);
-
-            removeKeys.Clear();
+            Players.Clear();
+            MyAPIGateway.Players.GetPlayers(Players);
 
             // DEBUG player handler
 
-            foreach(var player in connectedPlayers.Values)
+            foreach(var player in ConnectedPlayers.Values)
             {
-                if(!players.Contains(player))
+                if(!Players.Contains(player))
                 {
-                    removeKeys.Add(player.SteamUserId);
-                    PlayerDisconnected?.Invoke(player);
+                    RemoveConnected.Add(player.SteamUserId);
 
                     Log.Info($"DEBUG: PlayerHandler :: {Utils.PrintPlayerName(player.SteamUserId)} disconnected");
+
+                    try
+                    {
+                        PlayerDisconnected?.Invoke(player);
+                    }
+                    catch(Exception e)
+                    {
+                        Log.Error(e);
+                    }
                 }
             }
 
-            if(removeKeys.Count != 0)
+            if(RemoveConnected.Count != 0)
             {
-                foreach(var key in removeKeys)
+                foreach(var key in RemoveConnected)
                 {
-                    connectedPlayers.Remove(key);
+                    ConnectedPlayers.Remove(key);
                 }
 
-                removeKeys.Clear();
+                RemoveConnected.Clear();
             }
 
-            foreach(var player in players)
+            foreach(var player in Players)
             {
-                if(!connectedPlayers.ContainsKey(player.SteamUserId))
+                if(!ConnectedPlayers.ContainsKey(player.SteamUserId))
                 {
-                    connectedPlayers.Add(player.SteamUserId, player);
-                    PlayerConnected?.Invoke(player);
+                    ConnectedPlayers.Add(player.SteamUserId, player);
 
                     Log.Info($"DEBUG: PlayerHandler :: {Utils.PrintPlayerName(player.SteamUserId)} joined");
+
+                    try
+                    {
+                        PlayerConnected?.Invoke(player);
+                    }
+                    catch(Exception e)
+                    {
+                        Log.Error(e);
+                    }
                 }
             }
 
-            players.Clear();
+            Players.Clear();
         }
     }
 }
