@@ -133,11 +133,11 @@ namespace Digi.PaintGun.Features.Sync
                 {
                     var p = new PaintMaterial(Paint);
                     grid.SkinBlocks(GridPosition, GridPosition, p.ColorMask, p.Skin.Value.String);
-                    Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to apply skin server side, skin not owned.");
+                    Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, $"Failed to apply skin server side, skin {Utils.PrintSkinName(Paint.SkinIndex)} not owned.");
                 }
                 else
                 {
-                    Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to apply skin server side, skin not owned.");
+                    Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, $"Failed to apply skin server side, skin {Utils.PrintSkinName(Paint.SkinIndex)} not owned.");
                     Paint = new SerializedPaintMaterial(Paint.ColorMaskPacked, null);
                 }
             }

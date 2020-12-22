@@ -54,38 +54,27 @@ namespace Digi.PaintGun.Utilities
             {
                 var pi = PaintGunMod.Instance.Palette.GetPlayerInfo(steamId);
 
-                // DEBUG some debugging info in here
+                // DEBUG ValidateSkinOwnership
 
                 if(pi == null)
                 {
-                    if(MyAPIGateway.Session.OnlineMode == MyOnlineModeEnum.OFFLINE)
-                    {
-                        Log.Info($"ValidateSkinOwnership() DEBUG: {steamId.ToString()} has no PlayerInfo!");
-                    }
+                    Log.Info($"DEBUG: ValidateSkinOwnership() :: {steamId.ToString()} has no PlayerInfo!");
 
                     return false;
                 }
 
                 if(pi.OwnedSkinIndexes == null)
                 {
-                    if(MyAPIGateway.Session.OnlineMode == MyOnlineModeEnum.OFFLINE)
-                    {
-                        Log.Info($"ValidateSkinOwnership() DEBUG: {steamId.ToString()} has no OwnedSkinIndexes list, is it before ownership testing was completed?");
-                    }
+                    Log.Info($"DEBUG: ValidateSkinOwnership() :: {steamId.ToString()} has no OwnedSkinIndexes list, is this before ownership testing was completed?");
 
                     return false;
                 }
 
                 if(!pi.OwnedSkinIndexes.Contains(paint.SkinIndex.Value))
                 {
-                    if(MyAPIGateway.Session.OnlineMode == MyOnlineModeEnum.OFFLINE)
-                    {
-                        var skin = PaintGunMod.Instance.Palette.GetSkinInfo(paint.SkinIndex.Value);
-                        string skinName = (skin != null ? skin.SubtypeId.ToString() : $"UnknownId#{paint.SkinIndex.Value.ToString()}");
-                        Log.Info($"ValidateSkinOwnership() DEBUG: {steamId.ToString()} tried to paint with a skin ({skinName}) they don't own... ?");
-                        Log.Info($"ValidateSkinOwnership() DEBUG: ownedIds={string.Join(", ", pi.OwnedSkinIndexes)}");
-                        Log.Info($"ValidateSkinOwnership() DEBUG: MyId={MyAPIGateway.Multiplayer.MyId.ToString()}; players={MyAPIGateway.Multiplayer.Players.Count.ToString()}; PlayerInfos={PaintGunMod.Instance.Palette.PlayerInfo.Count.ToString()}");
-                    }
+                    Log.Info($"DEBUG: ValidateSkinOwnership() :: {steamId.ToString()} tried to paint with a skin ({Utils.PrintSkinName(paint.SkinIndex)}) they don't own... ?");
+                    Log.Info($"DEBUG: ValidateSkinOwnership() :: ownedIds={string.Join(", ", pi.OwnedSkinIndexes)}");
+                    Log.Info($"DEBUG: ValidateSkinOwnership() :: MyId={MyAPIGateway.Multiplayer.MyId.ToString()}; players={MyAPIGateway.Multiplayer.Players.Count.ToString()}; PlayerInfos={PaintGunMod.Instance.Palette.PlayerInfo.Count.ToString()}");
 
                     return false;
                 }
@@ -458,6 +447,18 @@ namespace Digi.PaintGun.Utilities
                 return $"[NotFound!] ({steamId.ToString()})";
             else
                 return $"{player.DisplayName} ({steamId.ToString()})";
+        }
+
+        public static string PrintSkinName(int? id)
+        {
+            if(!id.HasValue)
+                return $"(NoSkinId)";
+
+            var skin = PaintGunMod.Instance.Palette.GetSkinInfo(id.Value);
+            if(skin != null)
+                return $"{skin.SubtypeId.ToString()} (idx={id.Value.ToString()})";
+
+            return $"(UnknownId#{id.Value.ToString()})";
         }
 
         public static string PrintNullable<T>(Nullable<T> nullable) where T : struct

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Digi.PaintGun.Utilities;
 using Sandbox.ModAPI;
 using VRage.Game.ModAPI;
 
@@ -45,12 +46,16 @@ namespace Digi.PaintGun.Systems
 
             removeKeys.Clear();
 
+            // DEBUG player handler
+
             foreach(var player in connectedPlayers.Values)
             {
                 if(!players.Contains(player))
                 {
                     removeKeys.Add(player.SteamUserId);
                     PlayerDisconnected?.Invoke(player);
+
+                    Log.Info($"DEBUG: PlayerHandler :: {Utils.PrintPlayerName(player.SteamUserId)} disconnected");
                 }
             }
 
@@ -70,6 +75,8 @@ namespace Digi.PaintGun.Systems
                 {
                     connectedPlayers.Add(player.SteamUserId, player);
                     PlayerConnected?.Invoke(player);
+
+                    Log.Info($"DEBUG: PlayerHandler :: {Utils.PrintPlayerName(player.SteamUserId)} joined");
                 }
             }
 

@@ -44,16 +44,15 @@ namespace Digi.PaintGun.Features.Sync
 
             if(!Utils.ValidateSkinOwnership(SteamId, NewPaint))
             {
-                Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to apply skin server side, skin not owned.");
+                Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, $"Failed to replace skin server side, skin {Utils.PrintSkinName(NewPaint.SkinIndex)} not owned.");
                 NewPaint = new SerializedPaintMaterial(NewPaint.ColorMaskPacked, null);
             }
 
             var grid = Utils.GetEntityOrError<MyCubeGrid>(this, GridEntId, Constants.NETWORK_DESYNC_ERROR_LOGGING);
-
             if(grid == null)
             {
                 if(Main.IsServer)
-                    Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side, grid no longer exists.");
+                    Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to replace paint server side, grid no longer exists.");
 
                 return;
             }
@@ -63,7 +62,7 @@ namespace Digi.PaintGun.Features.Sync
                 // ensure server side if safezone permissions are respected
                 if(!Utils.SafeZoneCanPaint(grid, SteamId))
                 {
-                    Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side, denied by safe zone.");
+                    Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to replace paint server side, denied by safe zone.");
                     return;
                 }
 
@@ -71,10 +70,7 @@ namespace Digi.PaintGun.Features.Sync
 
                 if(!Utils.AllowedToPaintGrid(grid, identity))
                 {
-                    if(Constants.NETWORK_DESYNC_ERROR_LOGGING)
-                        Log.Error($"Can't paint unallied grids; packet={this}", Log.PRINT_MESSAGE);
-
-                    Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side, ship not allied.");
+                    Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to replace paint server side, ship not allied.");
                     return;
                 }
             }
