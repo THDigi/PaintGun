@@ -448,6 +448,14 @@ namespace Digi.PaintGun.Utilities
                 return $"{player.DisplayName} ({steamId.ToString()})";
         }
 
+        public static string PrintPlayerName(IMyPlayer player)
+        {
+            if(player == null)
+                return $"[NullIMyPlayer!]";
+            else
+                return $"{player.DisplayName} ({player.SteamUserId.ToString()})";
+        }
+
         public static string PrintSkinName(int? id)
         {
             if(!id.HasValue)

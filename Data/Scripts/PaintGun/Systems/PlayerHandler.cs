@@ -48,13 +48,13 @@ namespace Digi.PaintGun.Systems
         void ViScPlayerConnected(long identityId)
         {
             ulong steamId = MyAPIGateway.Players.TryGetSteamId(identityId);
-            Log.Info($"DEBUG: PlayerHandler :: ViSc triggered join: '{Utils.GetPlayerByIdentityId(identityId)}' (steamId={steamId.ToString()})");
+            Log.Info($"DEBUG: PlayerHandler :: ViSc triggered join: '{Utils.PrintPlayerName(Utils.GetPlayerByIdentityId(identityId))}' (steamId={steamId.ToString()})");
         }
 
         void ViScPlayerDisconnected(long identityId)
         {
             ulong steamId = MyAPIGateway.Players.TryGetSteamId(identityId);
-            Log.Info($"DEBUG: PlayerHandler :: ViSc triggered disconnect: '{Utils.GetPlayerByIdentityId(identityId)}' (steamId={steamId.ToString()})");
+            Log.Info($"DEBUG: PlayerHandler :: ViSc triggered disconnect: '{Utils.PrintPlayerName(Utils.GetPlayerByIdentityId(identityId))}' (steamId={steamId.ToString()})");
         }
 
         protected override void UpdateAfterSim(int tick)
@@ -73,7 +73,7 @@ namespace Digi.PaintGun.Systems
                 {
                     RemoveConnected.Add(player.SteamUserId);
 
-                    Log.Info($"DEBUG: PlayerHandler :: {Utils.PrintPlayerName(player.SteamUserId)} disconnected");
+                    Log.Info($"DEBUG: PlayerHandler :: {Utils.PrintPlayerName(player)} disconnected");
 
                     try
                     {
@@ -102,7 +102,7 @@ namespace Digi.PaintGun.Systems
                 {
                     ConnectedPlayers.Add(player.SteamUserId, player);
 
-                    Log.Info($"DEBUG: PlayerHandler :: {Utils.PrintPlayerName(player.SteamUserId)} joined");
+                    Log.Info($"DEBUG: PlayerHandler :: {Utils.PrintPlayerName(player)} joined");
 
                     try
                     {
