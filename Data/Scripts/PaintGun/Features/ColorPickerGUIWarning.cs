@@ -13,7 +13,7 @@ namespace Digi.PaintGun.Features
     public class ColorPickerGUIWarning : ModComponent
     {
         HudAPIv2.HUDMessage text;
-        bool hidden = false; // DEBUG TODO save to config?
+        bool hidden = false; // TODO: save to config?
         bool colorMenuVisible = false;
 
         const double TextScale = 1;

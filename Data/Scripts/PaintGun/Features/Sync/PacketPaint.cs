@@ -91,7 +91,9 @@ namespace Digi.PaintGun.Features.Sync
                 if(!Utils.AllowedToPaintGrid(grid, identity))
                 {
                     if(Constants.NETWORK_DESYNC_ERROR_LOGGING)
+                    {
                         Log.Error($"{GetType().Name} :: Can't paint non-allied grids! Sender={SteamId.ToString()}; Grid={grid} ({grid.EntityId.ToString()})", Log.PRINT_MESSAGE);
+                    }
 
                     Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side, ship not allied.");
                     return;
@@ -100,7 +102,9 @@ namespace Digi.PaintGun.Features.Sync
                 if(!grid.CubeExists(GridPosition))
                 {
                     if(Constants.NETWORK_DESYNC_ERROR_LOGGING)
+                    {
                         Log.Error($"{GetType().Name} :: Can't paint inexistent blocks! Sender={SteamId.ToString()}; Grid={grid} ({grid.EntityId.ToString()}) at GridPosition={GridPosition.ToString()}", Log.PRINT_MESSAGE);
+                    }
 
                     Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, "Failed to paint server side, block no longer exists.");
                     return;

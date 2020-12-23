@@ -104,7 +104,7 @@ namespace Digi.PaintGun
                 ColorPickerGUIWarning = new ColorPickerGUIWarning(this);
             }
 
-            if(Constants.DEBUGGING)
+            if(Constants.DEBUG_COMPONENT)
                 Debug = new DebugComp(this);
         }
 

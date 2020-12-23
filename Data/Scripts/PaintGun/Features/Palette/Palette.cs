@@ -136,7 +136,7 @@ namespace Digi.PaintGun.Features.Palette
                     if(!definedIcons.Contains(icon))
                     {
                         if(Utils.IsLocalMod())
-                            Log.Info($"WARNING: {icon} not found in transparent materials definitions.", Log.PRINT_MESSAGE);
+                            Log.Error($"{icon} not found in transparent materials definitions.", Log.PRINT_MESSAGE);
 
                         icon = SKIN_ICON_UNKNOWN;
                     }
