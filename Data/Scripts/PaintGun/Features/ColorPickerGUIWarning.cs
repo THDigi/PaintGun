@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Text;
+using Digi.ComponentLib;
 using Draygo.API;
 using Sandbox.ModAPI;
+using VRage;
+using VRage.Input;
 using VRageMath;
 using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
 
@@ -9,8 +12,24 @@ namespace Digi.PaintGun.Features
 {
     public class ColorPickerGUIWarning : ModComponent
     {
-        HudAPIv2.HUDMessage skinDesyncWarning;
-        HudAPIv2.HUDMessage skinDesyncWarningShadow;
+        HudAPIv2.HUDMessage text;
+        bool hidden = false; // DEBUG TODO save to config?
+        bool colorMenuVisible = false;
+
+        const double TextScale = 1;
+
+        readonly Vector2D TextPosition = new Vector2D(0.4, 0.95); // note: top-right pivot; top-right coords=1,1
+
+        const string Text = "<color=yellow>NOTE: <color=white>Certain controls here do not affect the PaintGun:" +
+                    "\n - '<color=red>{LOCG:ApplyColor}<color=white>' checkbox" +
+                    "\n - '<color=red>{LOCG:ApplySkin}<color=white>' checkbox" +
+                    "\n - <color=red>Skins list for selecting skin<color=white>" +
+                    "\n" +
+                    "\nInstead, <color=lime>equip the PaintGun and use the hotkeys<color=white>." +
+                    "\n" +
+                    "\nHold O and K to hide this message.";
+
+        const string ScreenEndsWith = "ColorPicker";
 
         public ColorPickerGUIWarning(PaintGunMod main) : base(main)
         {
@@ -20,39 +39,45 @@ namespace Digi.PaintGun.Features
         {
             MyAPIGateway.Gui.GuiControlCreated += GUIScreenOpened;
             MyAPIGateway.Gui.GuiControlRemoved += GUIScreenClosed;
+
+            TextAPI.Detected += TextAPI_Detected;
         }
 
         protected override void UnregisterComponent()
         {
             MyAPIGateway.Gui.GuiControlCreated -= GUIScreenOpened;
             MyAPIGateway.Gui.GuiControlRemoved -= GUIScreenClosed;
+
+            TextAPI.Detected -= TextAPI_Detected;
+        }
+
+        protected override void UpdateInput(bool anyKeyOrMouse, bool inMenu, bool paused)
+        {
+            if(!hidden && anyKeyOrMouse && inMenu && colorMenuVisible && MyAPIGateway.Input.IsKeyPress(MyKeys.O) && MyAPIGateway.Input.IsKeyPress(MyKeys.K))
+            {
+                hidden = true;
+                HideText(permanent: true);
+            }
+        }
+
+        void TextAPI_Detected()
+        {
+            // if menu was already open when textAPI loaded then show text.
+            if(colorMenuVisible)
+            {
+                DrawText();
+            }
         }
 
         void GUIScreenOpened(object screen)
         {
             try
             {
-                if(!TextAPIEnabled || !screen.ToString().EndsWith("ColorPicker"))
+                if(!screen.GetType().Name.EndsWith(ScreenEndsWith))
                     return;
 
-                if(skinDesyncWarning == null)
-                {
-                    const string TEXT = "PaintGun NOTE:\nThe 'Use color', 'Use skin' and 'skin selection' from this menu are not also selected for the PaintGun.\nYou can select skins and toggle color/skin directly with the PaintGun equipped.";
-                    const double SCALE = 1.25;
-                    var position = new Vector2D(0, 0.75);
-
-                    skinDesyncWarningShadow = new HudAPIv2.HUDMessage(new StringBuilder(TEXT.Length + 24).Append("<color=0,0,0>").Append(TEXT), position, Scale: SCALE, HideHud: true, Blend: BlendTypeEnum.PostPP);
-                    skinDesyncWarning = new HudAPIv2.HUDMessage(new StringBuilder(TEXT.Length + 24).Append("<color=255,255,0>").Append(TEXT), position, Scale: SCALE, HideHud: true, Blend: BlendTypeEnum.PostPP);
-
-                    var textLen = skinDesyncWarning.GetTextLength();
-                    skinDesyncWarning.Offset = new Vector2D(textLen.X * -0.5, 0);
-                    skinDesyncWarningShadow.Offset = skinDesyncWarning.Offset + new Vector2D(0.0015, -0.0015);
-                }
-                else
-                {
-                    skinDesyncWarning.Visible = true;
-                    skinDesyncWarningShadow.Visible = true;
-                }
+                colorMenuVisible = true;
+                DrawText();
             }
             catch(Exception e)
             {
@@ -64,19 +89,51 @@ namespace Digi.PaintGun.Features
         {
             try
             {
-                if(!TextAPIEnabled || !screen.ToString().EndsWith("ColorPicker"))
+                if(!screen.GetType().Name.EndsWith(ScreenEndsWith))
                     return;
 
-                if(skinDesyncWarning != null)
-                {
-                    skinDesyncWarning.Visible = false;
-                    skinDesyncWarningShadow.Visible = false;
-                }
+                colorMenuVisible = false;
+                HideText();
             }
             catch(Exception e)
             {
                 Log.Error(e);
             }
+        }
+
+        void DrawText()
+        {
+            if(hidden || !TextAPIEnabled)
+                return;
+
+            if(text == null)
+            {
+                text = new HudAPIv2.HUDMessage(new StringBuilder(MyTexts.GetString(Text)), TextPosition, Scale: TextScale, Shadowing: true, Blend: BlendTypeEnum.PostPP);
+
+                var textSize = text.GetTextLength();
+                text.Offset = new Vector2D(-textSize.X, textSize.Y); // pivot top-right
+            }
+
+            text.Visible = true;
+
+            // enable input reading for hiding the text
+            SetUpdateMethods(UpdateFlags.UPDATE_INPUT, true);
+        }
+
+        void HideText(bool permanent = false)
+        {
+            if(text != null)
+            {
+                text.Visible = false;
+
+                if(permanent)
+                {
+                    text.DeleteMessage();
+                    text = null;
+                }
+            }
+
+            SetUpdateMethods(UpdateFlags.UPDATE_INPUT, false);
         }
     }
 }

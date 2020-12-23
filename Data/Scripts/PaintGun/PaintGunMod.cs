@@ -44,6 +44,7 @@ namespace Digi.PaintGun
         public Notifications Notifications;
         public SkinTestServer OwnershipTestServer;
         public SkinTestPlayer OwnershipTestPlayer;
+        public ColorPickerGUIWarning ColorPickerGUIWarning;
         public DebugComp Debug;
 
         // Rights
@@ -100,6 +101,7 @@ namespace Digi.PaintGun
                 Notifications = new Notifications(this);
                 OwnershipTestPlayer = new SkinTestPlayer(this);
                 PaletteHUD = new PaletteHUD(this);
+                ColorPickerGUIWarning = new ColorPickerGUIWarning(this);
             }
 
             if(Constants.DEBUGGING)
