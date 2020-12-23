@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 using Digi.ComponentLib;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
@@ -12,6 +13,10 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
 {
     public class SkinTestPlayer : ModComponent
     {
+        public const string STATUS_PREFIX = "SkinOwnershipTest: ";
+        public StringBuilder Status = new StringBuilder(128);
+        public bool TestInProgress => testing;
+
         bool testing = false;
         int waitUntilTick = 0;
         int cooldownReTest = 0;
@@ -20,10 +25,13 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
 
         const int MAX_TEST_TRIES = 3;
         const int RE_TEST_COOLDOWN = SkinTestServer.TEMP_GRID_EXPIRE - (Constants.TICKS_PER_SECOND * 5);
-        const int DETECT_PAINT_DELAY = Constants.TICKS_PER_SECOND * 1; // how long to wait until painting the grid after it was streamed
+        const int DETECT_PAINT_DELAY = Constants.TICKS_PER_SECOND * 2; // how long to wait until painting the grid after it was streamed
+        const int DETECT_PAINT_DELAY_SERVER = Constants.TICKS_PER_SECOND * 1; // same as above but for server/SP
 
         public SkinTestPlayer(PaintGunMod main) : base(main)
         {
+            Status.Clear().Append("Not started");
+
             if(Main.IsDedicatedServer)
                 throw new Exception("Why is OwnershipTestPlayer initialized for DS?!");
         }
@@ -48,6 +56,8 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
             testCount++;
             cooldownReTest = RE_TEST_COOLDOWN;
             Log.Info($"{GetType().Name}.Update() :: attempting test number {testCount.ToString()}...");
+
+            Status.Clear().Append(STATUS_PREFIX).Append("Starting test #").Append(testCount).Append("...");
 
             SetUpdateMethods(UpdateFlags.UPDATE_AFTER_SIM, true);
             NetworkLibHandler.PacketOwnershipTestRequest.Send();
@@ -94,7 +104,13 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
 
                 // paint&skin after a delay
                 hiddenGrid = (MyCubeGrid)grid;
-                waitUntilTick = Main.Tick + DETECT_PAINT_DELAY;
+
+                if(MyAPIGateway.Multiplayer.IsServer)
+                    waitUntilTick = Main.Tick + DETECT_PAINT_DELAY_SERVER;
+                else
+                    waitUntilTick = Main.Tick + DETECT_PAINT_DELAY;
+
+                Status.Clear().Append(STATUS_PREFIX).Append("Found grid to paint, waiting ").Append((waitUntilTick - Main.Tick) / Constants.TICKS_PER_SECOND).Append("s...");
             }
             catch(Exception e)
             {
@@ -112,6 +128,8 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
                     SetUpdateMethods(UpdateFlags.UPDATE_AFTER_SIM, false);
 
                     Log.Error($"Ownership test failed after {MAX_TEST_TRIES.ToString()} tries, please reconnect. Bugreport if persists.", Log.PRINT_MESSAGE);
+
+                    Status.Clear().Append(STATUS_PREFIX).Append("Failed after ").Append(MAX_TEST_TRIES).Append(" tries!");
 
                     Main.NetworkLibHandler.PacketWarningMessage.Send(0, $"Ownership test failed after {MAX_TEST_TRIES.ToString()} tries. Report with server mod log and ask client to submit theirs aswell.");
                     return;
@@ -142,6 +160,8 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
                     var pos = new Vector3I(i, 0, 0);
                     hiddenGrid.SkinBlocks(pos, pos, color, blockSkins[i].SubtypeId, playSound: false, validateOwnership: true);
                 }
+
+                Status.Clear().Append(STATUS_PREFIX).Append("Grid painted! Waiting for results...");
 
                 if(Constants.OWNERSHIP_TEST_LOGGING)
                     Log.Info($"{GetType().Name}.Update() :: grid painted");
@@ -185,6 +205,8 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
             }
 
             palette.ComputeOwnedSkins();
+
+            Status.Clear().Append(STATUS_PREFIX).Append("Got results! ").Append(palette.OwnedSkinsCount).Append(" of ").Append(palette.BlockSkins.Count).Append(" skins owned.");
 
             // change selection if for some reason it was selected
             var selectedSkin = palette.GetSkinInfo(palette.LocalInfo.SelectedSkinIndex);
