@@ -10,7 +10,7 @@ namespace Digi.PaintGun.Features.Palette
 {
     public class Painting : ModComponent
     {
-        HashSet<MyCubeGrid> gridsInSystemCache = new HashSet<MyCubeGrid>();
+        HashSet<IMyCubeGrid> ConnectedGrids = new HashSet<IMyCubeGrid>();
 
         public Painting(PaintGunMod main) : base(main)
         {
@@ -31,39 +31,63 @@ namespace Digi.PaintGun.Features.Palette
             gridInternal.ChangeColorAndSkin(gridInternal.GetCubeBlock(gridPosition), paint.ColorMask, paint.Skin);
         }
 
-        public void ReplaceColorInGrid(IMyCubeGrid grid, BlockMaterial oldPaint, PaintMaterial paint, bool includeSubgrids, ulong originalSenderSteamId)
+        public void ReplaceColorInGrid(IMyCubeGrid selectedGrid, BlockMaterial oldPaint, PaintMaterial paint, bool includeSubgrids, ulong originalSenderSteamId)
         {
-            var gridInternal = (MyCubeGrid)grid;
-            gridsInSystemCache.Clear();
+            //long timeStart = Stopwatch.GetTimestamp();
+
+            ConnectedGrids.Clear();
 
             if(includeSubgrids)
-                Utils.GetShipSubgrids(gridInternal, gridsInSystemCache);
+                MyAPIGateway.GridGroups.GetGroup(selectedGrid, GridLinkTypeEnum.Mechanical, ConnectedGrids);
             else
-                gridsInSystemCache.Add(gridInternal);
+                ConnectedGrids.Add(selectedGrid);
 
+            //int total = 0;
             int affected = 0;
 
-            foreach(var subgrid in gridsInSystemCache)
+            foreach(MyCubeGrid grid in ConnectedGrids)
             {
-                foreach(IMySlimBlock slim in subgrid.CubeBlocks)
+                // avoiding GetCubeBlock() lookup by feeding MySlimBlock directly
+                var enumerator = grid.CubeBlocks.GetEnumerator();
+                try
                 {
-                    var blockMaterial = new BlockMaterial(slim);
+                    while(enumerator.MoveNext())
+                    {
+                        var blockMaterial = new BlockMaterial(enumerator.Current);
 
-                    if(paint.ColorMask.HasValue && !Utils.ColorMaskEquals(blockMaterial.ColorMask, oldPaint.ColorMask))
-                        continue;
+                        if(paint.ColorMask.HasValue && !Utils.ColorMaskEquals(blockMaterial.ColorMask, oldPaint.ColorMask))
+                            continue;
 
-                    if(paint.Skin.HasValue && blockMaterial.Skin != oldPaint.Skin)
-                        continue;
+                        if(paint.Skin.HasValue && blockMaterial.Skin != oldPaint.Skin)
+                            continue;
 
-                    PaintBlock(subgrid, slim.Position, paint, originalSenderSteamId);
-                    affected++;
+                        grid.ChangeColorAndSkin(enumerator.Current, paint.ColorMask, paint.Skin);
+                        affected++;
+                    }
                 }
+                finally
+                {
+                    enumerator.Dispose();
+                }
+
+                //total += grid.CubeBlocks.Count;
             }
+
+            //long timeEnd = Stopwatch.GetTimestamp();
 
             if(originalSenderSteamId == MyAPIGateway.Multiplayer.MyId)
             {
-                Main.Notifications.Show(2, $"Replaced color for {affected.ToString()} blocks.", MyFontEnum.White, 2000);
+                Main.Notifications.Show(2, $"Replaced color for {affected.ToString()} blocks.", MyFontEnum.White, 5000);
+
+                //double seconds = (timeEnd - timeStart) / (double)Stopwatch.Frequency;
+
+                //if(affected == total)
+                //    Main.Notifications.Show(2, $"Replaced color for all {affected.ToString()} blocks in {(seconds * 1000).ToString("0.######")}ms", MyFontEnum.White, 5000);
+                //else
+                //    Main.Notifications.Show(2, $"Replaced color for {affected.ToString()} of {total.ToString()} blocks in {(seconds * 1000).ToString("0.######")}ms", MyFontEnum.White, 5000);
             }
+
+            ConnectedGrids.Clear();
         }
 
         #region Symmetry

@@ -199,43 +199,6 @@ namespace Digi.PaintGun.Utilities
         }
         #endregion ColorMask <> HSV <> RGB conversions
 
-        #region Recursive ship finder
-        public static void GetShipSubgrids(MyCubeGrid grid, HashSet<MyCubeGrid> results)
-        {
-            results.Add(grid);
-            GetSubgridsRecursive(grid, results);
-        }
-
-        static void GetSubgridsRecursive(MyCubeGrid grid, HashSet<MyCubeGrid> results)
-        {
-            foreach(var block in grid.GetFatBlocks())
-            {
-                var g = GetAttachedGrid(block);
-
-                if(g != null && !results.Contains(g))
-                {
-                    results.Add(g);
-                    GetSubgridsRecursive(g, results);
-                }
-            }
-        }
-
-        static MyCubeGrid GetAttachedGrid(MyCubeBlock block)
-        {
-            var mechanicalBlock = block as IMyMechanicalConnectionBlock; // includes piston, rotor and suspension bases
-
-            if(mechanicalBlock != null)
-                return mechanicalBlock.TopGrid as MyCubeGrid;
-
-            var attachableBlock = block as IMyAttachableTopBlock; // includes rotor tops, piston tops and wheels
-
-            if(attachableBlock != null)
-                return attachableBlock.Base?.CubeGrid as MyCubeGrid;
-
-            return null;
-        }
-        #endregion Recursive ship finder
-
         /// <summary>
         /// Chat message with the sender name being colored.
         /// NOTE: this is synchronized to all players but only the intended player(s) will see it.
