@@ -46,7 +46,7 @@ namespace Digi.PaintGun.Features.Sync
 
         protected override void UnregisterComponent()
         {
-            Lib.Dispose();
+            Lib?.Dispose();
             Lib = null;
         }
     }

@@ -94,6 +94,9 @@ namespace Digi.PaintGun.Features.Tool
 
         protected override void UnregisterComponent()
         {
+            if(!IsRegistered)
+                return;
+
             Settings.SettingsLoaded -= UpdateUISettings;
             GameConfig.ClosedOptionsMenu -= UpdateUISettings;
             LocalToolHandler.LocalToolHolstered -= LocalToolHolstered;

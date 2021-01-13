@@ -53,6 +53,9 @@ namespace Digi.PaintGun.Features.Palette
 
         protected override void UnregisterComponent()
         {
+            if(!IsRegistered)
+                return;
+
             if(Main.IsPlayer)
             {
                 Main.CheckPlayerField.PlayerReady -= PlayerReady;

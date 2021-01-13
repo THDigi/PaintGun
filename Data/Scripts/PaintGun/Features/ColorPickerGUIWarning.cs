@@ -45,6 +45,9 @@ namespace Digi.PaintGun.Features
 
         protected override void UnregisterComponent()
         {
+            if(!IsRegistered)
+                return;
+
             MyAPIGateway.Gui.GuiControlCreated -= GUIScreenOpened;
             MyAPIGateway.Gui.GuiControlRemoved -= GUIScreenClosed;
 

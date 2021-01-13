@@ -49,6 +49,9 @@ namespace Digi.PaintGun.Features.Palette
 
         protected override void UnregisterComponent()
         {
+            if(!IsRegistered)
+                return;
+
             Palette.LocalInfo.OnSkinIndexSelected -= SkinIndexSelected;
             Palette.LocalInfo.OnApplyColorChanged -= ApplyColorChanged;
             LocalToolHandler.LocalToolEquipped -= LocalToolEquipped;

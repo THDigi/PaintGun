@@ -186,7 +186,8 @@ namespace Digi.PaintGun.Features.Tool
             Clear(false);
             particles.Clear();
 
-            Main.Settings.SettingsLoaded -= UpdateSprayVolume;
+            if(Main?.Settings != null)
+                Main.Settings.SettingsLoaded -= UpdateSprayVolume;
         }
 
         public bool UpdateSimulation()

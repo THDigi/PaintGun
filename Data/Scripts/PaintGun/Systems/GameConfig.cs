@@ -43,6 +43,9 @@ namespace Digi.PaintGun.Systems
 
         protected override void UnregisterComponent()
         {
+            if(!IsRegistered)
+                return;
+
             MyAPIGateway.Gui.GuiControlRemoved -= GUIScreenClosed;
         }
 

@@ -45,6 +45,8 @@
                 UpdateMethods = UpdateMethods & ~flag;
         }
 
+        public bool IsRegistered { get; private set; }
+
         /// <summary>
         /// Called in LoadData()
         /// </summary>
@@ -62,6 +64,7 @@
 
         /// <summary>
         /// Called in UnloadData().
+        /// NOTE: if loading fails this can be calle without <see cref="RegisterComponent"/> being called, causing misleading errors. For that check <see cref="IsRegistered"/> for relevant unregistered things.
         /// </summary>
         protected abstract void UnregisterComponent();
 
@@ -101,8 +104,16 @@
             Log.Error($"UpdateDraw() is enabled but not overwritten for {GetType().Name} component!");
         }
 
-        void IComponent.RegisterComponent() => RegisterComponent();
-        void IComponent.UnregisterComponent() => UnregisterComponent();
+        void IComponent.RegisterComponent()
+        {
+            IsRegistered = true;
+            RegisterComponent();
+        }
+        void IComponent.UnregisterComponent()
+        {
+            UnregisterComponent();
+            IsRegistered = false;
+        }
         void IComponent.UpdateInput(bool anyKeyOrMouse, bool inMenu, bool paused) => UpdateInput(anyKeyOrMouse, inMenu, paused);
         void IComponent.UpdateBeforeSim(int tick) => UpdateBeforeSim(tick);
         void IComponent.UpdateAfterSim(int tick) => UpdateAfterSim(tick);

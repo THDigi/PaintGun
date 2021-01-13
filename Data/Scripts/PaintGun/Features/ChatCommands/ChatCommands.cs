@@ -33,6 +33,9 @@ namespace Digi.PaintGun.Features.ChatCommands
 
         protected override void UnregisterComponent()
         {
+            if(!IsRegistered)
+                return;
+
             MyAPIGateway.Utilities.MessageEntered -= MessageEntered;
         }
 

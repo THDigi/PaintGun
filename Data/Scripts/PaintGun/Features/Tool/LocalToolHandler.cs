@@ -78,6 +78,9 @@ namespace Digi.PaintGun.Features.Tool
 
         protected override void UnregisterComponent()
         {
+            if(!IsRegistered)
+                return;
+
             Palette.LocalInfo.OnColorPickModeChanged -= ColorPickModeChanged;
             ToolHandler.ToolSpawned -= ToolSpawned;
             ToolHandler.ToolRemoved -= ToolRemoved;
