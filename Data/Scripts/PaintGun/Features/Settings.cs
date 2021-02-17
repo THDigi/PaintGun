@@ -66,6 +66,7 @@ namespace Digi.PaintGun.Features
             aimInfoScale = aimInfoScaleDefault;
             aimInfoBackgroundOpacity = -1;
             requireCtrlForColorCycle = false;
+            hideSkinsFromPalette.Clear();
 
             colorPickMode1 = default_colorPickMode1;
             colorPickMode2 = default_colorPickMode2;
