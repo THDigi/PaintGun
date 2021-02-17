@@ -446,5 +446,13 @@ namespace Digi.PaintGun.Utilities
             const string FORMAT = "0.##";
             return $"{vec.X.ToString(FORMAT)},{vec.Y.ToString(FORMAT)},{vec.Z.ToString(FORMAT)}";
         }
+
+        public static Color HUDColorAlpha(Color color, float opacity)
+        {
+            // HACK: matching vanilla HUD transparency better
+            color *= opacity * (opacity * 1.075f);
+            color.A = (byte)(opacity * 255);
+            return color;
+        }
     }
 }

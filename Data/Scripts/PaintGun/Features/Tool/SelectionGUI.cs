@@ -592,9 +592,9 @@ namespace Digi.PaintGun.Features.Tool
 
             var alpha = (Settings.aimInfoBackgroundOpacity < 0 ? GameConfig.HudBackgroundOpacity : Settings.aimInfoBackgroundOpacity);
 
-            uiTitleBg.BillBoardColor = UI_TITLE_BG_COLOR * alpha;
-            uiTextBg.BillBoardColor = UI_TEXT_BG_COLOR * alpha;
-            uiProgressBarBg.BillBoardColor = UI_PROGRESSBAR_BG_COLOR * MathHelper.Clamp(alpha * 2, 0.1f, 0.9f);
+            uiTitleBg.BillBoardColor = Utils.HUDColorAlpha(UI_TITLE_BG_COLOR, alpha);
+            uiTextBg.BillBoardColor = Utils.HUDColorAlpha(UI_TEXT_BG_COLOR, alpha);
+            uiProgressBarBg.BillBoardColor = Utils.HUDColorAlpha(UI_PROGRESSBAR_BG_COLOR, MathHelper.Clamp(alpha * 2, 0.1f, 0.9f));
 
             float aspectRatioMod = (float)(1d / GameConfig.AspectRatio);
             float boxBgWidth = UI_BOX_WIDTH * aspectRatioMod;

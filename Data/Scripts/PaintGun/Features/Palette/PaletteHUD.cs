@@ -158,7 +158,8 @@ namespace Digi.PaintGun.Features.Palette
             const float BG_WIDTH_MUL = 3.85f;
             const float BG_HEIGHT_MUL = 1.3f;
 
-            MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_BACKGROUND, PALETTE_BG_COLOR * bgAlpha, worldPos, camMatrix.Left, camMatrix.Up, (float)(spacingWidth * BG_WIDTH_MUL), (float)(spacingHeight * BG_HEIGHT_MUL), Vector2.Zero, GUI_BG_BLENDTYPE);
+            var bgColor = Utils.HUDColorAlpha(PALETTE_BG_COLOR, bgAlpha);
+            MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_BACKGROUND, bgColor, worldPos, camMatrix.Left, camMatrix.Up, (float)(spacingWidth * BG_WIDTH_MUL), (float)(spacingHeight * BG_HEIGHT_MUL), Vector2.Zero, GUI_BG_BLENDTYPE);
 
             var pos = worldPos + camMatrix.Left * (spacingWidth * (MIDDLE_INDEX / 2)) + camMatrix.Up * (spacingHeight / 2);
 
