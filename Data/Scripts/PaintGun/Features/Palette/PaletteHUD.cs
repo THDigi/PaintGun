@@ -185,6 +185,14 @@ namespace Digi.PaintGun.Features.Palette
             if(!localInfo.ApplySkin || Palette.OwnedSkinsCount <= 0)
                 return;
 
+            List<SkinInfo> skins = Palette.SkinsForHUD;
+            if(skins == null)
+                return;
+
+            int skinsCount = skins.Count;
+            if(skinsCount <= 0)
+                return;
+
             if(skinTestStatus != null)
             {
                 skinTestStatus.Visible = false;
@@ -214,24 +222,22 @@ namespace Digi.PaintGun.Features.Palette
             const double MAX_VIEW_SKINS_HALF_D = (MAX_VIEW_SKINS / 2d);
             //const double MAX_VIEW_SKINS_HALF_D_BG = ((MAX_VIEW_SKINS - 4) / 2d);
 
-            if(Palette.OwnedSkinsCount >= MAX_VIEW_SKINS)
+            if(skinsCount >= MAX_VIEW_SKINS)
             {
                 //var bgPos = pos + camMatrix.Right * ((iconSpacingWidth * 0.5) - (iconSpacingWidth * 0.5));
                 //MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_BACKGROUND, PALETTE_COLOR_BG * bgAlpha, bgPos, camMatrix.Left, camMatrix.Up, (float)(iconSpacingWidth * MAX_VIEW_SKINS_HALF_D_BG) + iconBgSpacingAddWidth, iconSize + iconBgSpacingAddHeight, Vector2.Zero, UI_BG_BLENDTYPE);
 
                 pos += camMatrix.Left * ((iconSpacingWidth * MAX_VIEW_SKINS_HALF_D) - (iconSpacingWidth * 0.5));
 
-                List<SkinInfo> ownedSkins = Palette.OwnedSkins;
-                int ownedSkinsCount = ownedSkins.Count;
-                int ownedSkinIndex = 0;
+                int skinIndex = 0;
 
-                for(int i = 0; i < ownedSkinsCount; ++i)
+                for(int i = 0; i < skinsCount; ++i)
                 {
-                    var skin = ownedSkins[i];
+                    var skin = skins[i];
 
                     if(skin.Index == selectedSkinIndex)
                     {
-                        ownedSkinIndex = i;
+                        skinIndex = i;
                         break;
                     }
                 }
@@ -239,16 +245,16 @@ namespace Digi.PaintGun.Features.Palette
                 const float MIN_ALPHA = 0.5f; // alpha of the skin icon on the edge of the scrollable bar
                 float alphaSubtractStep = ((1f - MIN_ALPHA) / MAX_VIEW_SKINS_HALF);
 
-                int index = ownedSkinIndex - MAX_VIEW_SKINS_HALF;
+                int index = skinIndex - MAX_VIEW_SKINS_HALF;
 
                 for(int a = -MAX_VIEW_SKINS_HALF; a <= MAX_VIEW_SKINS_HALF; ++a)
                 {
                     if(index < 0)
-                        index = ownedSkinsCount + index;
-                    if(index >= ownedSkinsCount)
-                        index %= ownedSkinsCount;
+                        index = skinsCount + index;
+                    if(index >= skinsCount)
+                        index %= skinsCount;
 
-                    var skin = ownedSkins[index];
+                    var skin = skins[index];
 
                     float alpha = 1f - (Math.Abs(a) * alphaSubtractStep);
 
@@ -264,13 +270,13 @@ namespace Digi.PaintGun.Features.Palette
             }
             else
             {
-                double halfOwnedSkins = Palette.OwnedSkinsCount * 0.5;
+                double halfOwnedSkins = skinsCount * 0.5;
 
                 //MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_BACKGROUND, PALETTE_COLOR_BG * bgAlpha, pos, camMatrix.Left, camMatrix.Up, (float)(iconSpacingWidth * halfOwnedSkins) + iconBgSpacingAddWidth, iconSize + iconBgSpacingAddHeight, Vector2.Zero, UI_BG_BLENDTYPE);
 
                 pos += camMatrix.Left * ((iconSpacingWidth * halfOwnedSkins) - (iconSpacingWidth * 0.5));
 
-                foreach(var skin in Palette.OwnedSkins)
+                foreach(var skin in skins)
                 {
                     if(selectedSkinIndex == skin.Index)
                     {

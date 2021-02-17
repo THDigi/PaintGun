@@ -9,8 +9,14 @@ namespace Digi.PaintGun.Features.Palette
         public readonly MyStringHash SubtypeId;
         public readonly string Name;
         public readonly MyStringId Icon;
-        public bool LocallyOwned;
         public MyModContext Mod;
+        public bool LocallyOwned;
+        public bool ShowOnPalette;
+
+        /// <summary>
+        /// Owned and not turned off in config.
+        /// </summary>
+        public bool Selectable => LocallyOwned && ShowOnPalette;
 
         public SkinInfo(MyStringHash subtypeId, string name, string icon, bool locallyOwned = false)
         {

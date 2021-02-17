@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Sandbox.Definitions;
@@ -30,6 +31,7 @@ namespace Digi.PaintGun.Features
         public float aimInfoScale = aimInfoScaleDefault;
         public float aimInfoBackgroundOpacity = -1;
         public bool requireCtrlForColorCycle = false;
+        public HashSet<string> hideSkinsFromPalette = new HashSet<string>();
         public ControlCombination colorPickMode1;
         public ControlCombination colorPickMode2;
         public ControlCombination instantColorPick1;
@@ -139,6 +141,7 @@ namespace Digi.PaintGun.Features
             }
 
             UpdateToolDescription();
+            Palette.ComputeShownSkins();
 
             return success;
         }
@@ -379,6 +382,16 @@ namespace Digi.PaintGun.Features
                                 Log.Error("Invalid " + key + " value: " + value);
                             continue;
                         }
+                        case "hideskinsfrompalette":
+                        {
+                            string[] values = value.Split(SEPARATOR, StringSplitOptions.RemoveEmptyEntries);
+                            hideSkinsFromPalette.Clear();
+                            foreach(var val in values)
+                            {
+                                hideSkinsFromPalette.Add(val.Trim());
+                            }
+                            continue;
+                        }
                     }
                 }
 
@@ -439,6 +452,32 @@ namespace Digi.PaintGun.Features
             sb.Append("AimInfoBackgroundOpacity=").Append(aimInfoBackgroundOpacity < 0 ? "HUD" : Math.Round(aimInfoBackgroundOpacity, 5).ToString()).AppendLine(comments ? " // aim info's background opacity percent scalar (0 to 1 value) or set to HUD to use the game's HUD opacity. Default: HUD" : "");
 
             sb.Append("RequireCtrlForColorCycle=").Append(requireCtrlForColorCycle).AppendLine(comments ? " // Whether color cycling requires ctrl+scroll (true) or just scroll (false). Skin cycling (shift+scroll) is unaffected. Default: false" : "");
+
+            if(comments)
+            {
+                sb.AppendLine();
+                sb.AppendLine("// This allows you to hide certain skin IDs from the HUD palette, separated by comma and case-sensitive!");
+                sb.Append("// All detected skins: ");
+
+                int num = 99999; // start with a newline
+                var skins = Palette.BlockSkins;
+                for(int i = 1; i < skins.Count; ++i) // skipping index 0 intentionally
+                {
+                    if(++num > 7)
+                    {
+                        num = 0;
+                        sb.AppendLine().Append("//     ");
+                    }
+
+                    var skin = skins[i];
+                    sb.Append(skin.SubtypeId.String).Append(", ");
+                }
+
+                sb.Length -= 2; // remove last comma
+                sb.AppendLine();
+            }
+
+            sb.Append("HideSkinsFromPalette=").Append(string.Join(", ", hideSkinsFromPalette)).AppendLine();
 
             if(comments)
             {

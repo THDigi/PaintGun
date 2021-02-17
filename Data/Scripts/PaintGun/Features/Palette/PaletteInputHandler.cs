@@ -150,7 +150,7 @@ namespace Digi.PaintGun.Features.Palette
                         if(++index >= Palette.BlockSkins.Count)
                             index = 0;
                     }
-                    while(!Palette.GetSkinInfo(index).LocallyOwned);
+                    while(!Palette.GetSkinInfo(index).Selectable);
                     LocalInfo.SelectedSkinIndex = index;
                 }
                 else
@@ -183,7 +183,7 @@ namespace Digi.PaintGun.Features.Palette
                         if(--index < 0)
                             index = (Palette.BlockSkins.Count - 1);
                     }
-                    while(!Palette.GetSkinInfo(index).LocallyOwned);
+                    while(!Palette.GetSkinInfo(index).Selectable);
                     LocalInfo.SelectedSkinIndex = index;
                 }
                 else

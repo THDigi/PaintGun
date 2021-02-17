@@ -19,6 +19,7 @@ namespace Digi.PaintGun.Features.Palette
 
         public List<SkinInfo> BlockSkins;
         public List<SkinInfo> OwnedSkins;
+        public List<SkinInfo> SkinsForHUD;
         public int OwnedSkinsCount => (OwnedSkins == null ? 0 : OwnedSkins.Count);
 
         public PlayerInfo LocalInfo;
@@ -105,6 +106,7 @@ namespace Digi.PaintGun.Features.Palette
 
             BlockSkins = new List<SkinInfo>(foundSkins + 1); // include "No Skin" too.
             OwnedSkins = new List<SkinInfo>(BlockSkins.Capacity);
+            SkinsForHUD = new List<SkinInfo>(OwnedSkins.Capacity);
             var sb = new StringBuilder(128);
 
             foreach(var assetDef in MyDefinitionManager.Static.GetAssetModifierDefinitions())
@@ -459,18 +461,38 @@ namespace Digi.PaintGun.Features.Palette
             return pi;
         }
 
-        /// <summary>
-        /// Assigns <see cref="OwnedSkins"/>.
-        /// </summary>
         public void ComputeOwnedSkins()
         {
             OwnedSkins.Clear();
 
-            for(int i = 0; i < BlockSkins.Count; ++i)
+            foreach(SkinInfo skin in BlockSkins)
             {
-                SkinInfo skin = BlockSkins[i];
                 if(skin.LocallyOwned)
                     OwnedSkins.Add(skin);
+            }
+
+            ComputeShownSkins();
+        }
+
+        public void ComputeShownSkins()
+        {
+            if(SkinsForHUD == null)
+                return;
+
+            SkinsForHUD.Clear();
+
+            foreach(var skin in OwnedSkins)
+            {
+                skin.ShowOnPalette = !Settings.hideSkinsFromPalette.Contains(skin.SubtypeId.String);
+                if(skin.Selectable)
+                    SkinsForHUD.Add(skin);
+            }
+
+            // change selection if it's an unselectable skin
+            var selectedSkin = GetSkinInfo(LocalInfo.SelectedSkinIndex);
+            if(!selectedSkin.Selectable)
+            {
+                LocalInfo.SelectedSkinIndex = 0;
             }
         }
     }
