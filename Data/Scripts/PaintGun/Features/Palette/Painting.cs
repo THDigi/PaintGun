@@ -77,7 +77,7 @@ namespace Digi.PaintGun.Features.Palette
 
             if(originalSenderSteamId == MyAPIGateway.Multiplayer.MyId)
             {
-                Main.Notifications.Show(2, $"Replaced color for {affected.ToString()} blocks.", MyFontEnum.White, 5000);
+                Main.Notifications.Show(2, $"Replaced color for {affected.ToString()} blocks.", MyFontEnum.Debug, 5000);
 
                 //double seconds = (timeEnd - timeStart) / (double)Stopwatch.Frequency;
 

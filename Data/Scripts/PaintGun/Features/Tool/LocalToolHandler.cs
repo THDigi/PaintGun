@@ -544,7 +544,7 @@ namespace Digi.PaintGun.Features.Tool
                 var assigned = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.CUBE_COLOR_CHANGE));
 
                 Notifications.Show(0, "No paint or skin enabled.", MyFontEnum.Red);
-                Notifications.Show(1, $"Press [{assigned}] to toggle color or combined with [Shift] to toggle skin.", MyFontEnum.White);
+                Notifications.Show(1, $"Press [{assigned}] to toggle color or combined with [Shift] to toggle skin.", MyFontEnum.Debug);
 
                 SelectionGUI.SetGUIStatus(0, "No paint or skin enabled.", "red");
                 SelectionGUI.SetGUIStatus(1, null);
@@ -868,14 +868,14 @@ namespace Digi.PaintGun.Features.Tool
             if(Palette.ColorPickMode)
             {
                 Palette.ColorPickMode = false;
-                Notifications.Show(0, "Color picking cancelled.", MyFontEnum.White, 2000);
+                Notifications.Show(0, "Color picking cancelled.", MyFontEnum.Debug, 2000);
                 HUDSounds.PlayUnable();
             }
 
             if(Palette.ReplaceMode)
             {
                 Palette.ReplaceMode = false;
-                Notifications.Show(0, "Replace color mode turned off.", MyFontEnum.White, 2000);
+                Notifications.Show(0, "Replace color mode turned off.", MyFontEnum.Debug, 2000);
             }
 
             LocalTool = null;

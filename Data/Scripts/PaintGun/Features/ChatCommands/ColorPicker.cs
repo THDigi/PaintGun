@@ -24,7 +24,7 @@ namespace Digi.PaintGun.Features.ChatCommands
                 if(Main.Palette.ReplaceMode)
                 {
                     Main.Palette.ReplaceMode = false;
-                    Main.Notifications.Show(3, "Replace color mode turned off.", MyFontEnum.White, 2000);
+                    Main.Notifications.Show(3, "Replace color mode turned off.", MyFontEnum.Debug, 2000);
                 }
 
                 Main.Palette.ColorPickMode = true;

@@ -314,7 +314,7 @@ namespace Digi.PaintGun.Features.Tool
                 if(grid.XSymmetryPlane.HasValue && mirrorYZ.HasValue) // XYZ
                     MirrorHighlight(grid, 0, mirrorYZ.Value, alreadyMirrored);
 
-                Notifications.Show(3, $"Mirror paint will affect {mirroredValid} of {mirroredValidTotal} blocks.", MyFontEnum.White, 32);
+                Notifications.Show(3, $"Mirror paint will affect {mirroredValid} of {mirroredValidTotal} blocks.", MyFontEnum.Debug, 32);
             }
         }
 

@@ -133,7 +133,7 @@ namespace Digi.PaintGun.Features.Palette
 
                 var assigned = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.CUBE_COLOR_CHANGE));
                 Notifications.Show(0, pickSkin ? "Skin applying is turned off." : "Color applying is turned off.", MyFontEnum.Red, 1000);
-                Notifications.Show(1, pickSkin ? $"Press [Shift] + [{assigned}] to enable" : $"Press [{assigned}] to enable", MyFontEnum.White, 1000);
+                Notifications.Show(1, pickSkin ? $"Press [Shift] + [{assigned}] to enable" : $"Press [{assigned}] to enable", MyFontEnum.Debug, 1000);
                 return;
             }
 
@@ -244,14 +244,14 @@ namespace Digi.PaintGun.Features.Palette
                     PreventIronSight();
 
                     if(LocalInfo.ColorPickMode)
-                        Notifications.Show(0, "Color pick mode turned off.", MyFontEnum.White, 2000);
+                        Notifications.Show(0, "Color pick mode turned off.", MyFontEnum.Debug, 2000);
 
                     Palette.ColorPickMode = !Palette.ColorPickMode;
 
                     if(Palette.ColorPickMode && Palette.ReplaceMode)
                     {
                         Palette.ReplaceMode = false;
-                        Notifications.Show(3, "Replace color mode turned off.", MyFontEnum.White, 2000);
+                        Notifications.Show(3, "Replace color mode turned off.", MyFontEnum.Debug, 2000);
                     }
                 }
             }
@@ -311,12 +311,12 @@ namespace Digi.PaintGun.Features.Palette
                     if(Main.ReplaceColorAccess)
                     {
                         Palette.ReplaceMode = !Palette.ReplaceMode;
-                        Notifications.Show(0, "Replace color mode " + (Palette.ReplaceMode ? "enabled." : "turned off."), MyFontEnum.White, 2000);
+                        Notifications.Show(0, "Replace color mode " + (Palette.ReplaceMode ? "enabled." : "turned off."), MyFontEnum.Debug, 2000);
 
                         if(Palette.ReplaceMode && Palette.ColorPickMode)
                         {
                             Palette.ColorPickMode = false;
-                            Notifications.Show(0, "Color picking cancelled.", MyFontEnum.White, 2000);
+                            Notifications.Show(0, "Color picking cancelled.", MyFontEnum.Debug, 2000);
                         }
                     }
                     else

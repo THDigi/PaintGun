@@ -341,7 +341,7 @@ namespace Digi.PaintGun.Features.Palette
 
             if(currentMaterial.PaintEquals(pickedMaterial))
             {
-                Notifications.Show(0, $"Color and skin already selected.", MyFontEnum.White, 2000);
+                Notifications.Show(0, $"Color and skin already selected.", MyFontEnum.Debug, 2000);
                 return false;
             }
 
@@ -354,7 +354,7 @@ namespace Digi.PaintGun.Features.Palette
 
                 if(Utils.ColorMaskEquals(LocalInfo.SelectedColorMask, pickedMaterial.ColorMask.Value))
                 {
-                    Notifications.Show(0, $"Color already selected.", MyFontEnum.White, 2000);
+                    Notifications.Show(0, $"Color already selected.", MyFontEnum.Debug, 2000);
                 }
                 else
                 {
@@ -368,7 +368,7 @@ namespace Digi.PaintGun.Features.Palette
                             LocalInfo.SelectedColorIndex = i;
                             MyAPIGateway.Session.Player.SelectedBuildColorSlot = i;
 
-                            Notifications.Show(0, $"Color exists in slot [{(i + 1).ToString()}], selected.", MyFontEnum.White, 2000);
+                            Notifications.Show(0, $"Color exists in slot [{(i + 1).ToString()}], selected.", MyFontEnum.Debug, 2000);
                             break;
                         }
                     }
@@ -379,7 +379,7 @@ namespace Digi.PaintGun.Features.Palette
 
                         NetworkLibHandler.PacketPaletteSetColor.Send(LocalInfo.SelectedColorIndex, pickedMaterial.ColorMask.Value);
 
-                        Notifications.Show(0, $"Color slot [{(LocalInfo.SelectedColorIndex + 1).ToString()}] set to [{Utils.ColorMaskToString(pickedMaterial.ColorMask.Value)}]", MyFontEnum.White, 2000);
+                        Notifications.Show(0, $"Color slot [{(LocalInfo.SelectedColorIndex + 1).ToString()}] set to [{Utils.ColorMaskToString(pickedMaterial.ColorMask.Value)}]", MyFontEnum.Debug, 2000);
                     }
 
                     success = true;
@@ -411,7 +411,7 @@ namespace Digi.PaintGun.Features.Palette
                             LocalInfo.SelectedSkinIndex = skin.Index;
                             success = true;
 
-                            Notifications.Show(1, $"Selected skin: [{skin.Name}]", MyFontEnum.White, 2000);
+                            Notifications.Show(1, $"Selected skin: [{skin.Name}]", MyFontEnum.Debug, 2000);
                         }
                     }
                 }

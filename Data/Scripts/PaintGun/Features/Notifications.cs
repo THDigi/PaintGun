@@ -23,7 +23,7 @@ namespace Digi.PaintGun.Features
         {
         }
 
-        public void Show(int line, string text, string font = MyFontEnum.White, int aliveTime = DEFAULT_TIMEOUT_MS)
+        public void Show(int line, string text, string font = MyFontEnum.Debug, int aliveTime = DEFAULT_TIMEOUT_MS)
         {
             if(line < 0 || line >= notifications.Length)
                 throw new ArgumentException($"Notification line ({line.ToString()}) is either negative or above max of {(notifications.Length - 1).ToString()}.");
