@@ -45,6 +45,7 @@ namespace Digi.PaintGun.Features.Palette
             Palette.LocalInfo.OnApplyColorChanged += ApplyColorChanged;
             LocalToolHandler.LocalToolEquipped += LocalToolEquipped;
             LocalToolHandler.LocalToolHolstered += LocalToolHolstered;
+            Settings.SettingsChanged += UpdateUI;
         }
 
         protected override void UnregisterComponent()
@@ -56,6 +57,7 @@ namespace Digi.PaintGun.Features.Palette
             Palette.LocalInfo.OnApplyColorChanged -= ApplyColorChanged;
             LocalToolHandler.LocalToolEquipped -= LocalToolEquipped;
             LocalToolHandler.LocalToolHolstered -= LocalToolHolstered;
+            Settings.SettingsChanged -= UpdateUI;
         }
 
         void SkinIndexSelected(PlayerInfo pi, int prevIndex, int newIndex)
@@ -64,6 +66,11 @@ namespace Digi.PaintGun.Features.Palette
         }
 
         void ApplyColorChanged(PlayerInfo pi)
+        {
+            skinLabelUpdate = true;
+        }
+
+        public void UpdateUI()
         {
             skinLabelUpdate = true;
         }
@@ -298,22 +305,23 @@ namespace Digi.PaintGun.Features.Palette
 
             var localInfo = Palette.LocalInfo;
 
-            var labelPos = Settings.paletteScreenPos + new Vector2D(0, 0.06);
+            float scale = Settings.paletteScale;
+            var labelPos = Settings.paletteScreenPos + new Vector2D(0, 0.06 * 2 * scale); // TODO FIX: needs to move relatively with the scale of the elements below it, but it doesn't...
 
             if(localInfo.ApplyColor)
-                labelPos += new Vector2D(0, 0.08);
+                labelPos += new Vector2D(0, 0.08); // this needs fixing too
 
             var skin = Palette.GetSkinInfo(selectedSkinIndex);
             var text = skin.Name;
 
-            const double SCALE = 0.9;
+            const double TextScaleOffset = 1.8;
 
             if(skinLabel == null)
             {
                 skinLabelSB = new StringBuilder(64).Append(text);
 
-                skinLabelShadow = new HudAPIv2.HUDMessage(skinLabelSB, labelPos, Scale: SCALE, HideHud: true, Blend: BlendTypeEnum.PostPP);
-                skinLabel = new HudAPIv2.HUDMessage(skinLabelSB, labelPos, Scale: SCALE, HideHud: true, Blend: BlendTypeEnum.PostPP);
+                skinLabelShadow = new HudAPIv2.HUDMessage(skinLabelSB, labelPos, Scale: TextScaleOffset, HideHud: true, Blend: BlendTypeEnum.PostPP);
+                skinLabel = new HudAPIv2.HUDMessage(skinLabelSB, labelPos, Scale: TextScaleOffset, HideHud: true, Blend: BlendTypeEnum.PostPP);
 
                 skinLabelShadow.InitialColor = Color.Black;
                 skinLabel.InitialColor = Color.White;
@@ -329,6 +337,9 @@ namespace Digi.PaintGun.Features.Palette
 
                 skinLabel.Origin = labelPos;
                 skinLabelShadow.Origin = labelPos;
+
+                skinLabel.Scale = scale * TextScaleOffset;
+                skinLabelShadow.Scale = scale * TextScaleOffset;
 
                 var textLen = skinLabel.GetTextLength();
                 skinLabel.Offset = new Vector2D(textLen.X * -0.5, 0); // centered

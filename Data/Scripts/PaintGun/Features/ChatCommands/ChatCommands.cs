@@ -13,6 +13,8 @@ namespace Digi.PaintGun.Features.ChatCommands
 
         public IReadOnlyList<CommandHandlerBase> CommandHandlers => commandHandlers;
 
+        public Help HelpCommand;
+
         List<CommandHandlerBase> commandHandlers = new List<CommandHandlerBase>();
         Dictionary<string, CommandHandlerBase> aliasToCommandHandler = new Dictionary<string, CommandHandlerBase>();
         MyCommandLine argParser = new MyCommandLine();
@@ -23,7 +25,8 @@ namespace Digi.PaintGun.Features.ChatCommands
 
         protected override void RegisterComponent()
         {
-            AddCommand(new Help());
+            HelpCommand = new Help();
+            AddCommand(HelpCommand);
             AddCommand(new ColorPicker());
             AddCommand(new SetColor());
             AddCommand(new ReloadConfig());

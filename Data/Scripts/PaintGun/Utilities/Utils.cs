@@ -454,5 +454,20 @@ namespace Digi.PaintGun.Utilities
             color.A = (byte)(opacity * 255);
             return color;
         }
+
+        public static string ColorTag(Color color)
+        {
+            return $"<color={color.R.ToString()},{color.G.ToString()},{color.B.ToString()}>";
+        }
+
+        public static string ColorTag(Color color, string value)
+        {
+            return $"<color={color.R.ToString()},{color.G.ToString()},{color.B.ToString()}>{value}";
+        }
+
+        public static string ColorTag(Color color, string value1, string value2)
+        {
+            return $"<color={color.R.ToString()},{color.G.ToString()},{color.B.ToString()}>{value1}{value2}";
+        }
     }
 }

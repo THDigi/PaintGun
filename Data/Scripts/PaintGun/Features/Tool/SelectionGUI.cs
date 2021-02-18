@@ -87,7 +87,7 @@ namespace Digi.PaintGun.Features.Tool
 
         protected override void RegisterComponent()
         {
-            Settings.SettingsLoaded += UpdateUISettings;
+            Settings.SettingsChanged += UpdateUISettings;
             GameConfig.ClosedOptionsMenu += UpdateUISettings;
             LocalToolHandler.LocalToolHolstered += LocalToolHolstered;
         }
@@ -97,7 +97,7 @@ namespace Digi.PaintGun.Features.Tool
             if(!IsRegistered)
                 return;
 
-            Settings.SettingsLoaded -= UpdateUISettings;
+            Settings.SettingsChanged -= UpdateUISettings;
             GameConfig.ClosedOptionsMenu -= UpdateUISettings;
             LocalToolHandler.LocalToolHolstered -= LocalToolHolstered;
         }
@@ -583,7 +583,7 @@ namespace Digi.PaintGun.Features.Tool
                 text.Append('\n').Append(blockInfoStatus[2]);
         }
 
-        void UpdateUISettings()
+        public void UpdateUISettings()
         {
             if(uiTitle == null)
                 return;

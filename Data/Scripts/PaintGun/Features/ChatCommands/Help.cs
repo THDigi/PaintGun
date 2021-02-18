@@ -13,7 +13,7 @@ namespace Digi.PaintGun.Features.ChatCommands
         {
         }
 
-        public override void Execute(MyCommandLine parser)
+        public override void Execute(MyCommandLine parser = null)
         {
             var ch = PaintGunMod.Instance.ChatCommands;
 
@@ -63,8 +63,8 @@ namespace Digi.PaintGun.Features.ChatCommands
             sb.Append('\n');
             sb.Append("##### Config path #####").Append('\n');
             sb.Append('\n');
-            sb.Append("%appdata%/SpaceEngineers/Storage").Append('\n');
-            sb.Append("    /").Append(Log.WorkshopId).Append(".sbm_PaintGun/paintgun.cfg").Append('\n');
+            sb.Append(@"%appdata%\SpaceEngineers\Storage").Append('\n');
+            sb.Append(@"    \").Append(MyAPIGateway.Utilities.GamePaths.ModScopeName).Append(@"\").Append(Settings.FileName).Append('\n');
 
             MyAPIGateway.Utilities.ShowMissionScreen(PaintGunMod.MOD_NAME + " help", null, null, sb.ToString(), null, "Close");
         }

@@ -49,6 +49,7 @@ namespace Digi.PaintGun.Features.Palette
                 LocalInfo = GetOrAddPlayerInfo(MyAPIGateway.Multiplayer.MyId);
                 Main.CheckPlayerField.PlayerReady += PlayerReady;
                 Main.PlayerHandler.PlayerDisconnected += PlayerDisconnected;
+                Settings.SettingsChanged += ComputeShownSkins;
             }
         }
 
@@ -61,6 +62,7 @@ namespace Digi.PaintGun.Features.Palette
             {
                 Main.CheckPlayerField.PlayerReady -= PlayerReady;
                 Main.PlayerHandler.PlayerDisconnected -= PlayerDisconnected;
+                Settings.SettingsChanged -= ComputeShownSkins;
             }
         }
 
@@ -474,7 +476,7 @@ namespace Digi.PaintGun.Features.Palette
             ComputeShownSkins();
         }
 
-        public void ComputeShownSkins()
+        void ComputeShownSkins()
         {
             if(SkinsForHUD == null)
                 return;

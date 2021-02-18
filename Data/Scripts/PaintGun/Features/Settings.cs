@@ -13,8 +13,9 @@ namespace Digi.PaintGun.Features
     public class Settings : ModComponent
     {
         public event Action SettingsLoaded;
+        public event Action SettingsChanged;
 
-        private const string FILE = "paintgun.cfg";
+        public const string FileName = "paintgun.cfg";
         private const int CFG_VERSION = 3;
         private const int CFG_VERSION_NEWHUDDEFAULTS = 1;
         private const int CFG_VERSION_HUDBKOPACITYDEFAULTS = 2;
@@ -123,9 +124,9 @@ namespace Digi.PaintGun.Features
             {
                 ResetToDefaults();
 
-                if(MyAPIGateway.Utilities.FileExistsInLocalStorage(FILE, typeof(Settings)))
+                if(MyAPIGateway.Utilities.FileExistsInLocalStorage(FileName, typeof(Settings)))
                 {
-                    file = MyAPIGateway.Utilities.ReadFileInLocalStorage(FILE, typeof(Settings));
+                    file = MyAPIGateway.Utilities.ReadFileInLocalStorage(FileName, typeof(Settings));
                     ReadSettings(file);
 
                     SettingsLoaded?.Invoke();
@@ -142,9 +143,16 @@ namespace Digi.PaintGun.Features
             }
 
             UpdateToolDescription();
-            Palette.ComputeShownSkins();
+            SettingsChanged?.Invoke();
 
             return success;
+        }
+
+        public void ChangedByModConfig()
+        {
+            Save();
+            UpdateToolDescription();
+            SettingsChanged?.Invoke();
         }
 
         private void UpdateToolDescription()
@@ -209,7 +217,7 @@ namespace Digi.PaintGun.Features
 
                     if(args.Length != 2)
                     {
-                        Log.Error("Unknown " + FILE + " line: " + line + "\nMaybe is missing the '=' ?");
+                        Log.Error("Unknown " + FileName + " line: " + line + "\nMaybe is missing the '=' ?");
                         continue;
                     }
 
@@ -410,7 +418,7 @@ namespace Digi.PaintGun.Features
 
             try
             {
-                file = MyAPIGateway.Utilities.WriteFileInLocalStorage(FILE, typeof(Settings));
+                file = MyAPIGateway.Utilities.WriteFileInLocalStorage(FileName, typeof(Settings));
                 file.Write(GetSettingsString(true));
                 file.Flush();
             }
