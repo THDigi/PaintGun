@@ -10,6 +10,7 @@ using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
+using VRage.Input;
 using VRageMath;
 
 namespace Digi.PaintGun.Features.Tool
@@ -113,11 +114,17 @@ namespace Digi.PaintGun.Features.Tool
         protected override void UpdateInput(bool anyKeyOrMouse, bool inMenu, bool paused)
         {
             bool controllingLocalChar = (MyAPIGateway.Session.ControlledObject == MyAPIGateway.Session.Player?.Character);
-
             if(controllingLocalChar && LocalTool != null)
             {
                 bool inputReadable = (InputHandler.IsInputReadable() && !MyAPIGateway.Session.IsCameraUserControlledSpectator);
-                bool trigger = inputReadable && MyAPIGateway.Input.IsGameControlPressed(MyControlsSpace.PRIMARY_TOOL_ACTION);
+                bool trigger = false;
+                if(inputReadable)
+                {
+                    if(MyAPIGateway.Input.IsJoystickLastUsed)
+                        trigger = Math.Abs(MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Zneg)) > 0; // right trigger
+                    else
+                        trigger = MyAPIGateway.Input.IsGameControlPressed(MyControlsSpace.PRIMARY_TOOL_ACTION);
+                }
 
                 if(!CheckPlayerField.Ready)
                 {

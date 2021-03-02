@@ -131,6 +131,7 @@ namespace Digi.PaintGun.Features.Tool
             }
         }
 
+        // FIXME: equipping tool with gamepad by pressing dpad-down multiple times makes subsequent equips undetectable by script.
         void AddTool(IMyAutomaticRifleGun rifle)
         {
             var item = itemPool.Get();
