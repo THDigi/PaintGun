@@ -104,7 +104,7 @@ namespace Digi.PaintGun.Features.Tool
 
         void ToolRemoved(PaintGunItem item)
         {
-            if(item.OwnerIsLocalPlayer)
+            if(LocalTool != null && LocalTool == item)
             {
                 HandleTool_Holstered();
                 LocalToolHolstered?.Invoke(item);

@@ -14,7 +14,12 @@ namespace Digi.PaintGun.Features.Tool
     public class ToolHandler : ModComponent
     {
         public delegate void ToolEventDelegate(PaintGunItem item);
+
         public event ToolEventDelegate ToolSpawned;
+
+        /// <summary>
+        /// NOTE: this event can trigger for previous tool after <see cref="ToolSpawned"/> triggers on new tool.
+        /// </summary>
         public event ToolEventDelegate ToolRemoved;
 
         public List<PaintGunItem> Tools = new List<PaintGunItem>();
@@ -131,7 +136,6 @@ namespace Digi.PaintGun.Features.Tool
             }
         }
 
-        // FIXME: equipping tool with gamepad by pressing dpad-down multiple times makes subsequent equips undetectable by script.
         void AddTool(IMyAutomaticRifleGun rifle)
         {
             var item = itemPool.Get();
