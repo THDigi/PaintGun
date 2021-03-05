@@ -106,7 +106,7 @@ namespace Digi.PaintGun.Features.Palette
             int cycleDir = 0;
             bool cycleSkins = false;
 
-            if(MyAPIGateway.Input.IsJoystickLastUsed)
+            if(GameConfig.UsingGamepad)
             {
                 // x button is used for both, if it's not pressed then ignore
                 if(!MyAPIGateway.Input.IsJoystickButtonNewPressed(MyJoystickButtonsEnum.J03)) // X

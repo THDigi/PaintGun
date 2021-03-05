@@ -6,6 +6,7 @@ namespace Digi.PaintGun
     public class Constants : ModComponent
     {
         public const string PAINTGUN_ID = "PaintGun";
+        public const string PAINTGUN_PHYSITEMID = "PhysicalPaintGun";
         public const string PAINTGUN_WEAPONID = "WeaponPaintGun";
         public const string PAINT_MAGAZINE_ID = "PaintGunMag";
 

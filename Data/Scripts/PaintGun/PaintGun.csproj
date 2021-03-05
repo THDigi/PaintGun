@@ -166,6 +166,7 @@
     <Compile Include="Features\Tool\Particle.cs" />
     <Compile Include="Features\Tool\SelectionGUI.cs" />
     <Compile Include="Features\Tool\SelectionState.cs" />
+    <Compile Include="Features\Tool\LocalToolDescription.cs" />
     <Compile Include="Features\Tool\ToolHandler.cs" />
     <Compile Include="Features\UIEdit.cs" />
     <Compile Include="GameSession.cs" />
@@ -187,6 +188,7 @@
     <Compile Include="Systems\PlayerHandler.cs" />
     <Compile Include="Systems\GameConfig.cs" />
     <Compile Include="Features\Sync\NetworkLibHandler.cs" />
+    <Compile Include="Utilities\StringBuilderExtensions.cs" />
     <Compile Include="Systems\TextAPIHandler.cs" />
     <Compile Include="Utilities\Caches.cs" />
     <Compile Include="Utilities\DrawUtils.cs" />

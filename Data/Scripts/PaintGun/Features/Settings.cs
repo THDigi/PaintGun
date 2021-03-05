@@ -2,10 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using Sandbox.Definitions;
 using Sandbox.ModAPI;
-using VRage.Game;
-using VRage.Utils;
 using VRageMath;
 
 namespace Digi.PaintGun.Features
@@ -142,7 +139,7 @@ namespace Digi.PaintGun.Features
                 file?.Dispose();
             }
 
-            UpdateToolDescription();
+            Main.LocalToolDescription.RefreshToolDescription();
             SettingsChanged?.Invoke();
 
             return success;
@@ -151,42 +148,8 @@ namespace Digi.PaintGun.Features
         public void ChangedByModConfig()
         {
             Save();
-            UpdateToolDescription();
+            Main.LocalToolDescription.RefreshToolDescription();
             SettingsChanged?.Invoke();
-        }
-
-        private void UpdateToolDescription()
-        {
-            try
-            {
-                var defId = new MyDefinitionId(typeof(MyObjectBuilder_PhysicalGunObject), "PhysicalPaintGun");
-                var itemDef = MyDefinitionManager.Static.GetPhysicalItemDefinition(defId);
-
-                if(itemDef == null)
-                    throw new Exception($"Can't find '{defId.ToString()}' hand item definition!");
-
-                if(string.IsNullOrEmpty(itemDef.DescriptionText))
-                    return;
-
-                if(requireCtrlForColorCycle)
-                {
-                    if(itemDef.DescriptionEnum.HasValue)
-                        itemDef.DescriptionEnum = MyStringId.GetOrCompute(itemDef.DescriptionEnum.Value.String.Replace("[Scroll]", "[Ctrl+Scroll]"));
-                    else if(!string.IsNullOrEmpty(itemDef.DescriptionString))
-                        itemDef.DescriptionString = itemDef.DescriptionString.Replace("[Scroll]", "[Ctrl+Scroll]");
-                }
-                else
-                {
-                    if(itemDef.DescriptionEnum.HasValue)
-                        itemDef.DescriptionEnum = MyStringId.GetOrCompute(itemDef.DescriptionEnum.Value.String.Replace("[Ctrl+Scroll]", "[Scroll]"));
-                    else if(!string.IsNullOrEmpty(itemDef.DescriptionString))
-                        itemDef.DescriptionString = itemDef.DescriptionString.Replace("[Ctrl+Scroll]", "[Scroll]");
-                }
-            }
-            catch(Exception e)
-            {
-                Log.Error(e);
-            }
         }
 
         private void ReadSettings(TextReader file)

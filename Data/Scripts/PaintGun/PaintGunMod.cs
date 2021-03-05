@@ -38,6 +38,7 @@ namespace Digi.PaintGun
         public PaletteInputHandler PaletteInputHandler;
         public PaletteScheduledSync PaletteScheduledSync;
         public LocalToolHandler LocalToolHandler;
+        public LocalToolDescription LocalToolDescription;
         public PaletteHUD PaletteHUD;
         public SelectionGUI SelectionGUI;
         public ToolHandler ToolHandler;
@@ -97,6 +98,7 @@ namespace Digi.PaintGun
                 PaletteScheduledSync = new PaletteScheduledSync(this);
                 HUDSounds = new HUDSounds(this);
                 LocalToolHandler = new LocalToolHandler(this);
+                LocalToolDescription = new LocalToolDescription(this);
                 SelectionGUI = new SelectionGUI(this);
                 ToolHandler = new ToolHandler(this);
                 ChatCommands = new ChatCommands(this);

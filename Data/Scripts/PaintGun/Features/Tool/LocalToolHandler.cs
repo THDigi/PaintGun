@@ -120,7 +120,7 @@ namespace Digi.PaintGun.Features.Tool
                 bool trigger = false;
                 if(inputReadable)
                 {
-                    if(MyAPIGateway.Input.IsJoystickLastUsed)
+                    if(GameConfig.UsingGamepad)
                         trigger = Math.Abs(MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Zneg)) > 0; // right trigger
                     else
                         trigger = MyAPIGateway.Input.IsGameControlPressed(MyControlsSpace.PRIMARY_TOOL_ACTION);

@@ -20,6 +20,9 @@ namespace Digi.PaintGun.Systems
         public event EventHandlerHudStateChanged HudStateChanged;
         public delegate void EventHandlerHudStateChanged(HudState prevState, HudState state);
 
+        public event EventHandlerGamepadUseChanged GamepadUseChanged;
+        public delegate void EventHandlerGamepadUseChanged(bool isUsed);
+
         /// <summary>
         /// Called when client exits the options menu.
         /// </summary>
@@ -28,10 +31,11 @@ namespace Digi.PaintGun.Systems
         public HudState HudState;
         public float HudBackgroundOpacity;
         public double AspectRatio;
+        public bool UsingGamepad;
 
         public GameConfig(PaintGunMod main) : base(main)
         {
-            UpdateMethods = UpdateFlags.UPDATE_AFTER_SIM;
+            UpdateMethods = UpdateFlags.UPDATE_AFTER_SIM | UpdateFlags.UPDATE_INPUT;
         }
 
         protected override void RegisterComponent()
@@ -55,6 +59,16 @@ namespace Digi.PaintGun.Systems
             if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.TOGGLE_HUD))
             {
                 UpdateHudState();
+            }
+        }
+
+        protected override void UpdateInput(bool anyKeyOrMouse, bool inMenu, bool paused)
+        {
+            bool newUsingGamepad = MyAPIGateway.Input.IsJoystickLastUsed;
+            if(UsingGamepad != newUsingGamepad)
+            {
+                UsingGamepad = newUsingGamepad;
+                GamepadUseChanged?.Invoke(newUsingGamepad);
             }
         }
 
