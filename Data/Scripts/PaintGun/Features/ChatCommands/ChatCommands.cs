@@ -9,14 +9,13 @@ namespace Digi.PaintGun.Features.ChatCommands
 {
     public class ChatCommands : ModComponent
     {
-        internal const string MAIN_COMMAND = "/pg";
+        public const string MAIN_COMMAND = "/pg";
 
-        public IReadOnlyList<CommandHandlerBase> CommandHandlers => commandHandlers;
+        public readonly List<CommandHandlerBase> CommandHandlers = new List<CommandHandlerBase>(4);
+        public readonly Dictionary<string, CommandHandlerBase> AliasToCommandHandler = new Dictionary<string, CommandHandlerBase>(4);
 
         public Help HelpCommand;
 
-        List<CommandHandlerBase> commandHandlers = new List<CommandHandlerBase>();
-        Dictionary<string, CommandHandlerBase> aliasToCommandHandler = new Dictionary<string, CommandHandlerBase>();
         MyCommandLine argParser = new MyCommandLine();
 
         public ChatCommands(PaintGunMod main) : base(main)
@@ -44,11 +43,11 @@ namespace Digi.PaintGun.Features.ChatCommands
 
         void AddCommand(CommandHandlerBase handler)
         {
-            commandHandlers.Add(handler);
+            CommandHandlers.Add(handler);
 
             foreach(var alias in handler.Aliases)
             {
-                aliasToCommandHandler.Add(alias, handler);
+                AliasToCommandHandler.Add(alias, handler);
             }
         }
 
@@ -71,7 +70,7 @@ namespace Digi.PaintGun.Features.ChatCommands
                 var alias = argParser.Argument(1) ?? string.Empty;
                 CommandHandlerBase handler;
 
-                if(aliasToCommandHandler.TryGetValue(alias, out handler))
+                if(AliasToCommandHandler.TryGetValue(alias, out handler))
                 {
                     handler.Execute(argParser);
                 }

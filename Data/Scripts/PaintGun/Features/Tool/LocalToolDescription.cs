@@ -5,6 +5,7 @@ using Sandbox.Definitions;
 using Sandbox.Game;
 using Sandbox.Game.Gui;
 using VRage.Game;
+using VRage.Input;
 
 namespace Digi.PaintGun.Features.Tool
 {
@@ -67,9 +68,9 @@ namespace Digi.PaintGun.Features.Tool
 
             if(GameConfig.UsingGamepad)
             {
-                SB.Append("\n\xe007 paint, \xe008 deep paint mode");
-                SB.Append("\n\xe002 cycle colors");
-                SB.Append("\n\xe005+\xe002 cycle skins");
+                SB.Append("\n").Append(Main.Constants.GamepadBindName_Paint).Append(" paint, ").Append(Main.Constants.GamepadBindName_DeepPaintMode).Append(" deep paint mode");
+                SB.Append("\n").Append(Main.Constants.GamepadBindName_CycleColors).Append(" cycle colors");
+                SB.Append("\n").Append(Main.Constants.GamepadBindName_CycleSkins).Append(" cycle skins");
             }
             else // kb+m
             {

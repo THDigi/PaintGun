@@ -1,5 +1,5 @@
-﻿using Sandbox.ModAPI;
-using VRage.Game;
+﻿using VRage.Game;
+using VRage.Input;
 
 namespace Digi.PaintGun
 {
@@ -30,12 +30,26 @@ namespace Digi.PaintGun
 
         public const int TICKS_PER_SECOND = 60;
 
+        public const MyJoystickAxesEnum GamepadBind_Paint = MyJoystickAxesEnum.Zneg; // RT
+        public const MyJoystickAxesEnum GamepadBind_DeepPaintMode = MyJoystickAxesEnum.Zpos; // LT; can't be changed as it's the internal bind for ironsight which is used for deep paint mode
+        public const MyJoystickButtonsEnum GamepadBind_CyclePalette = MyJoystickButtonsEnum.J03; // X
+        public const MyJoystickButtonsEnum GamepadBind_CycleSkinsModifier = MyJoystickButtonsEnum.J05; // LB
+
+        public string GamepadBindName_Paint = string.Empty;
+        public string GamepadBindName_DeepPaintMode = string.Empty;
+        public string GamepadBindName_CycleColors = string.Empty;
+        public string GamepadBindName_CycleSkins = string.Empty;
+
         public Constants(PaintGunMod main) : base(main)
         {
         }
 
         protected override void RegisterComponent()
         {
+            GamepadBindName_Paint = InputHandler.xboxCodes[GamepadBind_Paint].ToString();
+            GamepadBindName_DeepPaintMode = InputHandler.xboxCodes[GamepadBind_DeepPaintMode].ToString();
+            GamepadBindName_CycleColors = InputHandler.xboxCodes[GamepadBind_CyclePalette].ToString();
+            GamepadBindName_CycleSkins = $"{InputHandler.xboxCodes[GamepadBind_CycleSkinsModifier]}+{InputHandler.xboxCodes[GamepadBind_CyclePalette]}";
         }
 
         protected override void UnregisterComponent()

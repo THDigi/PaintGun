@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using Digi.PaintGun.Features.Tool;
 using Sandbox.Game;
 using Sandbox.ModAPI;
 using VRage.Game.ModAPI.Ingame.Utilities;
@@ -15,11 +16,6 @@ namespace Digi.PaintGun.Features.ChatCommands
 
         public override void Execute(MyCommandLine parser = null)
         {
-            var ch = PaintGunMod.Instance.ChatCommands;
-
-            if(sb == null)
-                sb = new StringBuilder((ch.CommandHandlers.Count * 128) + 512);
-
             var assignedLG = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.LANDING_GEAR));
             var assignedSecondaryClick = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.SECONDARY_TOOL_ACTION));
             var assignedCubeSize = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.CUBE_BUILDER_CUBESIZE_MODE));
@@ -27,7 +23,20 @@ namespace Digi.PaintGun.Features.ChatCommands
             var assignedColorPrev = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.SWITCH_LEFT));
             var assignedColorNext = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.SWITCH_RIGHT));
 
-            sb.Append("##### Chat Commands #####").Append('\n');
+            var ch = PaintGunMod.Instance.ChatCommands;
+            if(sb == null)
+                sb = new StringBuilder((ch.CommandHandlers.Count * 128) + 512);
+
+            const string SegmentPrefix = "  "; //  menu;  windows
+            const string SegmentSuffix = ""; // " —————————";
+
+            sb.Append(SegmentPrefix).Append("Config path").Append(SegmentSuffix).Append('\n');
+            sb.Append('\n');
+            sb.Append(@"%appdata%\SpaceEngineers\Storage").Append('\n');
+            sb.Append(@"    \").Append(MyAPIGateway.Utilities.GamePaths.ModScopeName).Append(@"\").Append(Settings.FileName).Append('\n');
+            sb.Append('\n');
+
+            sb.Append(SegmentPrefix).Append("Chat Commands").Append(SegmentSuffix).Append('\n');
             sb.Append('\n');
 
             foreach(var handler in ch.CommandHandlers)
@@ -35,12 +44,14 @@ namespace Digi.PaintGun.Features.ChatCommands
                 handler.PrintHelp(sb);
             }
 
-            sb.Append("##### Hotkeys #####").Append('\n');
+            var constants = PaintGunMod.Instance.Constants;
+
+            sb.Append(SegmentPrefix).Append("Hotkeys").Append(SegmentSuffix).Append('\n');
             sb.Append('\n');
-            sb.Append(PaintGunMod.Instance.Settings.requireCtrlForColorCycle ? "Ctrl+" : "").Append("MouseScroll or ").Append(assignedColorPrev).Append("/").Append(assignedColorNext).Append('\n');
+            sb.Append(PaintGunMod.Instance.Settings.requireCtrlForColorCycle ? "Ctrl+" : "").Append("MouseScroll or ").Append(assignedColorPrev).Append("/").Append(assignedColorNext).Append(" or ").Append(constants.GamepadBindName_CycleColors).Append('\n');
             sb.Append("  Change selected color slot.").Append('\n');
             sb.Append('\n');
-            sb.Append("Shift+MouseScroll or Shift+").Append(assignedColorPrev).Append("/Shift+").Append(assignedColorNext).Append('\n');
+            sb.Append("Shift+MouseScroll or Shift+").Append(assignedColorPrev).Append("/Shift+").Append(assignedColorNext).Append(" or ").Append(constants.GamepadBindName_CycleSkins).Append('\n');
             sb.Append("  Change selected skin.").Append('\n');
             sb.Append('\n');
             sb.Append(assignedColorBlock).Append('\n');
@@ -49,7 +60,7 @@ namespace Digi.PaintGun.Features.ChatCommands
             sb.Append("Shift+").Append(assignedColorBlock).Append('\n');
             sb.Append("  Toggle if skin is applied.").Append('\n');
             sb.Append('\n');
-            sb.Append(assignedSecondaryClick).Append('\n');
+            sb.Append(assignedSecondaryClick).Append(" or ").Append(constants.GamepadBindName_DeepPaintMode).Append('\n');
             sb.Append("  Deep paint mode, allows painting under blocks if you're close enough.").Append('\n');
             sb.Append('\n');
             sb.Append("Shift+").Append(assignedSecondaryClick).Append('\n');
@@ -61,10 +72,6 @@ namespace Digi.PaintGun.Features.ChatCommands
             sb.Append("Shift+").Append(assignedCubeSize).Append('\n');
             sb.Append("  (Creative or SM) Toggle replace color mode.").Append('\n');
             sb.Append('\n');
-            sb.Append("##### Config path #####").Append('\n');
-            sb.Append('\n');
-            sb.Append(@"%appdata%\SpaceEngineers\Storage").Append('\n');
-            sb.Append(@"    \").Append(MyAPIGateway.Utilities.GamePaths.ModScopeName).Append(@"\").Append(Settings.FileName).Append('\n');
 
             MyAPIGateway.Utilities.ShowMissionScreen(PaintGunMod.MOD_NAME + " help", null, null, sb.ToString(), null, "Close");
         }

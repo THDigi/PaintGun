@@ -109,11 +109,11 @@ namespace Digi.PaintGun.Features.Palette
             if(GameConfig.UsingGamepad)
             {
                 // x button is used for both, if it's not pressed then ignore
-                if(!MyAPIGateway.Input.IsJoystickButtonNewPressed(MyJoystickButtonsEnum.J03)) // X
+                if(!MyAPIGateway.Input.IsJoystickButtonNewPressed(Constants.GamepadBind_CyclePalette))
                     return;
 
                 cycleDir = -1; // cycle right
-                cycleSkins = MyAPIGateway.Input.IsJoystickButtonPressed(MyJoystickButtonsEnum.J05); // LB
+                cycleSkins = MyAPIGateway.Input.IsJoystickButtonPressed(Constants.GamepadBind_CycleSkinsModifier);
 
                 if(!cycleSkins)
                 {

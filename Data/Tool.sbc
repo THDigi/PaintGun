@@ -65,6 +65,11 @@
         <Y>-0.2</Y>
         <Z>-0.3</Z>
       </ItemPosition>
+      <ItemIronsightPosition>
+        <X>0.05</X>
+        <Y>-0.12</Y>
+        <Z>-0.3</Z>
+      </ItemIronsightPosition>
 
       <!-- Hand Item Animations -->
       <ItemWalkingOrientation>
