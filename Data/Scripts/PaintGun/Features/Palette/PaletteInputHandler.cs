@@ -1,8 +1,10 @@
 ﻿using Digi.ComponentLib;
 using Sandbox.Game;
 using Sandbox.Game.Entities;
+using Sandbox.Game.Entities.Character.Components;
 using Sandbox.ModAPI;
 using VRage.Game;
+using VRage.Input;
 using VRageMath;
 
 namespace Digi.PaintGun.Features.Palette
@@ -56,7 +58,7 @@ namespace Digi.PaintGun.Features.Palette
                     if(Main.LocalToolHandler.LocalTool != null)
                     {
                         HandleInputs_ToggleApplyColorOrSkin();
-                        HandleInputs_CycleColorOrSkin();
+                        HandleInputs_CyclePalette();
                         HandleInputs_Symmetry();
                         HandleInputs_ColorPickMode();
                         HandleInputs_InstantColorPick();
@@ -93,7 +95,7 @@ namespace Digi.PaintGun.Features.Palette
             }
         }
 
-        void HandleInputs_CycleColorOrSkin()
+        void HandleInputs_CyclePalette()
         {
             if(LocalInfo == null)
                 return;
@@ -101,48 +103,76 @@ namespace Digi.PaintGun.Features.Palette
             if(!LocalInfo.ApplySkin && !LocalInfo.ApplyColor)
                 return;
 
-            if(MyAPIGateway.Input.IsAnyAltKeyPressed())
+            int cycleDir = 0;
+            bool cycleSkins = false;
+
+            if(MyAPIGateway.Input.IsJoystickLastUsed)
+            {
+                // x button is used for both, if it's not pressed then ignore
+                if(!MyAPIGateway.Input.IsJoystickButtonNewPressed(MyJoystickButtonsEnum.J03)) // X
+                    return;
+
+                cycleDir = -1; // cycle right
+                cycleSkins = MyAPIGateway.Input.IsJoystickButtonPressed(MyJoystickButtonsEnum.J05); // LB
+
+                if(!cycleSkins)
+                {
+                    var useObject = MyAPIGateway.Session?.Player?.Character?.Components?.Get<MyCharacterDetectorComponent>()?.UseObject;
+                    if(useObject != null)
+                        return; // aiming at an interactive object while pressing only X, ignore
+                }
+            }
+            else // keyboard & mouse
+            {
+                if(MyAPIGateway.Input.IsAnyAltKeyPressed())
+                    return; // ignore combos with alt to allow other systems to use these controls with alt
+
+                cycleDir = MyAPIGateway.Input.DeltaMouseScrollWheelValue();
+                if(cycleDir == 0)
+                {
+                    if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.SWITCH_RIGHT))
+                        cycleDir = -1;
+                    else if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.SWITCH_LEFT))
+                        cycleDir = 1;
+                }
+
+                if(cycleDir == 0)
+                    return;
+
+                cycleSkins = MyAPIGateway.Input.IsAnyShiftKeyPressed();
+                bool ctrl = MyAPIGateway.Input.IsAnyCtrlKeyPressed();
+
+                // ignore ctrl+shift+scroll combo, leave it to other systems
+                if(cycleSkins && ctrl)
+                    return;
+
+                // color cycling requires it pressed or explicitly requires it not pressed depending on user pref
+                if(!cycleSkins && Settings.requireCtrlForColorCycle != ctrl)
+                    return;
+            }
+
+            if(cycleDir == 0)
                 return;
 
-            var change = 0;
+            if(cycleSkins && Palette.OwnedSkinsCount == 0)
+                return; // no skins yet, ignore for now
 
-            if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.SWITCH_LEFT))
-                change = 1;
-            else if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.SWITCH_RIGHT))
-                change = -1;
-            else
-                change = MyAPIGateway.Input.DeltaMouseScrollWheelValue();
-
-            if(change == 0 || LocalInfo == null)
-                return;
-
-            bool pickSkin = MyAPIGateway.Input.IsAnyShiftKeyPressed();
-            bool ctrl = MyAPIGateway.Input.IsAnyCtrlKeyPressed();
-
-            if(pickSkin && ctrl)
-                return;
-
-            // color cycling requires it pressed or explicitly requires it not pressed depending on user pref
-            if(!pickSkin && Settings.requireCtrlForColorCycle != ctrl)
-                return;
-
-            if(pickSkin ? !LocalInfo.ApplySkin : !LocalInfo.ApplyColor)
+            // skin or color applying is off, can't cycle turned off palette
+            if(cycleSkins ? !LocalInfo.ApplySkin : !LocalInfo.ApplyColor)
             {
                 if(Settings.extraSounds)
                     HUDSounds.PlayUnable();
 
+                // there's no gamepad equivalent to toggle palettes so it'll just show kb/m binds for both.
                 var assigned = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.CUBE_COLOR_CHANGE));
-                Notifications.Show(0, pickSkin ? "Skin applying is turned off." : "Color applying is turned off.", MyFontEnum.Red, 1000);
-                Notifications.Show(1, pickSkin ? $"Press [Shift] + [{assigned}] to enable" : $"Press [{assigned}] to enable", MyFontEnum.Debug, 1000);
+                Notifications.Show(0, cycleSkins ? "Skin applying is turned off." : "Color applying is turned off.", MyFontEnum.Red, 1000);
+                Notifications.Show(1, cycleSkins ? $"Press [Shift] + [{assigned}] to enable" : $"Press [{assigned}] to enable", MyFontEnum.Debug, 1000);
                 return;
             }
 
-            if(pickSkin && Palette.OwnedSkinsCount == 0)
-                return;
-
-            if(change < 0)
+            if(cycleDir < 0)
             {
-                if(pickSkin)
+                if(cycleSkins)
                 {
                     var index = LocalInfo.SelectedSkinIndex;
                     do
@@ -151,6 +181,7 @@ namespace Digi.PaintGun.Features.Palette
                             index = 0;
                     }
                     while(!Palette.GetSkinInfo(index).Selectable);
+
                     LocalInfo.SelectedSkinIndex = index;
                 }
                 else
@@ -170,12 +201,13 @@ namespace Digi.PaintGun.Features.Palette
                         if(++index >= LocalInfo.ColorsMasks.Count)
                             index = 0;
                     }
+
                     LocalInfo.SelectedColorIndex = index;
                 }
             }
             else
             {
-                if(pickSkin)
+                if(cycleSkins)
                 {
                     var index = LocalInfo.SelectedSkinIndex;
                     do
@@ -184,6 +216,7 @@ namespace Digi.PaintGun.Features.Palette
                             index = (Palette.BlockSkins.Count - 1);
                     }
                     while(!Palette.GetSkinInfo(index).Selectable);
+
                     LocalInfo.SelectedSkinIndex = index;
                 }
                 else
@@ -201,11 +234,12 @@ namespace Digi.PaintGun.Features.Palette
                         if(--index < 0)
                             index = (LocalInfo.ColorsMasks.Count - 1);
                     }
+
                     LocalInfo.SelectedColorIndex = index;
                 }
             }
 
-            if(pickSkin)
+            if(cycleSkins)
             {
                 if(Settings.extraSounds)
                     HUDSounds.PlayItem();
