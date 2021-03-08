@@ -15,14 +15,15 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
     {
         public const string STATUS_PREFIX = "SkinOwnershipTest: ";
         public StringBuilder Status = new StringBuilder(128);
-        public bool TestInProgress => testing;
+        public bool TestInProgress { get; private set; }
 
-        bool testing = false;
+        int firstTestAtTick = 0;
         int waitUntilTick = 0;
         int cooldownReTest = 0;
         int testCount = 0;
         MyCubeGrid hiddenGrid;
 
+        const int FIRST_TEST_DELAY = Constants.TICKS_PER_SECOND * 10; // how long to wait after player fully spawned before even starting the first test, hopefully steam inventory loaded by this time
         const int MAX_TEST_TRIES = 3;
         const int RE_TEST_COOLDOWN = SkinTestServer.TEMP_GRID_EXPIRE - (Constants.TICKS_PER_SECOND * 5);
         const int DETECT_PAINT_DELAY = Constants.TICKS_PER_SECOND * 2; // how long to wait until painting the grid after it was streamed
@@ -52,7 +53,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
         #region Step 1 - Client asks server to spawn a grid
         void TestForLocalPlayer()
         {
-            testing = true;
+            TestInProgress = true;
             testCount++;
             cooldownReTest = RE_TEST_COOLDOWN;
             Log.Info($"{GetType().Name}.Update() :: attempting test number {testCount.ToString()}...");
@@ -124,7 +125,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
             {
                 if(testCount >= MAX_TEST_TRIES)
                 {
-                    testing = false;
+                    TestInProgress = false;
                     SetUpdateMethods(UpdateFlags.UPDATE_AFTER_SIM, false);
 
                     Log.Error($"Ownership test failed after {MAX_TEST_TRIES.ToString()} tries, please reconnect. Bugreport if persists.", Log.PRINT_MESSAGE);
@@ -134,14 +135,31 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
                     Main.NetworkLibHandler.PacketWarningMessage.Send(0, $"Ownership test failed after {MAX_TEST_TRIES.ToString()} tries. Report with server mod log and ask client to submit theirs aswell.");
                     return;
                 }
-            }
-
-            if(!testing)
-            {
-                // wait until player has a character so the grid doesn't get spawned who knows where
-                if(MyAPIGateway.Session?.Player?.Character != null)
+                else if(TestInProgress)
                 {
                     TestForLocalPlayer();
+                }
+            }
+
+            if(!TestInProgress)
+            {
+                if(firstTestAtTick > 0)
+                {
+                    if(tick >= firstTestAtTick)
+                    {
+                        TestForLocalPlayer();
+                    }
+                    else
+                    {
+                        int seconds = (int)Math.Round((firstTestAtTick - tick) / (float)Constants.TICKS_PER_SECOND, 0);
+                        Status.Clear().Append(STATUS_PREFIX).Append("Starting test in ").Append(seconds).Append("s...");
+                    }
+                }
+
+                // wait until player has a character so the grid doesn't get spawned who knows where
+                if(testCount == 0 && firstTestAtTick == 0 && MyAPIGateway.Session?.Player?.Character != null)
+                {
+                    firstTestAtTick = tick + FIRST_TEST_DELAY;
                 }
 
                 return;
@@ -216,7 +234,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
                 palette.LocalInfo.SelectedSkinIndex = 0;
             }
 
-            testing = false;
+            TestInProgress = false;
             SetUpdateMethods(UpdateFlags.UPDATE_AFTER_SIM, false);
         }
         #endregion Step 5 - received results from server

@@ -20,6 +20,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
         public const int GRID_CHECK_FREQUENCY = Constants.TICKS_PER_SECOND * 3;
         public readonly MyDefinitionId SpawnBlockDefId = new MyDefinitionId(typeof(MyObjectBuilder_CubeBlock), "PaintGun_TempBlock");
 
+        bool firstSkinAttempt = true;
         int waitUntilTick;
         Dictionary<ulong, GridInfo> tempGrids = new Dictionary<ulong, GridInfo>();
         List<ulong> removeKeys = new List<ulong>();
@@ -50,11 +51,16 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
         internal void SpawnGrid(ulong steamId)
         {
             var player = Utils.GetPlayerBySteamId(steamId);
-
             if(player == null)
             {
                 Log.Error($"{GetType().Name}.SpawnGrid(): steamId={steamId.ToString()} does not exist!");
                 return;
+            }
+
+            if(firstSkinAttempt)
+            {
+                firstSkinAttempt = false;
+                MyLog.Default.WriteLineAndConsole("### PaintGun: First skin-test grid spawned, if this printed before 'Loaded X Steam Inventory item definitions' then it'll probably fail the test.");
             }
 
             GridInfo gridInfo;

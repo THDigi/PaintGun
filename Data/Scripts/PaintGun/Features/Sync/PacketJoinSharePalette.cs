@@ -44,7 +44,11 @@ namespace Digi.PaintGun.Features.Sync
             ApplyColor = pi.ApplyColor;
             ApplySkin = pi.ApplySkin;
             ColorPickMode = pi.ColorPickMode;
-            PackedColorMasks = new List<uint>(pi.ColorsMasks.Count);
+
+            if(PackedColorMasks == null)
+                PackedColorMasks = new List<uint>(Constants.COLOR_PALETTE_SIZE);
+            else
+                PackedColorMasks.Clear();
 
             foreach(var colorMask in pi.ColorsMasks)
             {
