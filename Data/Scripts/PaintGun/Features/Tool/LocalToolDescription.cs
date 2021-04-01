@@ -5,7 +5,6 @@ using Sandbox.Definitions;
 using Sandbox.Game;
 using Sandbox.Game.Gui;
 using VRage.Game;
-using VRage.Input;
 
 namespace Digi.PaintGun.Features.Tool
 {

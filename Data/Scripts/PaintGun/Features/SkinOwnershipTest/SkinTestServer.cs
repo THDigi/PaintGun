@@ -66,8 +66,8 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
             GridInfo gridInfo;
             if(tempGrids.TryGetValue(steamId, out gridInfo))
             {
-                tempGrids.Remove(steamId);
-                tempGrids.Add(steamId, new GridInfo(gridInfo.Grid, Main.Tick + TEMP_GRID_EXPIRE));
+                gridInfo = new GridInfo(gridInfo.Grid, Main.Tick + TEMP_GRID_EXPIRE);
+                tempGrids[steamId] = gridInfo;
 
                 SetUpdateMethods(UpdateFlags.UPDATE_AFTER_SIM, true);
 

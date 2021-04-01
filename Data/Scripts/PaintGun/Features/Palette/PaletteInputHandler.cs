@@ -4,7 +4,6 @@ using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character.Components;
 using Sandbox.ModAPI;
 using VRage.Game;
-using VRage.Input;
 using VRageMath;
 
 namespace Digi.PaintGun.Features.Palette
@@ -46,11 +45,9 @@ namespace Digi.PaintGun.Features.Palette
                 return;
 
             bool controllingLocalChar = (MyAPIGateway.Session.ControlledObject == MyAPIGateway.Session.Player?.Character);
-
             if(controllingLocalChar)
             {
                 bool inputReadable = (InputHandler.IsInputReadable() && !MyAPIGateway.Session.IsCameraUserControlledSpectator);
-
                 if(inputReadable)
                 {
                     HandleInputs_CubeBuilderColorChange();

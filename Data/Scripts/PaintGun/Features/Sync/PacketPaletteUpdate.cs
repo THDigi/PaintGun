@@ -1,5 +1,4 @@
 ﻿using Digi.NetworkLib;
-using Digi.PaintGun.Utilities;
 using ProtoBuf;
 
 namespace Digi.PaintGun.Features.Sync

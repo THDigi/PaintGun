@@ -1,5 +1,4 @@
 ﻿using System.Text;
-using Digi.PaintGun.Features.Tool;
 using Sandbox.Game;
 using Sandbox.ModAPI;
 using VRage.Game.ModAPI.Ingame.Utilities;

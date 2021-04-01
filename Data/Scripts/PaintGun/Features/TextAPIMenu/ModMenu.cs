@@ -1,6 +1,4 @@
-﻿using System;
-using System.Text;
-using Digi.ComponentLib;
+﻿using Digi.ComponentLib;
 using Sandbox.ModAPI;
 using VRageMath;
 using static Draygo.API.HudAPIv2;

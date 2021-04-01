@@ -81,6 +81,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
                 //    Log.Info($"{GetType().Name}.EntityAdded() :: found a temporary grid: {grid.Name}");
 
                 grid.Render.Visible = false;
+                grid.Render.CastShadows = false;
 
                 if(grid.Physics != null)
                 {
@@ -93,6 +94,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
                 foreach(var block in internalGrid.GetFatBlocks())
                 {
                     block.Render.Visible = false;
+                    block.Render.CastShadows = false;
                 }
 
                 var steamId = ulong.Parse(grid.Name.Substring(SkinTestServer.ENT_NAME_PREFIX.Length));

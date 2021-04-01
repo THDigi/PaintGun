@@ -22,11 +22,11 @@ namespace Digi.PaintGun
 
         public static readonly object SAFE_ZONE_ACCES_FOR_PAINT = (object)0x40; // MySafeZoneAction.Building = 0x40
 
-        public static bool DEBUG_COMPONENT => false;
-        public static bool SKIN_INIT_LOGGING => true;
-        public static bool OWNERSHIP_TEST_LOGGING => true;
-        public static bool NETWORK_ACTION_LOGGING => true;
-        public static bool NETWORK_DESYNC_ERROR_LOGGING => false; // MyAPIGateway.Multiplayer.IsServer;
+        public static bool DEBUG_COMPONENT = false;
+        public static bool SKIN_INIT_LOGGING = true;
+        public static bool OWNERSHIP_TEST_LOGGING = true;
+        public static bool NETWORK_ACTION_LOGGING = true;
+        public static bool NETWORK_DESYNC_ERROR_LOGGING = false; // MyAPIGateway.Multiplayer.IsServer;
 
         public const int TICKS_PER_SECOND = 60;
 

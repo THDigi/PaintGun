@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
 using Digi.PaintGun.Features.Palette;
 using Sandbox.Game;

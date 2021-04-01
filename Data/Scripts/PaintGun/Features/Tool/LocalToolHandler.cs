@@ -10,7 +10,6 @@ using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
-using VRage.Input;
 using VRageMath;
 
 namespace Digi.PaintGun.Features.Tool
