@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using Digi.NetworkLib;
 using Digi.PaintGun.Features.Palette;
@@ -28,7 +29,7 @@ namespace Digi.PaintGun.Features.Sync
         bool ColorPickMode;
 
         [ProtoMember(6)]
-        List<uint> PackedColorMasks;
+        uint[] PackedColorMasks;
 
         [ProtoMember(7)]
         [DefaultValue(true)]
@@ -46,13 +47,19 @@ namespace Digi.PaintGun.Features.Sync
             ColorPickMode = pi.ColorPickMode;
 
             if(PackedColorMasks == null)
-                PackedColorMasks = new List<uint>(Constants.COLOR_PALETTE_SIZE);
-            else
-                PackedColorMasks.Clear();
+                PackedColorMasks = new uint[Constants.COLOR_PALETTE_SIZE];
 
-            foreach(var colorMask in pi.ColorsMasks)
+            var colors = pi.ColorsMasks;
+
+            if(colors.Count != PackedColorMasks.Length)
             {
-                PackedColorMasks.Add(colorMask.PackHSVToUint());
+                Log.Error($"PacketJoinSharePalette.Send(), player {Utils.PrintPlayerName(pi.SteamId)} has unexpected palette size={colors.Count.ToString()}");
+                // continue execution
+            }
+
+            for(int i = 0; i < Math.Min(colors.Count, PackedColorMasks.Length); i++)
+            {
+                PackedColorMasks[i] = colors[i].PackHSVToUint();
             }
 
             if(sendTo != 0)

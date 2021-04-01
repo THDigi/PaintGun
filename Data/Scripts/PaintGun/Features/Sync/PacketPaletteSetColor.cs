@@ -19,7 +19,7 @@ namespace Digi.PaintGun.Features.Sync
         public void Send(int index, Vector3 colorMask)
         {
             ColorIndex = index;
-            ColorMaskPacked = colorMask.PackHSVToUint();
+            ColorMaskPacked = ColorExtensions.PackHSVToUint(colorMask);
 
             if(Constants.NETWORK_ACTION_LOGGING)
                 Log.Info($"{GetType().Name} :: Sending pallete slot update; slot={ColorIndex.ToString()}; color={ColorExtensions.UnpackHSVFromUint(ColorMaskPacked).ToString()}");
@@ -35,8 +35,7 @@ namespace Digi.PaintGun.Features.Sync
                 Log.Info($"{GetType().Name} :: Received palette slot update; player={Utils.PrintPlayerName(SteamId)}, slot={ColorIndex.ToString()}; color={ColorExtensions.UnpackHSVFromUint(ColorMaskPacked).ToString()}");
 
             var pi = Main.Palette.GetOrAddPlayerInfo(SteamId);
-
-            pi.SetColorAt(ColorIndex, ColorMaskPacked);
+            pi.SetColorAt(ColorIndex, ColorExtensions.UnpackHSVFromUint(ColorMaskPacked));
         }
     }
 }

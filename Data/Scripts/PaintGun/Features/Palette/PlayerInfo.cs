@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Digi.PaintGun.Features.Tool;
 using Digi.PaintGun.Utilities;
 using Sandbox.ModAPI;
@@ -16,7 +17,7 @@ namespace Digi.PaintGun.Features.Palette
         /// Use <see cref="SetColors(List{Vector3})"/> or <see cref="SetColorAt(int, Vector3)"/> to edit it.
         /// </summary>
         public IReadOnlyList<Vector3> ColorsMasks => _colorsMasks;
-        List<Vector3> _colorsMasks;
+        readonly Vector3[] _colorsMasks;
 
         /// <summary>
         /// Owned skins for this player server-side.
@@ -24,56 +25,50 @@ namespace Digi.PaintGun.Features.Palette
         /// </summary>
         public List<int> OwnedSkinIndexes;
 
-        public void SetColors(List<Vector3> listToClone)
+        public void SetColors(List<Vector3> copyFrom)
         {
-            _colorsMasks.Clear();
+            if(copyFrom.Count != _colorsMasks.Length)
+            {
+                Log.Error($"SetColors(List<Vector3>) got unexpected list size={copyFrom.Count.ToString()}");
+                // continue execution
+            }
 
-            foreach(var colorMask in listToClone)
+            for(int i = 0; i < Math.Min(_colorsMasks.Length, copyFrom.Count); i++)
             {
                 // Normalize color because it can differ to the palette after being painted and converted like this, causing weird issues
-                _colorsMasks.Add(Utils.ColorMaskNormalize(colorMask));
+                _colorsMasks[i] = Utils.ColorMaskNormalize(copyFrom[i]);
             }
 
             OnColorListChanged?.Invoke(this, null);
         }
 
-        public void SetColors(List<uint> listToClone)
+        public void SetColors(uint[] copyFrom)
         {
-            _colorsMasks.Clear();
-
-            foreach(var colorPacked in listToClone)
+            if(copyFrom.Length != _colorsMasks.Length)
             {
-                _colorsMasks.Add(ColorExtensions.UnpackHSVFromUint(colorPacked));
+                Log.Error($"SetColors(uint[]) got unexpected array size={copyFrom.Length.ToString()}");
+                // continue execution
+            }
+
+            for(int i = 0; i < Math.Min(_colorsMasks.Length, copyFrom.Length); i++)
+            {
+                _colorsMasks[i] = ColorExtensions.UnpackHSVFromUint(copyFrom[i]);
             }
 
             OnColorListChanged?.Invoke(this, null);
-        }
-
-        public void SetColorAt(int index, uint PackedColor)
-        {
-            var colorMask = ColorExtensions.UnpackHSVFromUint(PackedColor);
-
-            if(colorMask != _colorsMasks[index])
-            {
-                _colorsMasks[index] = colorMask;
-
-                OnColorListChanged?.Invoke(this, index);
-            }
         }
 
         public void SetColorAt(int index, Vector3 colorMask)
         {
             colorMask = Utils.ColorMaskNormalize(colorMask);
-
             if(colorMask != _colorsMasks[index])
             {
-                _colorsMasks[index] = Utils.ColorMaskNormalize(colorMask);
-
+                _colorsMasks[index] = colorMask;
                 OnColorListChanged?.Invoke(this, index);
             }
         }
 
-        public Vector3 SelectedColorMask => ColorsMasks[SelectedColorIndex];
+        public Vector3 SelectedColorMask => ColorsMasks[_selectedColorSlot];
 
         int _selectedColorSlot;
         public int SelectedColorIndex
@@ -190,12 +185,12 @@ namespace Digi.PaintGun.Features.Palette
         {
             SteamId = steamId;
 
-            var redColor = new Vector3(0, 1, 1);
-            _colorsMasks = new List<Vector3>(Constants.COLOR_PALETTE_SIZE);
+            _colorsMasks = new Vector3[Constants.COLOR_PALETTE_SIZE];
 
+            var redColor = new Vector3(0, 1, 1);
             for(int i = 0; i < Constants.COLOR_PALETTE_SIZE; i++)
             {
-                _colorsMasks.Add(redColor);
+                _colorsMasks[i] = redColor;
             }
         }
 
