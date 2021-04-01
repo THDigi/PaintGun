@@ -24,6 +24,9 @@ namespace Digi.PaintGun.Features.Tool
             RefreshToolDescription();
             GameConfig.GamepadUseChanged += GamepadUseChanged;
             LocalToolHandler.LocalToolEquipped += LocalToolEquipped;
+
+            RefreshToolDescription();
+            Refresh();
         }
 
         protected override void UnregisterComponent()
