@@ -20,14 +20,15 @@ namespace Digi.PaintGun.Features
 
         readonly Vector2D TextPosition = new Vector2D(0.4, 0.95); // note: top-right pivot; top-right coords=1,1
 
-        const string Text = "<color=yellow>NOTE: <color=white>Certain controls here do not affect the PaintGun:" +
-                    "\n - '<color=red>{LOCG:ApplyColor}<color=white>' checkbox" +
-                    "\n - '<color=red>{LOCG:ApplySkin}<color=white>' checkbox" +
-                    "\n - <color=red>Skins list for selecting skin<color=white>" +
-                    "\n" +
-                    "\nInstead, <color=lime>equip the PaintGun and use the hotkeys<color=white>." +
-                    "\n" +
-                    "\nHold O and K to hide this message.";
+        const string Text = "<color=yellow>NOTE: <reset>PaintGun's skin selection and apply color/skin toggles are independent from the game's." +
+                            "\n" +
+                            "\nThis means that using game's color picker will not select the same skin for PaintGun." +
+                            "\nOr using paintgun's skin selection/hotkeys or color picker will also not set those things for the game." +
+                            "\nThis is a problem for newly placed blocks as they use the game's skin selection." +
+                            "\n" +
+                            "\nThe cause is the lacking modding API, there's no way to get/set those things for the game." +
+                            "\n" +
+                            "\n<color=200,200,200>(Hold O and K to hide this message)";
 
         const string ScreenEndsWith = "ColorPicker";
 
