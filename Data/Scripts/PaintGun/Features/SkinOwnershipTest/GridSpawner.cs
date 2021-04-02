@@ -20,16 +20,21 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
             steamId = player.SteamUserId;
             this.callback = callback;
 
+            const double SpawnUpOffset = 10;
+
             var spawnPos = player.GetPosition();
 
             if(Vector3.IsZero(spawnPos, 0.01f))
             {
                 var controlled = player.Controller?.ControlledEntity?.Entity;
-
                 if(controlled != null)
-                    spawnPos = controlled.GetPosition();
+                    spawnPos = controlled.GetPosition() + controlled.WorldMatrix.Up * SpawnUpOffset;
                 else
                     Log.Error($"{GetType().Name} :: {player.DisplayName} ({player.SteamUserId.ToString()}) has GetPosition() zero and couldn't get controlled entity to get position.");
+            }
+            else if(player.Character != null)
+            {
+                spawnPos += player.Character.WorldMatrix.Up * SpawnUpOffset;
             }
 
             var gridObj = new MyObjectBuilder_CubeGrid()
