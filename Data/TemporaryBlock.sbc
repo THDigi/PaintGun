@@ -18,10 +18,15 @@
       <ModelOffset x="0" y="0" z="0" />
       <Model>Models\TempBlock.mwm</Model>
       <Components>
-        <Component Subtype="SteelPlate" Count="1" />
+        <Component Subtype="SteelPlate" Count="1">
+          <DeconstructId>
+            <TypeId>Ore</TypeId>
+            <SubtypeId>Scrap</SubtypeId>
+          </DeconstructId>
+        </Component>
       </Components>
       <CriticalComponent Subtype="SteelPlate" Index="0" />
-      <BuildTimeSeconds>1</BuildTimeSeconds>
+      <BuildTimeSeconds>99999999</BuildTimeSeconds>
       <IsAirTight>false</IsAirTight>
     </Definition>
   </CubeBlocks>
