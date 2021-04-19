@@ -84,12 +84,26 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
             new PaintTestGridSpawner(player, SpawnBlockDefId, out grid, GridSpawned);
 
             if(Constants.OWNERSHIP_TEST_LOGGING)
-                Log.Info($"{GetType().Name}.SpawnGrid() :: spawning...");
+                Log.Info($"{GetType().Name}.SpawnGrid() :: spawning for {Utils.PrintPlayerName(steamId)}, gridid={grid.EntityId.ToString()}...");
         }
 
         private void GridSpawned(IMyCubeGrid grid, ulong steamId)
         {
-            tempGrids.Add(steamId, new GridInfo(grid, Main.Tick + TEMP_GRID_EXPIRE));
+            GridInfo gridInfo;
+            if(tempGrids.TryGetValue(steamId, out gridInfo))
+            {
+                if(gridInfo.Grid != grid)
+                {
+                    Log.Error($"{GetType().Name}.GridSpawned() :: got 2 different grids for {Utils.PrintPlayerName(steamId)}: just spawned: {grid.EntityId.ToString()}; was already in dictionary: {gridInfo.Grid.EntityId.ToString()} < deleting this one.", null);
+                    gridInfo.Grid.Close();
+                }
+                else
+                {
+                    // same grid spawned twice? curious...
+                }
+            }
+
+            tempGrids[steamId] = new GridInfo(grid, Main.Tick + TEMP_GRID_EXPIRE);
 
             SetUpdateMethods(UpdateFlags.UPDATE_AFTER_SIM, true);
 

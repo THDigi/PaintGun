@@ -97,14 +97,21 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
 
         private void EntitySpawned(IMyEntity ent)
         {
-            var grid = (IMyCubeGrid)ent;
-            callback?.Invoke(grid, steamId);
-
-            // fatblocks need more specific hiding...
-            var internalGrid = (MyCubeGrid)grid;
-            foreach(var block in internalGrid.GetFatBlocks())
+            try
             {
-                block.Render.Visible = false;
+                var grid = (IMyCubeGrid)ent;
+                callback?.Invoke(grid, steamId);
+
+                // fatblocks need more specific hiding...
+                var internalGrid = (MyCubeGrid)grid;
+                foreach(var block in internalGrid.GetFatBlocks())
+                {
+                    block.Render.Visible = false;
+                }
+            }
+            catch(Exception e)
+            {
+                Log.Error(e);
             }
         }
     }
