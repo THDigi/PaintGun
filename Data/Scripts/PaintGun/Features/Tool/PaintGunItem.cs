@@ -86,6 +86,13 @@ namespace Digi.PaintGun.Features.Tool
             soundEmitter.Entity = (MyEntity)Rifle;
             UpdateSprayVolume();
 
+            if(Rifle.GunBase == null)
+                throw new NullReferenceException($"{GetType().Name} :: Rifle.GunBase == null; ent={Rifle}; owner={Rifle.Owner}/{Rifle.OwnerIdentityId.ToString()}");
+
+            // HACK: prevent tool from ever reloading, which breaks animations for other things
+            if(Rifle.GunBase.CurrentAmmo <= 0)
+                Rifle.GunBase.CurrentAmmo = 1;
+
             if(Rifle.Owner == null)
             {
                 Log.Error($"Can't find holder of a PaintGun entity because it's null! OwnerIdentityId={Rifle.OwnerIdentityId.ToString()} entId={Rifle.EntityId.ToString()}", Log.PRINT_MESSAGE);
