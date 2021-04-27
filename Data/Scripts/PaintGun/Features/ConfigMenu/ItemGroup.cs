@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Digi.PaintGun.Features.TextAPIMenu
+namespace Digi.PaintGun.Features.ConfigMenu
 {
     public class ItemGroup
     {

@@ -2,7 +2,7 @@
 using VRageMath;
 using static Draygo.API.HudAPIv2;
 
-namespace Digi.PaintGun.Features.TextAPIMenu
+namespace Digi.PaintGun.Features.ConfigMenu
 {
     public class ItemSubMenu : ItemBase<MenuSubCategory>
     {

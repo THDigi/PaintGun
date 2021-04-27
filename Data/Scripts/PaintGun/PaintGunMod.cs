@@ -5,7 +5,7 @@ using Digi.PaintGun.Features.Debug;
 using Digi.PaintGun.Features.Palette;
 using Digi.PaintGun.Features.SkinOwnershipTest;
 using Digi.PaintGun.Features.Sync;
-using Digi.PaintGun.Features.TextAPIMenu;
+using Digi.PaintGun.Features.ConfigMenu;
 using Digi.PaintGun.Features.Tool;
 using Digi.PaintGun.Systems;
 using Digi.PaintGun.Utilities;
@@ -47,7 +47,7 @@ namespace Digi.PaintGun
         public SkinTestServer OwnershipTestServer;
         public SkinTestPlayer OwnershipTestPlayer;
         public ColorPickerGUIWarning ColorPickerGUIWarning;
-        public ModMenu ModMenu;
+        public ConfigMenuHandler ConfigMenuHandler;
         public DebugComp Debug;
 
         // Rights
@@ -106,7 +106,7 @@ namespace Digi.PaintGun
                 OwnershipTestPlayer = new SkinTestPlayer(this);
                 PaletteHUD = new PaletteHUD(this);
                 ColorPickerGUIWarning = new ColorPickerGUIWarning(this);
-                ModMenu = new ModMenu(this);
+                ConfigMenuHandler = new ConfigMenuHandler(this);
             }
 
             if(Constants.DEBUG_COMPONENT)

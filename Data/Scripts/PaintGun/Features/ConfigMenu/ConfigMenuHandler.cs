@@ -4,12 +4,12 @@ using VRageMath;
 using static Draygo.API.HudAPIv2;
 using static Draygo.API.HudAPIv2.MenuRootCategory;
 
-namespace Digi.PaintGun.Features.TextAPIMenu
+namespace Digi.PaintGun.Features.ConfigMenu
 {
     /// <summary>
     /// The mod menu invoked by TextAPI
     /// </summary>
-    public class ModMenu : ModComponent
+    public class ConfigMenuHandler : ModComponent
     {
         private MenuRootCategory Category_Mod;
         private MenuCategoryBase Category_Tool;
@@ -21,7 +21,7 @@ namespace Digi.PaintGun.Features.TextAPIMenu
         private readonly ItemGroup groupAll = new ItemGroup(); // for mass-updating titles
         private readonly ItemGroup groupSkins = new ItemGroup();
 
-        public ModMenu(PaintGunMod main) : base(main)
+        public ConfigMenuHandler(PaintGunMod main) : base(main)
         {
         }
 

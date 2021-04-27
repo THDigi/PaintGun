@@ -3,7 +3,7 @@ using Digi.PaintGun.Utilities;
 using VRageMath;
 using static Draygo.API.HudAPIv2;
 
-namespace Digi.PaintGun.Features.TextAPIMenu
+namespace Digi.PaintGun.Features.ConfigMenu
 {
     public class ItemButton : ItemBase<MenuItem>
     {

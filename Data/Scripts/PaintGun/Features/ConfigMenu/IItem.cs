@@ -1,4 +1,4 @@
-﻿namespace Digi.PaintGun.Features.TextAPIMenu
+﻿namespace Digi.PaintGun.Features.ConfigMenu
 {
     public interface IItem
     {
