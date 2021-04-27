@@ -86,7 +86,6 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
 
             grid.IsPreview = false; // needs to be synchronized
             grid.Save = false;
-            grid.Render.Visible = false;
         }
 
         //private void EntityAddedToScene(MyEntity ent)
@@ -101,6 +100,8 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
             {
                 var grid = (IMyCubeGrid)ent;
                 callback?.Invoke(grid, steamId);
+
+                grid.Render.Visible = false;
 
                 // fatblocks need more specific hiding...
                 var internalGrid = (MyCubeGrid)grid;
