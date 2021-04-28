@@ -41,11 +41,11 @@ namespace Digi.PaintGun.Features.Palette
 
         protected override void RegisterComponent()
         {
-            Palette.LocalInfo.OnSkinIndexSelected += SkinIndexSelected;
-            Palette.LocalInfo.OnApplyColorChanged += ApplyColorChanged;
-            LocalToolHandler.LocalToolEquipped += LocalToolEquipped;
-            LocalToolHandler.LocalToolHolstered += LocalToolHolstered;
-            Settings.SettingsChanged += UpdateUI;
+            Main.Palette.LocalInfo.OnSkinIndexSelected += SkinIndexSelected;
+            Main.Palette.LocalInfo.OnApplyColorChanged += ApplyColorChanged;
+            Main.LocalToolHandler.LocalToolEquipped += LocalToolEquipped;
+            Main.LocalToolHandler.LocalToolHolstered += LocalToolHolstered;
+            Main.Settings.SettingsChanged += UpdateUI;
         }
 
         protected override void UnregisterComponent()
@@ -53,11 +53,11 @@ namespace Digi.PaintGun.Features.Palette
             if(!IsRegistered)
                 return;
 
-            Palette.LocalInfo.OnSkinIndexSelected -= SkinIndexSelected;
-            Palette.LocalInfo.OnApplyColorChanged -= ApplyColorChanged;
-            LocalToolHandler.LocalToolEquipped -= LocalToolEquipped;
-            LocalToolHandler.LocalToolHolstered -= LocalToolHolstered;
-            Settings.SettingsChanged -= UpdateUI;
+            Main.Palette.LocalInfo.OnSkinIndexSelected -= SkinIndexSelected;
+            Main.Palette.LocalInfo.OnApplyColorChanged -= ApplyColorChanged;
+            Main.LocalToolHandler.LocalToolEquipped -= LocalToolEquipped;
+            Main.LocalToolHandler.LocalToolHolstered -= LocalToolHolstered;
+            Main.Settings.SettingsChanged -= UpdateUI;
         }
 
         void SkinIndexSelected(PlayerInfo pi, int prevIndex, int newIndex)
@@ -87,7 +87,7 @@ namespace Digi.PaintGun.Features.Palette
 
         protected override void UpdateDraw()
         {
-            if(!CheckPlayerField.Ready)
+            if(!Main.CheckPlayerField.Ready)
                 return;
 
             drawSkinLabel = false;
@@ -104,17 +104,15 @@ namespace Digi.PaintGun.Features.Palette
 
         void DrawPaletteHUD()
         {
-            var localInfo = Palette.LocalInfo;
+            var localInfo = Main.Palette.LocalInfo;
             if(localInfo == null)
                 return;
 
-            if(LocalToolHandler.LocalTool != null && !MyAPIGateway.Gui.IsCursorVisible && !(Settings.hidePaletteWithHUD && GameConfig.HudState == HudState.OFF))
+            if(Main.LocalToolHandler.LocalTool != null && !MyAPIGateway.Gui.IsCursorVisible && !(Main.Settings.hidePaletteWithHUD && Main.GameConfig.HudState == HudState.OFF))
             {
-                var cam = MyAPIGateway.Session.Camera;
-                MatrixD camMatrix = cam.WorldMatrix;
-                double scaleFOV = Math.Tan(cam.FovWithZoom * 0.5);
-                scaleFOV *= Settings.paletteScale;
-                float scaleFOVf = (float)scaleFOV;
+                MatrixD camMatrix = MyAPIGateway.Session.Camera.WorldMatrix;
+
+                float scaleFOV = (Main.DrawUtils.ScaleFOV * Main.Settings.paletteScale);
 
                 var character = MyAPIGateway.Session.Player.Character;
 
@@ -123,15 +121,15 @@ namespace Digi.PaintGun.Features.Palette
                     MyTransparentGeometry.AddPointBillboard(MATERIAL_DOT, Color.Lime, camMatrix.Translation + camMatrix.Forward * LocalToolHandler.PAINT_AIM_START_OFFSET, 0.005f, 0, blendType: AIM_DOT_BLEND_TYPE);
                 }
 
-                Vector3D worldPos = DrawUtils.HUDtoWorld(Settings.paletteScreenPos);
-                float bgAlpha = (Settings.paletteBackgroundOpacity < 0 ? GameConfig.HudBackgroundOpacity : Settings.paletteBackgroundOpacity);
+                Vector3D worldPos = Main.DrawUtils.HUDtoWorld(Main.Settings.paletteScreenPos);
+                float bgAlpha = (Main.Settings.paletteBackgroundOpacity < 0 ? Main.GameConfig.HudBackgroundOpacity : Main.Settings.paletteBackgroundOpacity);
 
-                DrawColorSelector(camMatrix, worldPos, scaleFOVf, bgAlpha);
-                DrawSkinSelector(camMatrix, worldPos, scaleFOVf, bgAlpha);
+                DrawColorSelector(camMatrix, worldPos, scaleFOV, bgAlpha);
+                DrawSkinSelector(camMatrix, worldPos, scaleFOV, bgAlpha);
 
-                if(TextAPIEnabled && Palette.OwnedSkinsCount <= 0)
+                if(Main.TextAPI.IsEnabled && Main.Palette.OwnedSkinsCount <= 0)
                 {
-                    var labelPos = Settings.paletteScreenPos + new Vector2D(0, 0.08);
+                    var labelPos = Main.Settings.paletteScreenPos + new Vector2D(0, 0.08);
 
                     if(skinTestStatus == null)
                     {
@@ -150,7 +148,7 @@ namespace Digi.PaintGun.Features.Palette
 
         void DrawColorSelector(MatrixD camMatrix, Vector3D worldPos, float scaleFOV, float bgAlpha)
         {
-            var localInfo = Palette.LocalInfo;
+            var localInfo = Main.Palette.LocalInfo;
             if(!localInfo.ApplyColor)
                 return;
 
@@ -189,11 +187,11 @@ namespace Digi.PaintGun.Features.Palette
 
         void DrawSkinSelector(MatrixD camMatrix, Vector3D worldPos, float scaleFOV, float bgAlpha)
         {
-            var localInfo = Palette.LocalInfo;
-            if(!localInfo.ApplySkin || Palette.OwnedSkinsCount <= 0)
+            var localInfo = Main.Palette.LocalInfo;
+            if(!localInfo.ApplySkin || Main.Palette.OwnedSkinsCount <= 0)
                 return;
 
-            List<SkinInfo> skins = Palette.SkinsForHUD;
+            List<SkinInfo> skins = Main.Palette.SkinsForHUD;
             if(skins == null)
                 return;
 
@@ -300,18 +298,18 @@ namespace Digi.PaintGun.Features.Palette
 
         void DrawSkinNameText(int selectedSkinIndex)
         {
-            if(!TextAPIEnabled)
+            if(!Main.TextAPI.IsEnabled)
                 return;
 
-            var localInfo = Palette.LocalInfo;
+            var localInfo = Main.Palette.LocalInfo;
 
-            float scale = Settings.paletteScale;
-            var labelPos = Settings.paletteScreenPos + new Vector2D(0, 0.06 * 2 * scale); // TODO FIX: needs to move relatively with the scale of the elements below it, but it doesn't...
+            float scale = Main.Settings.paletteScale;
+            var labelPos = Main.Settings.paletteScreenPos + new Vector2D(0, 0.06 * 2 * scale); // TODO FIX: needs to move relatively with the scale of the elements below it, but it doesn't...
 
             if(localInfo.ApplyColor)
                 labelPos += new Vector2D(0, 0.08); // this needs fixing too
 
-            var skin = Palette.GetSkinInfo(selectedSkinIndex);
+            var skin = Main.Palette.GetSkinInfo(selectedSkinIndex);
             var text = skin.Name;
 
             const double TextScaleOffset = 1.8;

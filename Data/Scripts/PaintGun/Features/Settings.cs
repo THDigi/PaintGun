@@ -432,7 +432,7 @@ namespace Digi.PaintGun.Features
                 sb.Append("// All detected skins: ");
 
                 int num = 99999; // start with a newline
-                var skins = Palette.BlockSkins;
+                var skins = Main.Palette.BlockSkins;
                 for(int i = 1; i < skins.Count; ++i) // skipping index 0 intentionally
                 {
                     if(++num > 7)

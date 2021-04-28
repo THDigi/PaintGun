@@ -10,7 +10,7 @@ namespace Digi.PaintGun.Features.Palette
 {
     public class PaletteInputHandler : ModComponent
     {
-        PlayerInfo LocalInfo => Palette.LocalInfo;
+        PlayerInfo LocalInfo => Main.Palette.LocalInfo;
 
         public PaletteInputHandler(PaintGunMod main) : base(main)
         {
@@ -18,7 +18,7 @@ namespace Digi.PaintGun.Features.Palette
 
         protected override void RegisterComponent()
         {
-            CheckPlayerField.PlayerReady += PlayerReady;
+            Main.CheckPlayerField.PlayerReady += PlayerReady;
         }
 
         protected override void UnregisterComponent()
@@ -27,7 +27,7 @@ namespace Digi.PaintGun.Features.Palette
 
         void PlayerReady()
         {
-            CheckPlayerField.PlayerReady -= PlayerReady;
+            Main.CheckPlayerField.PlayerReady -= PlayerReady;
             UpdateMethods = UpdateFlags.UPDATE_INPUT;
         }
 
@@ -103,7 +103,7 @@ namespace Digi.PaintGun.Features.Palette
             int cycleDir = 0;
             bool cycleSkins = false;
 
-            if(GameConfig.UsingGamepad)
+            if(Main.GameConfig.UsingGamepad)
             {
                 // x button is used for both, if it's not pressed then ignore
                 if(!MyAPIGateway.Input.IsJoystickButtonNewPressed(Constants.GamepadBind_CyclePalette))
@@ -144,26 +144,26 @@ namespace Digi.PaintGun.Features.Palette
                     return;
 
                 // color cycling requires it pressed or explicitly requires it not pressed depending on user pref
-                if(!cycleSkins && Settings.requireCtrlForColorCycle != ctrl)
+                if(!cycleSkins && Main.Settings.requireCtrlForColorCycle != ctrl)
                     return;
             }
 
             if(cycleDir == 0)
                 return;
 
-            if(cycleSkins && Palette.OwnedSkinsCount == 0)
+            if(cycleSkins && Main.Palette.OwnedSkinsCount == 0)
                 return; // no skins yet, ignore for now
 
             // skin or color applying is off, can't cycle turned off palette
             if(cycleSkins ? !LocalInfo.ApplySkin : !LocalInfo.ApplyColor)
             {
-                if(Settings.extraSounds)
-                    HUDSounds.PlayUnable();
+                if(Main.Settings.extraSounds)
+                    Main.HUDSounds.PlayUnable();
 
                 // there's no gamepad equivalent to toggle palettes so it'll just show kb/m binds for both.
                 var assigned = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.CUBE_COLOR_CHANGE));
-                Notifications.Show(0, cycleSkins ? "Skin applying is turned off." : "Color applying is turned off.", MyFontEnum.Red, 1000);
-                Notifications.Show(1, cycleSkins ? $"Press [Shift] + [{assigned}] to enable" : $"Press [{assigned}] to enable", MyFontEnum.Debug, 1000);
+                Main.Notifications.Show(0, cycleSkins ? "Skin applying is turned off." : "Color applying is turned off.", MyFontEnum.Red, 1000);
+                Main.Notifications.Show(1, cycleSkins ? $"Press [Shift] + [{assigned}] to enable" : $"Press [{assigned}] to enable", MyFontEnum.Debug, 1000);
                 return;
             }
 
@@ -174,17 +174,17 @@ namespace Digi.PaintGun.Features.Palette
                     var index = LocalInfo.SelectedSkinIndex;
                     do
                     {
-                        if(++index >= Palette.BlockSkins.Count)
+                        if(++index >= Main.Palette.BlockSkins.Count)
                             index = 0;
                     }
-                    while(!Palette.GetSkinInfo(index).Selectable);
+                    while(!Main.Palette.GetSkinInfo(index).Selectable);
 
                     LocalInfo.SelectedSkinIndex = index;
                 }
                 else
                 {
                     var index = LocalInfo.SelectedColorIndex;
-                    if(Settings.selectColorZigZag)
+                    if(Main.Settings.selectColorZigZag)
                     {
                         if(index >= 13)
                             index = 0;
@@ -210,16 +210,16 @@ namespace Digi.PaintGun.Features.Palette
                     do
                     {
                         if(--index < 0)
-                            index = (Palette.BlockSkins.Count - 1);
+                            index = (Main.Palette.BlockSkins.Count - 1);
                     }
-                    while(!Palette.GetSkinInfo(index).Selectable);
+                    while(!Main.Palette.GetSkinInfo(index).Selectable);
 
                     LocalInfo.SelectedSkinIndex = index;
                 }
                 else
                 {
                     var index = LocalInfo.SelectedColorIndex;
-                    if(Settings.selectColorZigZag)
+                    if(Main.Settings.selectColorZigZag)
                     {
                         if(index >= 7)
                             index -= 7;
@@ -238,35 +238,35 @@ namespace Digi.PaintGun.Features.Palette
 
             if(cycleSkins)
             {
-                if(Settings.extraSounds)
-                    HUDSounds.PlayItem();
+                if(Main.Settings.extraSounds)
+                    Main.HUDSounds.PlayItem();
             }
             else
             {
                 MyAPIGateway.Session.Player.SelectedBuildColorSlot = LocalInfo.SelectedColorIndex;
 
-                if(Settings.extraSounds)
-                    HUDSounds.PlayClick();
+                if(Main.Settings.extraSounds)
+                    Main.HUDSounds.PlayClick();
             }
         }
 
         void HandleInputs_Symmetry()
         {
-            if(LocalToolHandler.SymmetryInputAvailable && MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.USE_SYMMETRY))
+            if(Main.LocalToolHandler.SymmetryInputAvailable && MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.USE_SYMMETRY))
             {
                 MyAPIGateway.CubeBuilder.UseSymmetry = !MyAPIGateway.CubeBuilder.UseSymmetry;
             }
 
-            if(Palette.ReplaceMode && MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.USE_SYMMETRY))
+            if(Main.Palette.ReplaceMode && MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.USE_SYMMETRY))
             {
-                Palette.ReplaceShipWide = !Palette.ReplaceShipWide;
+                Main.Palette.ReplaceShipWide = !Main.Palette.ReplaceShipWide;
             }
         }
 
         bool colorPickModeInputPressed;
         void HandleInputs_ColorPickMode()
         {
-            if(InputHandler.GetPressedOr(Settings.colorPickMode1, Settings.colorPickMode2))
+            if(InputHandler.GetPressedOr(Main.Settings.colorPickMode1, Main.Settings.colorPickMode2))
             {
                 if(!colorPickModeInputPressed)
                 {
@@ -275,14 +275,14 @@ namespace Digi.PaintGun.Features.Palette
                     PreventIronSight();
 
                     if(LocalInfo.ColorPickMode)
-                        Notifications.Show(0, "Color pick mode turned off.", MyFontEnum.Debug, 2000);
+                        Main.Notifications.Show(0, "Color pick mode turned off.", MyFontEnum.Debug, 2000);
 
-                    Palette.ColorPickMode = !Palette.ColorPickMode;
+                    Main.Palette.ColorPickMode = !Main.Palette.ColorPickMode;
 
-                    if(Palette.ColorPickMode && Palette.ReplaceMode)
+                    if(Main.Palette.ColorPickMode && Main.Palette.ReplaceMode)
                     {
-                        Palette.ReplaceMode = false;
-                        Notifications.Show(3, "Replace color mode turned off.", MyFontEnum.Debug, 2000);
+                        Main.Palette.ReplaceMode = false;
+                        Main.Notifications.Show(3, "Replace color mode turned off.", MyFontEnum.Debug, 2000);
                     }
                 }
             }
@@ -295,7 +295,7 @@ namespace Digi.PaintGun.Features.Palette
         bool colorPickInputPressed;
         void HandleInputs_InstantColorPick()
         {
-            if(InputHandler.GetPressedOr(Settings.instantColorPick1, Settings.instantColorPick2))
+            if(InputHandler.GetPressedOr(Main.Settings.instantColorPick1, Main.Settings.instantColorPick2))
             {
                 if(!colorPickInputPressed)
                 {
@@ -303,22 +303,22 @@ namespace Digi.PaintGun.Features.Palette
 
                     PreventIronSight();
 
-                    if(LocalToolHandler.AimedBlock != null || LocalToolHandler.AimedBlock != null)
+                    if(Main.LocalToolHandler.AimedBlock != null || Main.LocalToolHandler.AimedBlock != null)
                     {
                         if(LocalInfo.ColorPickMode)
-                            Palette.ColorPickMode = false;
+                            Main.Palette.ColorPickMode = false;
 
                         PaintMaterial paint;
-                        if(LocalToolHandler.AimedBlock != null)
-                            paint = new PaintMaterial(LocalToolHandler.AimedBlock.ColorMaskHSV, LocalToolHandler.AimedBlock.SkinSubtypeId);
+                        if(Main.LocalToolHandler.AimedBlock != null)
+                            paint = new PaintMaterial(Main.LocalToolHandler.AimedBlock.ColorMaskHSV, Main.LocalToolHandler.AimedBlock.SkinSubtypeId);
                         else
-                            paint = LocalToolHandler.AimedPlayersPaint;
+                            paint = Main.LocalToolHandler.AimedPlayersPaint;
 
-                        Palette.GrabPaletteFromPaint(paint);
+                        Main.Palette.GrabPaletteFromPaint(paint);
                     }
                     else
                     {
-                        Notifications.Show(0, "First aim at a block or player.", MyFontEnum.Red, 2000);
+                        Main.Notifications.Show(0, "First aim at a block or player.", MyFontEnum.Red, 2000);
                     }
                 }
             }
@@ -331,7 +331,7 @@ namespace Digi.PaintGun.Features.Palette
         bool replaceAllModeInputPressed;
         private void HandleInputs_ReplaceMode()
         {
-            if(InputHandler.GetPressedOr(Settings.replaceColorMode1, Settings.replaceColorMode2))
+            if(InputHandler.GetPressedOr(Main.Settings.replaceColorMode1, Main.Settings.replaceColorMode2))
             {
                 if(!replaceAllModeInputPressed)
                 {
@@ -341,18 +341,18 @@ namespace Digi.PaintGun.Features.Palette
 
                     if(Main.ReplaceColorAccess)
                     {
-                        Palette.ReplaceMode = !Palette.ReplaceMode;
-                        Notifications.Show(0, "Replace color mode " + (Palette.ReplaceMode ? "enabled." : "turned off."), MyFontEnum.Debug, 2000);
+                        Main.Palette.ReplaceMode = !Main.Palette.ReplaceMode;
+                        Main.Notifications.Show(0, "Replace color mode " + (Main.Palette.ReplaceMode ? "enabled." : "turned off."), MyFontEnum.Debug, 2000);
 
-                        if(Palette.ReplaceMode && Palette.ColorPickMode)
+                        if(Main.Palette.ReplaceMode && Main.Palette.ColorPickMode)
                         {
-                            Palette.ColorPickMode = false;
-                            Notifications.Show(0, "Color picking cancelled.", MyFontEnum.Debug, 2000);
+                            Main.Palette.ColorPickMode = false;
+                            Main.Notifications.Show(0, "Color picking cancelled.", MyFontEnum.Debug, 2000);
                         }
                     }
                     else
                     {
-                        Notifications.Show(0, Main.ReplaceColorAccessInfo, MyFontEnum.Red, 3000);
+                        Main.Notifications.Show(0, Main.ReplaceColorAccessInfo, MyFontEnum.Red, 3000);
                     }
                 }
             }
@@ -364,7 +364,7 @@ namespace Digi.PaintGun.Features.Palette
 
         private void PreventIronSight()
         {
-            var holdingTool = LocalToolHandler?.LocalTool?.Rifle;
+            var holdingTool = Main.LocalToolHandler?.LocalTool?.Rifle;
             if(holdingTool == null)
                 return;
 

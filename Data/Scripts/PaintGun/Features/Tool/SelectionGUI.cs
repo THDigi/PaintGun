@@ -28,7 +28,7 @@ namespace Digi.PaintGun.Features.Tool
         string[] blockInfoStatus = new string[3];
 
         bool guiVisible = true;
-        Vector2D uiPosition => Settings.aimInfoScreenPos;
+        Vector2D uiPosition => Main.Settings.aimInfoScreenPos;
         Vector2D uiTextBgPosition = new Vector2D(0, -0.071);
         Vector2D uiProgressBarPosition = new Vector2D(0.005, -0.079);
 
@@ -87,9 +87,9 @@ namespace Digi.PaintGun.Features.Tool
 
         protected override void RegisterComponent()
         {
-            Settings.SettingsChanged += UpdateUISettings;
-            GameConfig.ClosedOptionsMenu += UpdateUISettings;
-            LocalToolHandler.LocalToolHolstered += LocalToolHolstered;
+            Main.Settings.SettingsChanged += UpdateUISettings;
+            Main.GameConfig.ClosedOptionsMenu += UpdateUISettings;
+            Main.LocalToolHandler.LocalToolHolstered += LocalToolHolstered;
         }
 
         protected override void UnregisterComponent()
@@ -97,9 +97,9 @@ namespace Digi.PaintGun.Features.Tool
             if(!IsRegistered)
                 return;
 
-            Settings.SettingsChanged -= UpdateUISettings;
-            GameConfig.ClosedOptionsMenu -= UpdateUISettings;
-            LocalToolHandler.LocalToolHolstered -= LocalToolHolstered;
+            Main.Settings.SettingsChanged -= UpdateUISettings;
+            Main.GameConfig.ClosedOptionsMenu -= UpdateUISettings;
+            Main.LocalToolHandler.LocalToolHolstered -= LocalToolHolstered;
         }
 
         public void SetGUIStatus(int line, string text, string colorNameOrRGB = null)
@@ -117,7 +117,7 @@ namespace Digi.PaintGun.Features.Tool
 
             SymmetryStatusText = null;
 
-            if(!Palette.ReplaceMode && Main.SymmetryAccess)
+            if(!Main.Palette.ReplaceMode && Main.SymmetryAccess)
             {
                 var grid = block.CubeGrid;
 
@@ -128,37 +128,37 @@ namespace Digi.PaintGun.Features.Tool
 
                     if(inputReadable)
                     {
-                        LocalToolHandler.SymmetryInputAvailable = true;
+                        Main.LocalToolHandler.SymmetryInputAvailable = true;
 
                         if(MyAPIGateway.CubeBuilder.UseSymmetry)
-                            SymmetryStatusText = (TextAPIEnabled ? $"[{assigned}] <color=yellow>Symmetry: ON" : $"([{assigned}]) Symmetry: ON");
+                            SymmetryStatusText = (Main.TextAPI.IsEnabled ? $"[{assigned}] <color=yellow>Symmetry: ON" : $"([{assigned}]) Symmetry: ON");
                         else
-                            SymmetryStatusText = (TextAPIEnabled ? $"[{assigned}] Symmetry: OFF" : $"([{assigned}]) Symmetry: OFF");
+                            SymmetryStatusText = (Main.TextAPI.IsEnabled ? $"[{assigned}] Symmetry: OFF" : $"([{assigned}]) Symmetry: OFF");
                     }
                     else
                     {
                         if(MyAPIGateway.CubeBuilder.UseSymmetry)
-                            SymmetryStatusText = (TextAPIEnabled ? "<color=yellow>Symmetry: ON" : "Symmetry: ON");
+                            SymmetryStatusText = (Main.TextAPI.IsEnabled ? "<color=yellow>Symmetry: ON" : "Symmetry: ON");
                         else
-                            SymmetryStatusText = (TextAPIEnabled ? "Symmetry: OFF" : "Symmetry: OFF");
+                            SymmetryStatusText = (Main.TextAPI.IsEnabled ? "Symmetry: OFF" : "Symmetry: OFF");
                     }
                 }
                 else
                 {
-                    SymmetryStatusText = (TextAPIEnabled ? "<color=gray>Symetry: not set-up\nUse block placer to do so." : "Symetry: not set-up, use block placer to do so.");
+                    SymmetryStatusText = (Main.TextAPI.IsEnabled ? "<color=gray>Symetry: not set-up\nUse block placer to do so." : "Symetry: not set-up, use block placer to do so.");
                 }
             }
         }
 
         protected override void UpdateDraw()
         {
-            if(Palette.LocalInfo == null || !CheckPlayerField.Ready)
+            if(Main.Palette.LocalInfo == null || !Main.CheckPlayerField.Ready)
                 return;
 
-            if(LocalToolHandler.LocalTool == null || MyAPIGateway.Session.ControlledObject != MyAPIGateway.Session.Player?.Character)
+            if(Main.LocalToolHandler.LocalTool == null || MyAPIGateway.Session.ControlledObject != MyAPIGateway.Session.Player?.Character)
                 return;
 
-            if(LocalToolHandler.AimedPlayer != null)
+            if(Main.LocalToolHandler.AimedPlayer != null)
                 DrawCharacterSelection();
 
             DrawSymmetry();
@@ -181,11 +181,11 @@ namespace Digi.PaintGun.Features.Tool
         #region Selection draw
         void DrawCharacterSelection()
         {
-            var aimedCharacter = LocalToolHandler.AimedPlayer.Character;
+            var aimedCharacter = Main.LocalToolHandler.AimedPlayer.Character;
 
             if(aimedCharacter == null || aimedCharacter.MarkedForClose || aimedCharacter.Closed || !aimedCharacter.Visible)
             {
-                LocalToolHandler.AimedPlayer = null;
+                Main.LocalToolHandler.AimedPlayer = null;
                 return;
             }
 
@@ -206,10 +206,10 @@ namespace Digi.PaintGun.Features.Tool
 
         void DrawSymmetry()
         {
-            if(!LocalToolHandler.SymmetryInputAvailable || !MyAPIGateway.CubeBuilder.UseSymmetry || LocalToolHandler.AimedBlock == null)
+            if(!Main.LocalToolHandler.SymmetryInputAvailable || !MyAPIGateway.CubeBuilder.UseSymmetry || Main.LocalToolHandler.AimedBlock == null)
                 return;
 
-            var selectedGrid = LocalToolHandler.AimedBlock.CubeGrid;
+            var selectedGrid = Main.LocalToolHandler.AimedBlock.CubeGrid;
 
             if(!selectedGrid.XSymmetryPlane.HasValue && !selectedGrid.YSymmetryPlane.HasValue && !selectedGrid.ZSymmetryPlane.HasValue)
                 return;
@@ -273,28 +273,28 @@ namespace Digi.PaintGun.Features.Tool
 
         void DrawBlockSelection()
         {
-            var block = LocalToolHandler.AimedBlock;
+            var block = Main.LocalToolHandler.AimedBlock;
 
             if(block == null)
                 return;
 
             if(block.IsDestroyed || block.IsFullyDismounted)
             {
-                LocalToolHandler.AimedBlock = null;
+                Main.LocalToolHandler.AimedBlock = null;
                 return;
             }
 
-            DrawBlockSelection(block, LocalToolHandler.AimedState);
+            DrawBlockSelection(block, Main.LocalToolHandler.AimedState);
 
-            var grid = LocalToolHandler.AimedBlock.CubeGrid;
+            var grid = Main.LocalToolHandler.AimedBlock.CubeGrid;
 
             // symmetry highlight
-            if(Main.SymmetryAccess && !Palette.ReplaceMode && !Palette.ColorPickMode && MyCubeBuilder.Static.UseSymmetry && (grid.XSymmetryPlane.HasValue || grid.YSymmetryPlane.HasValue || grid.ZSymmetryPlane.HasValue))
+            if(Main.SymmetryAccess && !Main.Palette.ReplaceMode && !Main.Palette.ColorPickMode && MyCubeBuilder.Static.UseSymmetry && (grid.XSymmetryPlane.HasValue || grid.YSymmetryPlane.HasValue || grid.ZSymmetryPlane.HasValue))
             {
-                var alreadyMirrored = Caches.AlreadyMirrored;
+                var alreadyMirrored = Main.Caches.AlreadyMirrored;
                 alreadyMirrored.Clear();
 
-                mirroredValid = (LocalToolHandler.AimedState == SelectionState.Valid ? 1 : 0);
+                mirroredValid = (Main.LocalToolHandler.AimedState == SelectionState.Valid ? 1 : 0);
                 mirroredValidTotal = 1;
 
                 var mirrorX = MirrorHighlight(grid, 0, block.Position, alreadyMirrored); // X
@@ -314,7 +314,7 @@ namespace Digi.PaintGun.Features.Tool
                 if(grid.XSymmetryPlane.HasValue && mirrorYZ.HasValue) // XYZ
                     MirrorHighlight(grid, 0, mirrorYZ.Value, alreadyMirrored);
 
-                Notifications.Show(3, $"Mirror paint will affect {mirroredValid} of {mirroredValidTotal} blocks.", MyFontEnum.Debug, 32);
+                Main.Notifications.Show(3, $"Mirror paint will affect {mirroredValid} of {mirroredValidTotal} blocks.", MyFontEnum.Debug, 32);
             }
         }
 
@@ -381,8 +381,8 @@ namespace Digi.PaintGun.Features.Tool
                 {
                     mirroredValidTotal++;
 
-                    var paintMaterial = Palette.GetLocalPaintMaterial();
-                    bool validSelection = LocalToolHandler.IsMirrorBlockValid(block, paintMaterial);
+                    var paintMaterial = Main.Palette.GetLocalPaintMaterial();
+                    bool validSelection = Main.LocalToolHandler.IsMirrorBlockValid(block, paintMaterial);
 
                     if(validSelection)
                         mirroredValid++;
@@ -398,7 +398,7 @@ namespace Digi.PaintGun.Features.Tool
         #region Aimed info GUI
         void UpdateGUI()
         {
-            if(!TextAPIEnabled || !CheckPlayerField.Ready)
+            if(!Main.TextAPI.IsEnabled || !Main.CheckPlayerField.Ready)
                 return;
 
             if(uiTitle == null)
@@ -409,8 +409,8 @@ namespace Digi.PaintGun.Features.Tool
                 // NOTE: this creation order is needed to have background elements stay in background when everything uses PostPP (or SDR) at once.
 
                 int i = 0;
-                ui[i++] = uiTextBg = new HudAPIv2.BillBoardHUDMessage(PaletteHUD.MATERIAL_PALETTE_BACKGROUND, uiPosition, UI_TEXT_BG_COLOR, Width: UI_BOX_WIDTH, Height: UI_TEXT_BG_HEIGHT, Blend: UI_BG_BLENDTYPE);
-                ui[i++] = uiTitleBg = new HudAPIv2.BillBoardHUDMessage(PaletteHUD.MATERIAL_PALETTE_BACKGROUND, uiPosition, UI_TITLE_BG_COLOR, Width: UI_BOX_WIDTH, Height: UI_TITLE_BG_HEIGHT, Blend: UI_BG_BLENDTYPE);
+                ui[i++] = uiTextBg = new HudAPIv2.BillBoardHUDMessage(Main.PaletteHUD.MATERIAL_PALETTE_BACKGROUND, uiPosition, UI_TEXT_BG_COLOR, Width: UI_BOX_WIDTH, Height: UI_TEXT_BG_HEIGHT, Blend: UI_BG_BLENDTYPE);
+                ui[i++] = uiTitleBg = new HudAPIv2.BillBoardHUDMessage(Main.PaletteHUD.MATERIAL_PALETTE_BACKGROUND, uiPosition, UI_TITLE_BG_COLOR, Width: UI_BOX_WIDTH, Height: UI_TITLE_BG_HEIGHT, Blend: UI_BG_BLENDTYPE);
 
                 ui[i++] = uiTitle = new HudAPIv2.HUDMessage(new StringBuilder(MAX_EXPECTED_CHARACTERS_TITLE), uiPosition, Scale: UI_TITLE_SCALE, Blend: UI_FG_BLENDTYPE);
                 ui[i++] = uiText = new HudAPIv2.HUDMessage(new StringBuilder(MAX_EXPECTED_CHARACTERS_TEXT), uiPosition, Scale: UI_TEXT_SCALE, Blend: UI_FG_BLENDTYPE);
@@ -418,14 +418,14 @@ namespace Digi.PaintGun.Features.Tool
                 ui[i++] = uiTargetColor = new HudAPIv2.BillBoardHUDMessage(MATERIAL_ICON_GENERIC_BLOCK, uiPosition, Color.White, Width: UI_COLORBOX_WIDTH, Height: UI_COLORBOX_HEIGHT, Blend: UI_FG_BLENDTYPE);
                 ui[i++] = uiPaintColor = new HudAPIv2.BillBoardHUDMessage(MATERIAL_ICON_PAINT_AMMO, uiPosition, Color.White, Width: UI_COLORBOX_WIDTH, Height: UI_COLORBOX_HEIGHT, Blend: UI_FG_BLENDTYPE);
 
-                ui[i++] = uiProgressBarBg = new HudAPIv2.BillBoardHUDMessage(PaletteHUD.MATERIAL_PALETTE_BACKGROUND, uiPosition, UI_PROGRESSBAR_BG_COLOR, Width: UI_PROGRESSBAR_WIDTH, Height: UI_PROGRESSBAR_HEIGHT, Blend: UI_BG_BLENDTYPE);
-                ui[i++] = uiProgressBar = new HudAPIv2.BillBoardHUDMessage(PaletteHUD.MATERIAL_PALETTE_BACKGROUND, uiPosition, UI_PROGRESSBAR_COLOR, Width: UI_PROGRESSBAR_WIDTH, Height: UI_PROGRESSBAR_HEIGHT, Blend: UI_FG_BLENDTYPE);
+                ui[i++] = uiProgressBarBg = new HudAPIv2.BillBoardHUDMessage(Main.PaletteHUD.MATERIAL_PALETTE_BACKGROUND, uiPosition, UI_PROGRESSBAR_BG_COLOR, Width: UI_PROGRESSBAR_WIDTH, Height: UI_PROGRESSBAR_HEIGHT, Blend: UI_BG_BLENDTYPE);
+                ui[i++] = uiProgressBar = new HudAPIv2.BillBoardHUDMessage(Main.PaletteHUD.MATERIAL_PALETTE_BACKGROUND, uiPosition, UI_PROGRESSBAR_COLOR, Width: UI_PROGRESSBAR_WIDTH, Height: UI_PROGRESSBAR_HEIGHT, Blend: UI_FG_BLENDTYPE);
 
                 UpdateUISettings();
             }
 
-            bool targetCharacter = (Palette.ColorPickMode && LocalToolHandler.AimedPlayer != null);
-            bool visible = (!MyAPIGateway.Gui.IsCursorVisible && Palette.LocalInfo != null && (targetCharacter || LocalToolHandler.AimedBlock != null));
+            bool targetCharacter = (Main.Palette.ColorPickMode && Main.LocalToolHandler.AimedPlayer != null);
+            bool visible = (!MyAPIGateway.Gui.IsCursorVisible && Main.Palette.LocalInfo != null && (targetCharacter || Main.LocalToolHandler.AimedBlock != null));
 
             SetGUIVisible(visible);
 
@@ -433,8 +433,8 @@ namespace Digi.PaintGun.Features.Tool
                 return;
 
             PaintMaterial targetMaterial;
-            var paint = Palette.GetLocalPaintMaterial();
-            int ammo = (LocalToolHandler.LocalTool != null ? LocalToolHandler.LocalTool.Ammo : 0);
+            var paint = Main.Palette.GetLocalPaintMaterial();
+            int ammo = (Main.LocalToolHandler.LocalTool != null ? Main.LocalToolHandler.LocalTool.Ammo : 0);
             var title = uiTitle.Message.Clear().Append("<color=220,244,252>");
             float progress = 0f;
 
@@ -442,17 +442,17 @@ namespace Digi.PaintGun.Features.Tool
             {
                 uiTargetColor.Material = MATERIAL_ICON_GENERIC_CHARACTER;
 
-                targetMaterial = LocalToolHandler.AimedPlayersPaint;
+                targetMaterial = Main.LocalToolHandler.AimedPlayersPaint;
 
                 uiTargetColor.BillBoardColor = (targetMaterial.ColorMask.HasValue ? Utils.ColorMaskToRGB(targetMaterial.ColorMask.Value) : Color.Gray);
 
-                title.AppendLimitedChars(LocalToolHandler.AimedPlayer.DisplayName, GUI_TITLE_MAX_CHARS);
+                title.AppendLimitedChars(Main.LocalToolHandler.AimedPlayer.DisplayName, GUI_TITLE_MAX_CHARS);
             }
             else
             {
                 uiTargetColor.Material = MATERIAL_ICON_GENERIC_BLOCK;
 
-                var block = LocalToolHandler.AimedBlock;
+                var block = Main.LocalToolHandler.AimedBlock;
                 targetMaterial = new PaintMaterial(block.ColorMaskHSV, block.SkinSubtypeId);
 
                 uiTargetColor.BillBoardColor = Utils.ColorMaskToRGB(targetMaterial.ColorMask.Value);
@@ -481,7 +481,7 @@ namespace Digi.PaintGun.Features.Tool
             {
                 text.Append("<color=220,244,252>");
 
-                if(Palette.ColorPickMode && LocalToolHandler.AimedPlayer != null)
+                if(Main.Palette.ColorPickMode && Main.LocalToolHandler.AimedPlayer != null)
                     text.Append("Engineer's selected paint:");
                 else
                     text.Append("Block's material:");
@@ -490,7 +490,7 @@ namespace Digi.PaintGun.Features.Tool
 
                 if(targetMaterial.ColorMask.HasValue)
                 {
-                    if(Palette.IsColorMaskInPalette(targetMaterial.ColorMask.Value))
+                    if(Main.Palette.IsColorMaskInPalette(targetMaterial.ColorMask.Value))
                         text.Append("<color=55,255,55>");
                     else
                         text.Append("<color=255,200,25>");
@@ -504,7 +504,7 @@ namespace Digi.PaintGun.Features.Tool
                 text.Append("<color=white>        Skin: ");
                 if(targetMaterial.Skin.HasValue)
                 {
-                    var targetSkin = Palette.GetSkinInfo(targetMaterial.Skin.Value);
+                    var targetSkin = Main.Palette.GetSkinInfo(targetMaterial.Skin.Value);
 
                     if(targetSkin != null)
                     {
@@ -530,9 +530,9 @@ namespace Digi.PaintGun.Features.Tool
 
             {
                 text.Append("<color=220,244,252>");
-                if(Palette.ColorPickMode)
+                if(Main.Palette.ColorPickMode)
                 {
-                    text.Append("Replace slot: ").Append(Palette.LocalInfo.SelectedColorIndex + 1);
+                    text.Append("Replace slot: ").Append(Main.Palette.LocalInfo.SelectedColorIndex + 1);
                 }
                 else
                 {
@@ -559,7 +559,7 @@ namespace Digi.PaintGun.Features.Tool
                 {
                     text.Append("        <color=white>Skin: ");
 
-                    var skin = Palette.GetSkinInfo(paint.Skin.Value);
+                    var skin = Main.Palette.GetSkinInfo(paint.Skin.Value);
                     if(skin != null)
                     {
                         if(skin.Index == 0)
@@ -588,15 +588,15 @@ namespace Digi.PaintGun.Features.Tool
             if(uiTitle == null)
                 return;
 
-            SetUIOption(HudAPIv2.Options.HideHud, Settings.hidePaletteWithHUD);
+            SetUIOption(HudAPIv2.Options.HideHud, Main.Settings.hidePaletteWithHUD);
 
-            var alpha = (Settings.aimInfoBackgroundOpacity < 0 ? GameConfig.HudBackgroundOpacity : Settings.aimInfoBackgroundOpacity);
+            var alpha = (Main.Settings.aimInfoBackgroundOpacity < 0 ? Main.GameConfig.HudBackgroundOpacity : Main.Settings.aimInfoBackgroundOpacity);
 
             uiTitleBg.BillBoardColor = Utils.HUDColorAlpha(UI_TITLE_BG_COLOR, alpha);
             uiTextBg.BillBoardColor = Utils.HUDColorAlpha(UI_TEXT_BG_COLOR, alpha);
             uiProgressBarBg.BillBoardColor = Utils.HUDColorAlpha(UI_PROGRESSBAR_BG_COLOR, MathHelper.Clamp(alpha * 2, 0.1f, 0.9f));
 
-            float aspectRatioMod = (float)(1d / GameConfig.AspectRatio);
+            float aspectRatioMod = (float)(1d / Main.GameConfig.AspectRatio);
             float boxBgWidth = UI_BOX_WIDTH * aspectRatioMod;
             float colorWidth = UI_COLORBOX_WIDTH * aspectRatioMod;
             float progressBarWidth = UI_PROGRESSBAR_WIDTH * aspectRatioMod;

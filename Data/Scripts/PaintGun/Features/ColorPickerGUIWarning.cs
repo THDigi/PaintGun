@@ -41,7 +41,7 @@ namespace Digi.PaintGun.Features
             MyAPIGateway.Gui.GuiControlCreated += GUIScreenOpened;
             MyAPIGateway.Gui.GuiControlRemoved += GUIScreenClosed;
 
-            TextAPI.Detected += TextAPI_Detected;
+            Main.TextAPI.Detected += TextAPI_Detected;
         }
 
         protected override void UnregisterComponent()
@@ -52,7 +52,7 @@ namespace Digi.PaintGun.Features
             MyAPIGateway.Gui.GuiControlCreated -= GUIScreenOpened;
             MyAPIGateway.Gui.GuiControlRemoved -= GUIScreenClosed;
 
-            TextAPI.Detected -= TextAPI_Detected;
+            Main.TextAPI.Detected -= TextAPI_Detected;
         }
 
         protected override void UpdateInput(bool anyKeyOrMouse, bool inMenu, bool paused)
@@ -107,7 +107,7 @@ namespace Digi.PaintGun.Features
 
         void DrawText()
         {
-            if(hidden || !TextAPIEnabled)
+            if(hidden || !Main.TextAPI.IsEnabled)
                 return;
 
             if(text == null)

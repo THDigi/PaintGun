@@ -35,7 +35,7 @@ namespace Digi.PaintGun.Features.Tool
                     if(_toolPreviewPaint.Value.ColorMask.HasValue)
                         LocalTool.PaintPreviewColorRGB = Utils.ColorMaskToRGB(_toolPreviewPaint.Value.ColorMask.Value);
                     else
-                        LocalTool.PaintPreviewColorRGB = Utils.ColorMaskToRGB(Palette.DefaultColorMask);
+                        LocalTool.PaintPreviewColorRGB = Utils.ColorMaskToRGB(Main.Palette.DefaultColorMask);
                 }
                 else
                 {
@@ -71,9 +71,9 @@ namespace Digi.PaintGun.Features.Tool
 
         protected override void RegisterComponent()
         {
-            Palette.LocalInfo.OnColorPickModeChanged += ColorPickModeChanged;
-            ToolHandler.ToolSpawned += ToolSpawned;
-            ToolHandler.ToolRemoved += ToolRemoved;
+            Main.Palette.LocalInfo.OnColorPickModeChanged += ColorPickModeChanged;
+            Main.ToolHandler.ToolSpawned += ToolSpawned;
+            Main.ToolHandler.ToolRemoved += ToolRemoved;
         }
 
         protected override void UnregisterComponent()
@@ -81,9 +81,9 @@ namespace Digi.PaintGun.Features.Tool
             if(!IsRegistered)
                 return;
 
-            Palette.LocalInfo.OnColorPickModeChanged -= ColorPickModeChanged;
-            ToolHandler.ToolSpawned -= ToolSpawned;
-            ToolHandler.ToolRemoved -= ToolRemoved;
+            Main.Palette.LocalInfo.OnColorPickModeChanged -= ColorPickModeChanged;
+            Main.ToolHandler.ToolSpawned -= ToolSpawned;
+            Main.ToolHandler.ToolRemoved -= ToolRemoved;
         }
 
         void ColorPickModeChanged(PlayerInfo pi)
@@ -119,13 +119,13 @@ namespace Digi.PaintGun.Features.Tool
                 bool trigger = false;
                 if(inputReadable)
                 {
-                    if(GameConfig.UsingGamepad)
+                    if(Main.GameConfig.UsingGamepad)
                         trigger = Math.Abs(MyAPIGateway.Input.GetJoystickAxisStateForGameplay(Constants.GamepadBind_Paint)) > 0;
                     else
                         trigger = MyAPIGateway.Input.IsGameControlPressed(MyControlsSpace.PRIMARY_TOOL_ACTION);
                 }
 
-                if(!CheckPlayerField.Ready)
+                if(!Main.CheckPlayerField.Ready)
                 {
                     //if(trigger)
                     //    Notifications.Show(0, "Please wait while the game figures out that you exist...", MyFontEnum.Red, 1000);
@@ -159,7 +159,7 @@ namespace Digi.PaintGun.Features.Tool
         void Spraying(bool spraying)
         {
             LocalTool.Spraying = spraying;
-            NetworkLibHandler.PacketToolSpraying.Send(spraying);
+            Main.NetworkLibHandler.PacketToolSpraying.Send(spraying);
         }
 
         void HandleInputs_Painting(bool trigger)
@@ -167,9 +167,9 @@ namespace Digi.PaintGun.Features.Tool
             if(Main.Tick % PAINT_UPDATE_TICKS != 0)
                 return;
 
-            if(Palette.ReplaceMode && !Main.ReplaceColorAccess) // if access no longer allows it, disable the replace mode
+            if(Main.Palette.ReplaceMode && !Main.ReplaceColorAccess) // if access no longer allows it, disable the replace mode
             {
-                Palette.ReplaceMode = false;
+                Main.Palette.ReplaceMode = false;
                 Main.Notifications.Show(0, "Replace color mode turned off due to loss of access.", MyFontEnum.Red, 2000);
             }
 
@@ -194,7 +194,7 @@ namespace Digi.PaintGun.Features.Tool
             Vector3D aimPoint;
             GetTarget(character, out targetGrid, out targetBlock, out targetPlayer, out aimPoint);
 
-            if(targetPlayer != null && Palette.ColorPickMode)
+            if(targetPlayer != null && Main.Palette.ColorPickMode)
             {
                 HandleTool_ColorPickFromPlayer(trigger, targetPlayer);
                 return;
@@ -202,9 +202,9 @@ namespace Digi.PaintGun.Features.Tool
 
             if(targetBlock == null)
             {
-                if(Palette.ColorPickMode)
+                if(Main.Palette.ColorPickMode)
                 {
-                    Notifications.Show(0, "Aim at a block or player and click to pick color.", MyFontEnum.Blue);
+                    Main.Notifications.Show(0, "Aim at a block or player and click to pick color.", MyFontEnum.Blue);
                 }
                 else if(!Utils.SafeZoneCanPaint(aimPoint, MyAPIGateway.Multiplayer.MyId))
                 {
@@ -212,32 +212,32 @@ namespace Digi.PaintGun.Features.Tool
                     //HUDSounds.PlayUnable();
 
                     if(trigger)
-                        Notifications.Show(0, "Can't paint in this safe zone.", MyFontEnum.Red);
+                        Main.Notifications.Show(0, "Can't paint in this safe zone.", MyFontEnum.Red);
                 }
-                else if(Palette.ReplaceMode)
+                else if(Main.Palette.ReplaceMode)
                 {
-                    Notifications.Show(0, $"Aim at a block to replace its color on {(Palette.ReplaceShipWide ? "the entire ship" : "this grid")}.", MyFontEnum.Blue);
+                    Main.Notifications.Show(0, $"Aim at a block to replace its color on {(Main.Palette.ReplaceShipWide ? "the entire ship" : "this grid")}.", MyFontEnum.Blue);
                 }
                 else if(trigger)
                 {
-                    HUDSounds.PlayUnable();
+                    Main.HUDSounds.PlayUnable();
 
                     if(!Main.IgnoreAmmoConsumption && LocalTool.Ammo == 0)
-                        Notifications.Show(0, "No ammo and no target.", MyFontEnum.Red);
+                        Main.Notifications.Show(0, "No ammo and no target.", MyFontEnum.Red);
                     else
-                        Notifications.Show(0, "Aim at a block to paint it.", MyFontEnum.Red);
+                        Main.Notifications.Show(0, "Aim at a block to paint it.", MyFontEnum.Red);
                 }
 
                 return;
             }
 
-            SelectionGUI.UpdateSymmetryStatus(targetBlock);
+            Main.SelectionGUI.UpdateSymmetryStatus(targetBlock);
 
-            var paintMaterial = Palette.GetLocalPaintMaterial();
+            var paintMaterial = Main.Palette.GetLocalPaintMaterial();
             var blockMaterial = new BlockMaterial(targetBlock);
             AimedBlock = targetBlock;
 
-            if(Palette.ColorPickMode)
+            if(Main.Palette.ColorPickMode)
             {
                 HandleTool_ColorPickModeFromBlock(paintMaterial, blockMaterial, trigger);
                 return;
@@ -252,11 +252,11 @@ namespace Digi.PaintGun.Features.Tool
             {
                 if(trigger)
                 {
-                    HUDSounds.PlayUnable();
-                    Notifications.Show(1, "No ammo.", MyFontEnum.Red);
+                    Main.HUDSounds.PlayUnable();
+                    Main.Notifications.Show(1, "No ammo.", MyFontEnum.Red);
                 }
 
-                SelectionGUI.SetGUIStatus(0, "No ammo!", "red");
+                Main.SelectionGUI.SetGUIStatus(0, "No ammo!", "red");
                 return;
             }
 
@@ -267,21 +267,21 @@ namespace Digi.PaintGun.Features.Tool
                 float paintSpeed = (1.0f / Utils.GetBlockSurface(targetBlock));
                 var finalMaterial = HandleTool_PaintProcess(paintMaterial, blockMaterial, paintSpeed, blockName);
 
-                if(Palette.ReplaceMode && Main.ReplaceColorAccess)
+                if(Main.Palette.ReplaceMode && Main.ReplaceColorAccess)
                 {
-                    NetworkLibHandler.PacketReplacePaint.Send(targetGrid, blockMaterial, finalMaterial, Palette.ReplaceShipWide);
+                    Main.NetworkLibHandler.PacketReplacePaint.Send(targetGrid, blockMaterial, finalMaterial, Main.Palette.ReplaceShipWide);
                 }
                 else
                 {
                     bool useMirroring = (Main.SymmetryAccess && MyAPIGateway.CubeBuilder.UseSymmetry);
-                    NetworkLibHandler.PacketPaint.Send(targetGrid, targetBlock.Position, finalMaterial, useMirroring);
+                    Main.NetworkLibHandler.PacketPaint.Send(targetGrid, targetBlock.Position, finalMaterial, useMirroring);
                 }
             }
         }
 
         void HandleTool_ColorPickFromPlayer(bool trigger, IMyPlayer targetPlayer)
         {
-            var pi = Palette.GetPlayerInfo(targetPlayer.SteamUserId);
+            var pi = Main.Palette.GetPlayerInfo(targetPlayer.SteamUserId);
 
             if(pi == null)
             {
@@ -294,8 +294,8 @@ namespace Digi.PaintGun.Features.Tool
 
             if(trigger)
             {
-                Palette.ColorPickMode = false;
-                Palette.GrabPaletteFromPaint(AimedPlayersPaint, changeApply: true);
+                Main.Palette.ColorPickMode = false;
+                Main.Palette.GrabPaletteFromPaint(AimedPlayersPaint, changeApply: true);
                 return;
             }
 
@@ -303,12 +303,12 @@ namespace Digi.PaintGun.Features.Tool
             {
                 ToolPreviewPaint = AimedPlayersPaint;
 
-                if(Settings.extraSounds)
-                    HUDSounds.PlayItem();
+                if(Main.Settings.extraSounds)
+                    Main.HUDSounds.PlayItem();
             }
 
-            SelectionGUI.SetGUIStatus(0, "Click to get engineer's selected color.");
-            SelectionGUI.SetGUIStatus(1, null);
+            Main.SelectionGUI.SetGUIStatus(0, "Click to get engineer's selected color.");
+            Main.SelectionGUI.SetGUIStatus(1, null);
             return;
         }
 
@@ -511,7 +511,7 @@ namespace Digi.PaintGun.Features.Tool
             if(block == null)
                 return false;
 
-            if(Palette.ColorPickMode)
+            if(Main.Palette.ColorPickMode)
                 return false;
 
             if(!paintMaterial.ColorMask.HasValue && !paintMaterial.Skin.HasValue)
@@ -526,7 +526,7 @@ namespace Digi.PaintGun.Features.Tool
             var blockMaterial = new BlockMaterial(block);
             bool materialEquals = paintMaterial.PaintEquals(blockMaterial);
 
-            if(Palette.ReplaceMode)
+            if(Main.Palette.ReplaceMode)
                 return !materialEquals;
 
             if(!Main.InstantPaintAccess)
@@ -549,11 +549,11 @@ namespace Digi.PaintGun.Features.Tool
             {
                 var assigned = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.CUBE_COLOR_CHANGE));
 
-                Notifications.Show(0, "No paint or skin enabled.", MyFontEnum.Red);
-                Notifications.Show(1, $"Press [{assigned}] to toggle color or combined with [Shift] to toggle skin.", MyFontEnum.Debug);
+                Main.Notifications.Show(0, "No paint or skin enabled.", MyFontEnum.Red);
+                Main.Notifications.Show(1, $"Press [{assigned}] to toggle color or combined with [Shift] to toggle skin.", MyFontEnum.Debug);
 
-                SelectionGUI.SetGUIStatus(0, "No paint or skin enabled.", "red");
-                SelectionGUI.SetGUIStatus(1, null);
+                Main.SelectionGUI.SetGUIStatus(0, "No paint or skin enabled.", "red");
+                Main.SelectionGUI.SetGUIStatus(1, null);
                 return false;
             }
 
@@ -561,12 +561,12 @@ namespace Digi.PaintGun.Features.Tool
             {
                 if(trigger)
                 {
-                    HUDSounds.PlayUnable();
-                    Notifications.Show(0, "Can't paint enemy ships.", MyFontEnum.Red, 2000);
+                    Main.HUDSounds.PlayUnable();
+                    Main.Notifications.Show(0, "Can't paint enemy ships.", MyFontEnum.Red, 2000);
                 }
 
-                SelectionGUI.SetGUIStatus(0, "Not allied ship.", "red");
-                SelectionGUI.SetGUIStatus(1, null);
+                Main.SelectionGUI.SetGUIStatus(0, "Not allied ship.", "red");
+                Main.SelectionGUI.SetGUIStatus(1, null);
                 return false;
             }
 
@@ -574,29 +574,29 @@ namespace Digi.PaintGun.Features.Tool
             {
                 if(trigger)
                 {
-                    HUDSounds.PlayUnable();
-                    Notifications.Show(0, "Can't paint in this safe zone.", MyFontEnum.Red, 2000);
+                    Main.HUDSounds.PlayUnable();
+                    Main.Notifications.Show(0, "Can't paint in this safe zone.", MyFontEnum.Red, 2000);
                 }
 
-                SelectionGUI.SetGUIStatus(0, "Protected by safe zone", "red");
-                SelectionGUI.SetGUIStatus(1, null);
+                Main.SelectionGUI.SetGUIStatus(0, "Protected by safe zone", "red");
+                Main.SelectionGUI.SetGUIStatus(1, null);
                 return false;
             }
 
             bool materialEquals = paintMaterial.PaintEquals(blockMaterial);
 
-            if(Palette.ReplaceMode)
+            if(Main.Palette.ReplaceMode)
             {
                 AimedState = (materialEquals ? SelectionState.Invalid : SelectionState.Valid);
 
                 var assigned = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.USE_SYMMETRY));
 
                 if(AimedState == SelectionState.Invalid)
-                    SelectionGUI.SetGUIStatus(0, "Already this material.", "red");
+                    Main.SelectionGUI.SetGUIStatus(0, "Already this material.", "red");
                 else
-                    SelectionGUI.SetGUIStatus(0, "Click to replace material.", "lime");
+                    Main.SelectionGUI.SetGUIStatus(0, "Click to replace material.", "lime");
 
-                SelectionGUI.SetGUIStatus(1, $"[{assigned}] {(Palette.ReplaceShipWide ? "<color=yellow>" : "")}Replace mode: {(Palette.ReplaceShipWide ? "Ship-wide" : "Grid")}");
+                Main.SelectionGUI.SetGUIStatus(1, $"[{assigned}] {(Main.Palette.ReplaceShipWide ? "<color=yellow>" : "")}Replace mode: {(Main.Palette.ReplaceShipWide ? "Ship-wide" : "Grid")}");
 
                 return (AimedState == SelectionState.Valid);
             }
@@ -612,12 +612,12 @@ namespace Digi.PaintGun.Features.Tool
 
                     if(trigger)
                     {
-                        HUDSounds.PlayUnable();
-                        Notifications.Show(0, "Unfinished blocks can't be painted!", MyFontEnum.Red);
+                        Main.HUDSounds.PlayUnable();
+                        Main.Notifications.Show(0, "Unfinished blocks can't be painted!", MyFontEnum.Red);
                     }
 
-                    SelectionGUI.SetGUIStatus(0, (!built ? "Block not built" : "Block damaged"), "red");
-                    SelectionGUI.SetGUIStatus(1, null);
+                    Main.SelectionGUI.SetGUIStatus(0, (!built ? "Block not built" : "Block damaged"), "red");
+                    Main.SelectionGUI.SetGUIStatus(1, null);
                     return false;
                 }
             }
@@ -680,11 +680,11 @@ namespace Digi.PaintGun.Features.Tool
                     AimedState = SelectionState.Invalid;
 
                     if(symmetry)
-                        SelectionGUI.SetGUIStatus(0, "Block(s) color match.", "lime");
+                        Main.SelectionGUI.SetGUIStatus(0, "Block(s) color match.", "lime");
                     else
-                        SelectionGUI.SetGUIStatus(0, "Colors match.", "lime");
+                        Main.SelectionGUI.SetGUIStatus(0, "Colors match.", "lime");
 
-                    SelectionGUI.SetGUIStatus(1, SelectionGUI.SymmetryStatusText);
+                    Main.SelectionGUI.SetGUIStatus(1, Main.SelectionGUI.SymmetryStatusText);
                     return false;
                 }
             }
@@ -692,13 +692,13 @@ namespace Digi.PaintGun.Features.Tool
             if(!trigger)
             {
                 if(symmetry && !symmetrySameColor)
-                    SelectionGUI.SetGUIStatus(0, "Click to update symmetry paint.");
+                    Main.SelectionGUI.SetGUIStatus(0, "Click to update symmetry paint.");
                 else if(Main.InstantPaintAccess)
-                    SelectionGUI.SetGUIStatus(0, "Click to paint.");
+                    Main.SelectionGUI.SetGUIStatus(0, "Click to paint.");
                 else
-                    SelectionGUI.SetGUIStatus(0, "Hold click to paint.");
+                    Main.SelectionGUI.SetGUIStatus(0, "Hold click to paint.");
 
-                SelectionGUI.SetGUIStatus(1, SelectionGUI.SymmetryStatusText);
+                Main.SelectionGUI.SetGUIStatus(1, Main.SelectionGUI.SymmetryStatusText);
             }
 
             return true;
@@ -741,8 +741,8 @@ namespace Digi.PaintGun.Features.Tool
         {
             if(trigger)
             {
-                Palette.ColorPickMode = false;
-                Palette.GrabPaletteFromPaint(new PaintMaterial(blockMaterial.ColorMask, blockMaterial.Skin));
+                Main.Palette.ColorPickMode = false;
+                Main.Palette.GrabPaletteFromPaint(new PaintMaterial(blockMaterial.ColorMask, blockMaterial.Skin));
                 return;
             }
 
@@ -750,23 +750,23 @@ namespace Digi.PaintGun.Features.Tool
             {
                 ToolPreviewPaint = new PaintMaterial(blockMaterial.ColorMask, blockMaterial.Skin);
 
-                if(Settings.extraSounds)
-                    HUDSounds.PlayItem();
+                if(Main.Settings.extraSounds)
+                    Main.HUDSounds.PlayItem();
             }
 
             if(paintMaterial.ColorMask.HasValue && !paintMaterial.Skin.HasValue)
-                SelectionGUI.SetGUIStatus(0, "Click to get this color.", "lime");
+                Main.SelectionGUI.SetGUIStatus(0, "Click to get this color.", "lime");
             else if(!paintMaterial.ColorMask.HasValue && paintMaterial.Skin.HasValue)
-                SelectionGUI.SetGUIStatus(0, "Click to select this skin.", "lime");
+                Main.SelectionGUI.SetGUIStatus(0, "Click to select this skin.", "lime");
             else
-                SelectionGUI.SetGUIStatus(0, "Click to get this material.", "lime");
+                Main.SelectionGUI.SetGUIStatus(0, "Click to get this material.", "lime");
 
-            SelectionGUI.SetGUIStatus(1, null);
+            Main.SelectionGUI.SetGUIStatus(1, null);
         }
 
         PaintMaterial HandleTool_PaintProcess(PaintMaterial paintMaterial, BlockMaterial blockMaterial, float paintSpeed, string blockName)
         {
-            if(Palette.ReplaceMode)
+            if(Main.Palette.ReplaceMode)
             {
                 // notification for this is done in the ReceivedPacket method to avoid re-iterating blocks
 
@@ -780,15 +780,15 @@ namespace Digi.PaintGun.Features.Tool
 
             if(Main.InstantPaintAccess)
             {
-                SelectionGUI.SetGUIStatus(0, "Painted!", "lime");
-                SelectionGUI.SetGUIStatus(1, SelectionGUI.SymmetryStatusText);
+                Main.SelectionGUI.SetGUIStatus(0, "Painted!", "lime");
+                Main.SelectionGUI.SetGUIStatus(1, Main.SelectionGUI.SymmetryStatusText);
                 return paintMaterial;
             }
 
             if(!paintMaterial.ColorMask.HasValue && paintMaterial.Skin.HasValue)
             {
-                SelectionGUI.SetGUIStatus(0, "Skinned!", "lime");
-                SelectionGUI.SetGUIStatus(1, SelectionGUI.SymmetryStatusText);
+                Main.SelectionGUI.SetGUIStatus(0, "Skinned!", "lime");
+                Main.SelectionGUI.SetGUIStatus(1, Main.SelectionGUI.SymmetryStatusText);
                 return paintMaterial;
             }
 
@@ -813,21 +813,21 @@ namespace Digi.PaintGun.Features.Tool
                 {
                     blockColorMask = paintColorMask;
 
-                    SelectionGUI.SetGUIStatus(0, "Painting done!", "lime");
+                    Main.SelectionGUI.SetGUIStatus(0, "Painting done!", "lime");
 
-                    if(Settings.extraSounds)
-                        HUDSounds.PlayColor();
+                    if(Main.Settings.extraSounds)
+                        Main.HUDSounds.PlayColor();
                 }
                 else
                 {
                     var percent = Utils.ColorPercent(blockColorMask, paintColorMask);
 
-                    SelectionGUI.SetGUIStatus(0, $"Painting {percent.ToString()}%...");
+                    Main.SelectionGUI.SetGUIStatus(0, $"Painting {percent.ToString()}%...");
                 }
             }
             else // if hue is too far off, first "remove" the paint.
             {
-                var defaultColorMask = Palette.DefaultColorMask;
+                var defaultColorMask = Main.Palette.DefaultColorMask;
 
                 paintSpeed *= DEPAINT_SPEED * PAINT_UPDATE_TICKS;
                 paintSpeed *= MyAPIGateway.Session.GrinderSpeedMultiplier;
@@ -850,18 +850,18 @@ namespace Digi.PaintGun.Features.Tool
                     if(Utils.ColorMaskEquals(paintColorMask, defaultColorMask))
                     {
                         blockColorMask = paintColorMask;
-                        SelectionGUI.SetGUIStatus(0, "Removing paint done!");
+                        Main.SelectionGUI.SetGUIStatus(0, "Removing paint done!");
                     }
                     else
                     {
-                        SelectionGUI.SetGUIStatus(0, "Removing paint 100%...");
+                        Main.SelectionGUI.SetGUIStatus(0, "Removing paint 100%...");
                     }
                 }
                 else
                 {
                     var percent = Utils.ColorPercent(blockColorMask, defaultColorMask);
 
-                    SelectionGUI.SetGUIStatus(0, $"Removing paint {percent.ToString()}%...");
+                    Main.SelectionGUI.SetGUIStatus(0, $"Removing paint {percent.ToString()}%...");
                 }
             }
 
@@ -871,17 +871,17 @@ namespace Digi.PaintGun.Features.Tool
 
         void HandleTool_Holstered()
         {
-            if(Palette.ColorPickMode)
+            if(Main.Palette.ColorPickMode)
             {
-                Palette.ColorPickMode = false;
-                Notifications.Show(0, "Color picking cancelled.", MyFontEnum.Debug, 2000);
-                HUDSounds.PlayUnable();
+                Main.Palette.ColorPickMode = false;
+                Main.Notifications.Show(0, "Color picking cancelled.", MyFontEnum.Debug, 2000);
+                Main.HUDSounds.PlayUnable();
             }
 
-            if(Palette.ReplaceMode)
+            if(Main.Palette.ReplaceMode)
             {
-                Palette.ReplaceMode = false;
-                Notifications.Show(0, "Replace color mode turned off.", MyFontEnum.Debug, 2000);
+                Main.Palette.ReplaceMode = false;
+                Main.Notifications.Show(0, "Replace color mode turned off.", MyFontEnum.Debug, 2000);
             }
 
             LocalTool = null;

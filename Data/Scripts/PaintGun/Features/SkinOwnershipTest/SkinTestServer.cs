@@ -37,7 +37,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
 
         protected override void RegisterComponent()
         {
-            NetworkLibHandler.PacketOwnershipTestResults.OwnedSkinIndexes = new List<int>(Palette.BlockSkins.Count - 1); // index 0 is not being sent.
+            Main.NetworkLibHandler.PacketOwnershipTestResults.OwnedSkinIndexes = new List<int>(Main.Palette.BlockSkins.Count - 1); // index 0 is not being sent.
         }
 
         protected override void UnregisterComponent()
@@ -131,8 +131,8 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
 
             waitUntilTick = tick + GRID_CHECK_FREQUENCY;
 
-            var blockSkins = Palette.BlockSkins;
-            var packetSkinIndexes = NetworkLibHandler.PacketOwnershipTestResults.OwnedSkinIndexes;
+            var blockSkins = Main.Palette.BlockSkins;
+            var packetSkinIndexes = Main.NetworkLibHandler.PacketOwnershipTestResults.OwnedSkinIndexes;
 
             foreach(var kv in tempGrids)
             {
@@ -201,7 +201,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
                         gridInfo.Grid.Close();
                         removeKeys.Add(steamId);
 
-                        var pi = Palette.GetOrAddPlayerInfo(steamId);
+                        var pi = Main.Palette.GetOrAddPlayerInfo(steamId);
                         pi.OwnedSkinIndexes = new List<int>(blockSkins.Count);
                         pi.OwnedSkinIndexes.AddRange(packetSkinIndexes);
 
@@ -216,7 +216,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
                             Log.Info($"... sending skin indexes (count={pi.OwnedSkinIndexes.Count.ToString()}) = {string.Join(", ", pi.OwnedSkinIndexes)}");
 
                         // tell player their owned skins
-                        NetworkLibHandler.PacketOwnershipTestResults.Send(steamId);
+                        Main.NetworkLibHandler.PacketOwnershipTestResults.Send(steamId);
                     }
                 }
             }

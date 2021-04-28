@@ -61,7 +61,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
             Status.Clear().Append(STATUS_PREFIX).Append("Starting test #").Append(testCount).Append("...");
 
             SetUpdateMethods(UpdateFlags.UPDATE_AFTER_SIM, true);
-            NetworkLibHandler.PacketOwnershipTestRequest.Send();
+            Main.NetworkLibHandler.PacketOwnershipTestRequest.Send();
         }
         #endregion Step 1 - Client asks server to spawn a grid
 
@@ -171,7 +171,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
             {
                 waitUntilTick = 0;
 
-                var blockSkins = Palette.BlockSkins;
+                var blockSkins = Main.Palette.BlockSkins;
 
                 for(int i = 1; i < blockSkins.Count; ++i)
                 {
@@ -232,7 +232,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
             var selectedSkin = palette.GetSkinInfo(palette.LocalInfo.SelectedSkinIndex);
             if(!selectedSkin.LocallyOwned)
             {
-                Notifications.Show(3, $"Skin [{selectedSkin.Name}] not owned, switching to default.", MyFontEnum.Red, 3000);
+                Main.Notifications.Show(3, $"Skin [{selectedSkin.Name}] not owned, switching to default.", MyFontEnum.Red, 3000);
                 palette.LocalInfo.SelectedSkinIndex = 0;
             }
 

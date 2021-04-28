@@ -22,8 +22,8 @@ namespace Digi.PaintGun.Features.Tool
         protected override void RegisterComponent()
         {
             RefreshToolDescription();
-            GameConfig.GamepadUseChanged += GamepadUseChanged;
-            LocalToolHandler.LocalToolEquipped += LocalToolEquipped;
+            Main.GameConfig.GamepadUseChanged += GamepadUseChanged;
+            Main.LocalToolHandler.LocalToolEquipped += LocalToolEquipped;
 
             RefreshToolDescription();
             Refresh();
@@ -31,8 +31,8 @@ namespace Digi.PaintGun.Features.Tool
 
         protected override void UnregisterComponent()
         {
-            GameConfig.GamepadUseChanged -= GamepadUseChanged;
-            LocalToolHandler.LocalToolEquipped -= LocalToolEquipped;
+            Main.GameConfig.GamepadUseChanged -= GamepadUseChanged;
+            Main.LocalToolHandler.LocalToolEquipped -= LocalToolEquipped;
         }
 
         public void RefreshToolDescription()
@@ -44,7 +44,7 @@ namespace Digi.PaintGun.Features.Tool
         {
             RequiresRefresh = true;
 
-            if(LocalToolHandler.LocalTool != null)
+            if(Main.LocalToolHandler.LocalTool != null)
                 Refresh();
         }
 
@@ -68,7 +68,7 @@ namespace Digi.PaintGun.Features.Tool
             SB.Clear();
             SB.Append("Paints blocks.");
 
-            if(GameConfig.UsingGamepad)
+            if(Main.GameConfig.UsingGamepad)
             {
                 SB.Append("\n").Append(Main.Constants.GamepadBindName_Paint).Append(" paint, ").Append(Main.Constants.GamepadBindName_DeepPaintMode).Append(" deep paint mode");
                 SB.Append("\n").Append(Main.Constants.GamepadBindName_CycleColors).Append(" cycle colors");
@@ -77,7 +77,7 @@ namespace Digi.PaintGun.Features.Tool
             else // kb+m
             {
                 SB.Append("\n[").AppendInputBind(MyControlsSpace.PRIMARY_TOOL_ACTION).Append("] paint, [").AppendInputBind(MyControlsSpace.SECONDARY_TOOL_ACTION).Append("] deep paint mode");
-                SB.Append("\n[").Append(Settings.requireCtrlForColorCycle ? "Ctrl+" : "").Append("Scroll] cycle colors");
+                SB.Append("\n[").Append(Main.Settings.requireCtrlForColorCycle ? "Ctrl+" : "").Append("Scroll] cycle colors");
                 SB.Append("\n[Shift+Scroll] cycle skins");
             }
 
@@ -92,7 +92,7 @@ namespace Digi.PaintGun.Features.Tool
 
             // refresh HUD with the new text if paintgun is equipped
             //if(MyHud.BlockInfo.DefinitionId.SubtypeName == Constants.PAINTGUN_PHYSITEMID)
-            if(LocalToolHandler.LocalTool != null)
+            if(Main.LocalToolHandler.LocalTool != null)
             {
                 MyHud.BlockInfo.SetContextHelp(itemDef);
             }

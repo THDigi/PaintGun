@@ -13,7 +13,7 @@ namespace Digi.PaintGun.Features.Palette
         bool syncApplyColor;
         bool syncApplySkin;
 
-        PlayerInfo LocalInfo => Palette.LocalInfo;
+        PlayerInfo LocalInfo => Main.Palette.LocalInfo;
 
         const int DELAY_BEFORE_SYNC = Constants.TICKS_PER_SECOND / 4; // when a property is changed, this countdown starts and after that it will sync them
         const int COOLDOWN_UNTIL_RESYNC = Constants.TICKS_PER_SECOND / 2; // this cooldown starts after the sync is done and blocks future re-syncs.
@@ -44,7 +44,7 @@ namespace Digi.PaintGun.Features.Palette
                 bool? applyColor = (syncApplyColor ? (bool?)LocalInfo.ApplyColor : null);
                 bool? applySkin = (syncApplySkin ? (bool?)LocalInfo.ApplySkin : null);
 
-                NetworkLibHandler.PacketPaletteUpdate.Send(colorIndex, skinIndex, applyColor, applySkin);
+                Main.NetworkLibHandler.PacketPaletteUpdate.Send(colorIndex, skinIndex, applyColor, applySkin);
 
                 syncColorIndex = false;
                 syncSkinIndex = false;

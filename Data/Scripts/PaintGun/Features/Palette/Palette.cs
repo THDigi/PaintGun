@@ -49,7 +49,7 @@ namespace Digi.PaintGun.Features.Palette
                 LocalInfo = GetOrAddPlayerInfo(MyAPIGateway.Multiplayer.MyId);
                 Main.CheckPlayerField.PlayerReady += PlayerReady;
                 Main.PlayerHandler.PlayerDisconnected += PlayerDisconnected;
-                Settings.SettingsChanged += ComputeShownSkins;
+                Main.Settings.SettingsChanged += ComputeShownSkins;
             }
         }
 
@@ -62,7 +62,7 @@ namespace Digi.PaintGun.Features.Palette
             {
                 Main.CheckPlayerField.PlayerReady -= PlayerReady;
                 Main.PlayerHandler.PlayerDisconnected -= PlayerDisconnected;
-                Settings.SettingsChanged -= ComputeShownSkins;
+                Main.Settings.SettingsChanged -= ComputeShownSkins;
             }
         }
 
@@ -78,7 +78,7 @@ namespace Digi.PaintGun.Features.Palette
             UpdatePalette();
 
             // broadcast local player's palette to everyone and server sends everyone's palettes back.
-            NetworkLibHandler.PacketJoinSharePalette.Send(LocalInfo, MyAPIGateway.Multiplayer.MyId);
+            Main.NetworkLibHandler.PacketJoinSharePalette.Send(LocalInfo, MyAPIGateway.Multiplayer.MyId);
         }
 
         const string ARMOR_SUFFIX = "_Armor";
@@ -253,7 +253,7 @@ namespace Digi.PaintGun.Features.Palette
 
         void CheckLocalPaletteChanges()
         {
-            if(!CheckPlayerField.Ready)
+            if(!Main.CheckPlayerField.Ready)
                 return;
 
             var newColors = MyAPIGateway.Session.Player.BuildColorSlots;
@@ -279,7 +279,7 @@ namespace Digi.PaintGun.Features.Palette
                 if(!Utils.ColorMaskEquals(storedColors[i], Utils.ColorMaskNormalize(newColors[i])))
                 {
                     changed = true;
-                    NetworkLibHandler.PacketPaletteSetColor.Send(i, newColors[i]);
+                    Main.NetworkLibHandler.PacketPaletteSetColor.Send(i, newColors[i]);
                 }
             }
 
@@ -327,9 +327,9 @@ namespace Digi.PaintGun.Features.Palette
         public void GrabPaletteFromPaint(PaintMaterial pickedMaterial, bool changeApply = false)
         {
             if(SetColorAndSkin(pickedMaterial, changeApply))
-                HUDSounds.PlayMouseClick();
+                Main.HUDSounds.PlayMouseClick();
             else
-                HUDSounds.PlayUnable();
+                Main.HUDSounds.PlayUnable();
         }
 
         bool SetColorAndSkin(PaintMaterial pickedMaterial, bool changeApply)
@@ -337,7 +337,7 @@ namespace Digi.PaintGun.Features.Palette
             // in case of players with both ApplyColor and ApplySkin turned off.
             if(!pickedMaterial.ColorMask.HasValue && !pickedMaterial.Skin.HasValue)
             {
-                Notifications.Show(0, $"Target has no color or skin enabled.", MyFontEnum.Red, 3000);
+                Main.Notifications.Show(0, $"Target has no color or skin enabled.", MyFontEnum.Red, 3000);
                 return false;
             }
 
@@ -345,7 +345,7 @@ namespace Digi.PaintGun.Features.Palette
 
             if(currentMaterial.PaintEquals(pickedMaterial))
             {
-                Notifications.Show(0, $"Color and skin already selected.", MyFontEnum.Debug, 2000);
+                Main.Notifications.Show(0, $"Color and skin already selected.", MyFontEnum.Debug, 2000);
                 return false;
             }
 
@@ -358,7 +358,7 @@ namespace Digi.PaintGun.Features.Palette
 
                 if(Utils.ColorMaskEquals(LocalInfo.SelectedColorMask, pickedMaterial.ColorMask.Value))
                 {
-                    Notifications.Show(0, $"Color already selected.", MyFontEnum.Debug, 2000);
+                    Main.Notifications.Show(0, $"Color already selected.", MyFontEnum.Debug, 2000);
                 }
                 else
                 {
@@ -372,7 +372,7 @@ namespace Digi.PaintGun.Features.Palette
                             LocalInfo.SelectedColorIndex = i;
                             MyAPIGateway.Session.Player.SelectedBuildColorSlot = i;
 
-                            Notifications.Show(0, $"Color exists in slot [{(i + 1).ToString()}], selected.", MyFontEnum.Debug, 2000);
+                            Main.Notifications.Show(0, $"Color exists in slot [{(i + 1).ToString()}], selected.", MyFontEnum.Debug, 2000);
                             break;
                         }
                     }
@@ -381,9 +381,9 @@ namespace Digi.PaintGun.Features.Palette
                     {
                         MyAPIGateway.Session.Player.ChangeOrSwitchToColor(pickedMaterial.ColorMask.Value);
 
-                        NetworkLibHandler.PacketPaletteSetColor.Send(LocalInfo.SelectedColorIndex, pickedMaterial.ColorMask.Value);
+                        Main.NetworkLibHandler.PacketPaletteSetColor.Send(LocalInfo.SelectedColorIndex, pickedMaterial.ColorMask.Value);
 
-                        Notifications.Show(0, $"Color slot [{(LocalInfo.SelectedColorIndex + 1).ToString()}] set to [{Utils.ColorMaskToString(pickedMaterial.ColorMask.Value)}]", MyFontEnum.Debug, 2000);
+                        Main.Notifications.Show(0, $"Color slot [{(LocalInfo.SelectedColorIndex + 1).ToString()}] set to [{Utils.ColorMaskToString(pickedMaterial.ColorMask.Value)}]", MyFontEnum.Debug, 2000);
                     }
 
                     success = true;
@@ -408,14 +408,14 @@ namespace Digi.PaintGun.Features.Palette
                     {
                         if(!skin.LocallyOwned)
                         {
-                            Notifications.Show(1, $"Skin [{skin.Name}] is not owned, not selected.", MyFontEnum.Red, 2000);
+                            Main.Notifications.Show(1, $"Skin [{skin.Name}] is not owned, not selected.", MyFontEnum.Red, 2000);
                         }
                         else
                         {
                             LocalInfo.SelectedSkinIndex = skin.Index;
                             success = true;
 
-                            Notifications.Show(1, $"Selected skin: [{skin.Name}]", MyFontEnum.Debug, 2000);
+                            Main.Notifications.Show(1, $"Selected skin: [{skin.Name}]", MyFontEnum.Debug, 2000);
                         }
                     }
                 }
@@ -485,7 +485,7 @@ namespace Digi.PaintGun.Features.Palette
 
             foreach(var skin in OwnedSkins)
             {
-                skin.ShowOnPalette = !Settings.hideSkinsFromPalette.Contains(skin.SubtypeId.String);
+                skin.ShowOnPalette = !Main.Settings.hideSkinsFromPalette.Contains(skin.SubtypeId.String);
                 if(skin.Selectable)
                     SkinsForHUD.Add(skin);
             }

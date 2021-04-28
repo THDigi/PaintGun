@@ -99,7 +99,7 @@ namespace Digi.PaintGun.Features.Palette
             bool oddY = (odd & OddAxis.Y) == OddAxis.Y;
             bool oddZ = (odd & OddAxis.Z) == OddAxis.Z;
 
-            var alreadyMirrored = Caches.AlreadyMirrored;
+            var alreadyMirrored = Main.Caches.AlreadyMirrored;
             alreadyMirrored.Clear();
 
             var mirrorX = MirrorPaint(grid, 0, mirrorPlanes, oddX, gridPosition, paint, alreadyMirrored, originalSenderSteamId); // X

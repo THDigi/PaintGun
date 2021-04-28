@@ -27,13 +27,13 @@ namespace Digi.PaintGun.Features.ConfigMenu
 
         protected override void RegisterComponent()
         {
-            TextAPI.Detected += TextAPI_Detected;
+            Main.TextAPI.Detected += TextAPI_Detected;
         }
 
         protected override void UnregisterComponent()
         {
-            TextAPI.Detected -= TextAPI_Detected;
-            Settings.SettingsLoaded -= SettingsLoaded;
+            Main.TextAPI.Detected -= TextAPI_Detected;
+            Main.Settings.SettingsLoaded -= SettingsLoaded;
         }
 
         protected override void UpdateAfterSim(int tick)
@@ -68,36 +68,36 @@ namespace Digi.PaintGun.Features.ConfigMenu
             Category_Tool = AddCategory("Tool", Category_Mod);
 
             groupAll.Add(new ItemToggle(Category_Tool, "Spray Particles",
-                    getter: () => Settings.sprayParticles,
+                    getter: () => Main.Settings.sprayParticles,
                     setter: (v) =>
                     {
-                        Settings.sprayParticles = v;
-                        Settings.ChangedByModConfig();
+                        Main.Settings.sprayParticles = v;
+                        Main.Settings.ChangedByModConfig();
                     },
                     defaultValue: true));
 
             groupAll.Add(new ItemSlider(Category_Tool, "Spray Sound Volume", min: 0, max: 1, defaultValue: 0.8f, rounding: 2,
-                getter: () => Settings.spraySoundVolume,
+                getter: () => Main.Settings.spraySoundVolume,
                 setter: (val) =>
                 {
-                    Settings.spraySoundVolume = val;
-                    Settings.ChangedByModConfig();
+                    Main.Settings.spraySoundVolume = val;
+                    Main.Settings.ChangedByModConfig();
                 },
                 sliding: (val) =>
                 {
-                    Settings.spraySoundVolume = val;
+                    Main.Settings.spraySoundVolume = val;
                 },
                 cancelled: (orig) =>
                 {
-                    Settings.spraySoundVolume = orig;
+                    Main.Settings.spraySoundVolume = orig;
                 }));
 
             groupAll.Add(new ItemToggle(Category_Tool, "Extra Sounds",
-                getter: () => Settings.extraSounds,
+                getter: () => Main.Settings.extraSounds,
                 setter: (v) =>
                 {
-                    Settings.extraSounds = v;
-                    Settings.ChangedByModConfig();
+                    Main.Settings.extraSounds = v;
+                    Main.Settings.ChangedByModConfig();
                 },
                 defaultValue: true));
             #endregion Tool
@@ -106,48 +106,48 @@ namespace Digi.PaintGun.Features.ConfigMenu
             Category_Palette = AddCategory("HUD Palette", Category_Mod);
 
             groupAll.Add(new ItemToggle(Category_Palette, "Select Color in Zig-Zag",
-                getter: () => Settings.selectColorZigZag,
+                getter: () => Main.Settings.selectColorZigZag,
                 setter: (v) =>
                 {
-                    Settings.selectColorZigZag = v;
-                    Settings.ChangedByModConfig();
+                    Main.Settings.selectColorZigZag = v;
+                    Main.Settings.ChangedByModConfig();
                 },
                 defaultValue: false));
 
             groupAll.Add(new ItemToggle(Category_Palette, "Require CTRL for Color Cycle",
-                getter: () => Settings.requireCtrlForColorCycle,
+                getter: () => Main.Settings.requireCtrlForColorCycle,
                 setter: (v) =>
                 {
-                    Settings.requireCtrlForColorCycle = v;
-                    Settings.ChangedByModConfig();
+                    Main.Settings.requireCtrlForColorCycle = v;
+                    Main.Settings.ChangedByModConfig();
                 },
                 defaultValue: false));
 
             groupAll.Add(new ItemToggle(Category_Palette, "Hide Palette with HUD",
-                getter: () => Settings.hidePaletteWithHUD,
+                getter: () => Main.Settings.hidePaletteWithHUD,
                 setter: (v) =>
                 {
-                    Settings.hidePaletteWithHUD = v;
-                    Settings.ChangedByModConfig();
+                    Main.Settings.hidePaletteWithHUD = v;
+                    Main.Settings.ChangedByModConfig();
                 },
                 defaultValue: true));
 
             groupAll.Add(new ItemSlider(Category_Palette, "Background Opacity", min: -0.1f, max: 1f, defaultValue: -0.1f, rounding: 2,
-                getter: () => Settings.paletteBackgroundOpacity,
+                getter: () => Main.Settings.paletteBackgroundOpacity,
                 setter: (val) =>
                 {
-                    Settings.paletteBackgroundOpacity = (val < 0 ? -1 : val);
-                    Settings.ChangedByModConfig();
+                    Main.Settings.paletteBackgroundOpacity = (val < 0 ? -1 : val);
+                    Main.Settings.ChangedByModConfig();
                 },
                 sliding: (val) =>
                 {
-                    Settings.paletteBackgroundOpacity = (val < 0 ? -1 : val);
-                    PaletteHUD.UpdateUI();
+                    Main.Settings.paletteBackgroundOpacity = (val < 0 ? -1 : val);
+                    Main.PaletteHUD.UpdateUI();
                 },
                 cancelled: (orig) =>
                 {
-                    Settings.paletteBackgroundOpacity = (orig < 0 ? -1 : orig);
-                    PaletteHUD.UpdateUI();
+                    Main.Settings.paletteBackgroundOpacity = (orig < 0 ? -1 : orig);
+                    Main.PaletteHUD.UpdateUI();
                 },
                 format: (val) =>
                 {
@@ -155,44 +155,44 @@ namespace Digi.PaintGun.Features.ConfigMenu
                 }));
 
             groupAll.Add(new ItemBoxMove(Category_Palette, "Screen Position", min: -Vector2D.One, max: Vector2D.One, defaultValue: Settings.paletteScreenPosDefault, rounding: 3,
-                getter: () => Settings.paletteScreenPos,
+                getter: () => Main.Settings.paletteScreenPos,
                 setter: (pos) =>
                 {
-                    Settings.paletteScreenPos = pos;
-                    Settings.ChangedByModConfig();
+                    Main.Settings.paletteScreenPos = pos;
+                    Main.Settings.ChangedByModConfig();
                 },
                 selected: (pos) =>
                 {
-                    Settings.paletteScreenPos = pos;
-                    PaletteHUD.UpdateUI();
+                    Main.Settings.paletteScreenPos = pos;
+                    Main.PaletteHUD.UpdateUI();
                 },
                 moving: (pos) =>
                 {
-                    Settings.paletteScreenPos = pos;
-                    PaletteHUD.UpdateUI();
+                    Main.Settings.paletteScreenPos = pos;
+                    Main.PaletteHUD.UpdateUI();
                 },
                 cancelled: (origPos) =>
                 {
-                    Settings.paletteScreenPos = origPos;
-                    PaletteHUD.UpdateUI();
+                    Main.Settings.paletteScreenPos = origPos;
+                    Main.PaletteHUD.UpdateUI();
                 }));
 
             groupAll.Add(new ItemSlider(Category_Palette, "Scale", min: 0.1f, max: 2f, defaultValue: Settings.paletteScaleDefault, rounding: 2,
-                getter: () => Settings.paletteScale,
+                getter: () => Main.Settings.paletteScale,
                 setter: (val) =>
                 {
-                    Settings.paletteScale = val;
-                    Settings.ChangedByModConfig();
+                    Main.Settings.paletteScale = val;
+                    Main.Settings.ChangedByModConfig();
                 },
                 sliding: (val) =>
                 {
-                    Settings.paletteScale = val;
-                    PaletteHUD.UpdateUI();
+                    Main.Settings.paletteScale = val;
+                    Main.PaletteHUD.UpdateUI();
                 },
                 cancelled: (orig) =>
                 {
-                    Settings.paletteScale = orig;
-                    PaletteHUD.UpdateUI();
+                    Main.Settings.paletteScale = orig;
+                    Main.PaletteHUD.UpdateUI();
                 }));
             #endregion Palette
 
@@ -200,38 +200,38 @@ namespace Digi.PaintGun.Features.ConfigMenu
             Category_HideSkins = AddCategory("Skins Shown in Palette", Category_Palette);
 
             groupAll.Add(new ItemToggle(Category_HideSkins, "Toggle ALL",
-                getter: () => Settings.hideSkinsFromPalette.Count == 0,
+                getter: () => Main.Settings.hideSkinsFromPalette.Count == 0,
                 setter: (v) =>
                 {
-                    Settings.hideSkinsFromPalette.Clear();
+                    Main.Settings.hideSkinsFromPalette.Clear();
 
                     if(!v)
                     {
-                        for(int i = 1; i < Palette.BlockSkins.Count; i++) // intentionally skipping 0
+                        for(int i = 1; i < Main.Palette.BlockSkins.Count; i++) // intentionally skipping 0
                         {
-                            var skin = Palette.BlockSkins[i];
-                            Settings.hideSkinsFromPalette.Add(skin.SubtypeId.String);
+                            var skin = Main.Palette.BlockSkins[i];
+                            Main.Settings.hideSkinsFromPalette.Add(skin.SubtypeId.String);
                         }
                     }
 
-                    Settings.ChangedByModConfig();
+                    Main.Settings.ChangedByModConfig();
                     groupSkins.Update();
                 },
                 defaultValue: true));
 
-            var skins = Palette.BlockSkins;
+            var skins = Main.Palette.BlockSkins;
             for(int i = 1; i < skins.Count; i++) // intentionally skipping 0
             {
                 var skin = skins[i];
                 var item = new ItemToggle(Category_HideSkins, skin.Name,
-                    getter: () => !Settings.hideSkinsFromPalette.Contains(skin.SubtypeId.String),
+                    getter: () => !Main.Settings.hideSkinsFromPalette.Contains(skin.SubtypeId.String),
                     setter: (v) =>
                     {
                         if(!v)
-                            Settings.hideSkinsFromPalette.Add(skin.SubtypeId.String);
+                            Main.Settings.hideSkinsFromPalette.Add(skin.SubtypeId.String);
                         else
-                            Settings.hideSkinsFromPalette.Remove(skin.SubtypeId.String);
-                        Settings.ChangedByModConfig();
+                            Main.Settings.hideSkinsFromPalette.Remove(skin.SubtypeId.String);
+                        Main.Settings.ChangedByModConfig();
                     },
                     defaultValue: true);
 
@@ -263,21 +263,21 @@ namespace Digi.PaintGun.Features.ConfigMenu
             //    }));
 
             groupAll.Add(new ItemSlider(Category_AimInfo, "Background Opacity", min: -0.1f, max: 1f, defaultValue: -0.1f, rounding: 2,
-                getter: () => Settings.aimInfoBackgroundOpacity,
+                getter: () => Main.Settings.aimInfoBackgroundOpacity,
                 setter: (val) =>
                 {
-                    Settings.aimInfoBackgroundOpacity = (val < 0 ? -1 : val);
-                    Settings.ChangedByModConfig();
+                    Main.Settings.aimInfoBackgroundOpacity = (val < 0 ? -1 : val);
+                    Main.Settings.ChangedByModConfig();
                 },
                 sliding: (val) =>
                 {
-                    Settings.aimInfoBackgroundOpacity = (val < 0 ? -1 : val);
-                    SelectionGUI.UpdateUISettings();
+                    Main.Settings.aimInfoBackgroundOpacity = (val < 0 ? -1 : val);
+                    Main.SelectionGUI.UpdateUISettings();
                 },
                 cancelled: (orig) =>
                 {
-                    Settings.aimInfoBackgroundOpacity = (orig < 0 ? -1 : orig);
-                    SelectionGUI.UpdateUISettings();
+                    Main.Settings.aimInfoBackgroundOpacity = (orig < 0 ? -1 : orig);
+                    Main.SelectionGUI.UpdateUISettings();
                 },
                 format: (val) =>
                 {
@@ -285,26 +285,26 @@ namespace Digi.PaintGun.Features.ConfigMenu
                 }));
 
             groupAll.Add(new ItemBoxMove(Category_AimInfo, "Screen Position", min: -Vector2D.One, max: Vector2D.One, defaultValue: Settings.aimInfoScreenPosDefault, rounding: 3,
-                getter: () => Settings.aimInfoScreenPos,
+                getter: () => Main.Settings.aimInfoScreenPos,
                 setter: (pos) =>
                 {
-                    Settings.aimInfoScreenPos = pos;
-                    Settings.ChangedByModConfig();
+                    Main.Settings.aimInfoScreenPos = pos;
+                    Main.Settings.ChangedByModConfig();
                 },
                 selected: (pos) =>
                 {
-                    Settings.aimInfoScreenPos = pos;
-                    SelectionGUI.UpdateUISettings();
+                    Main.Settings.aimInfoScreenPos = pos;
+                    Main.SelectionGUI.UpdateUISettings();
                 },
                 moving: (pos) =>
                 {
-                    Settings.aimInfoScreenPos = pos;
-                    SelectionGUI.UpdateUISettings();
+                    Main.Settings.aimInfoScreenPos = pos;
+                    Main.SelectionGUI.UpdateUISettings();
                 },
                 cancelled: (origPos) =>
                 {
-                    Settings.aimInfoScreenPos = origPos;
-                    SelectionGUI.UpdateUISettings();
+                    Main.Settings.aimInfoScreenPos = origPos;
+                    Main.SelectionGUI.UpdateUISettings();
                 }));
             #endregion AimInfo
 
@@ -312,61 +312,61 @@ namespace Digi.PaintGun.Features.ConfigMenu
             Category_Hotkeys = AddCategory("Hotkeys", Category_Mod);
 
             groupAll.Add(new ItemInput(Category_Hotkeys, "Color Pick Mode (Bind 1)",
-                getter: () => Settings.colorPickMode1,
+                getter: () => Main.Settings.colorPickMode1,
                 setter: (combination) =>
                     {
-                        Settings.colorPickMode1 = combination;
-                        Settings.ChangedByModConfig();
+                        Main.Settings.colorPickMode1 = combination;
+                        Main.Settings.ChangedByModConfig();
                     },
-                    defaultValue: Settings.default_colorPickMode1));
+                    defaultValue: Main.Settings.default_colorPickMode1));
 
             groupAll.Add(new ItemInput(Category_Hotkeys, "Color Pick Mode (Bind 2)",
-                getter: () => Settings.colorPickMode2,
+                getter: () => Main.Settings.colorPickMode2,
                 setter: (combination) =>
                 {
-                    Settings.colorPickMode2 = combination;
-                    Settings.ChangedByModConfig();
+                    Main.Settings.colorPickMode2 = combination;
+                    Main.Settings.ChangedByModConfig();
                 },
-                defaultValue: Settings.default_colorPickMode2));
+                defaultValue: Main.Settings.default_colorPickMode2));
 
             groupAll.Add(new ItemInput(Category_Hotkeys, "Instant Color Pick (Bind 1)",
-                getter: () => Settings.instantColorPick1,
+                getter: () => Main.Settings.instantColorPick1,
                 setter: (combination) =>
                 {
-                    Settings.instantColorPick1 = combination;
-                    Settings.ChangedByModConfig();
+                    Main.Settings.instantColorPick1 = combination;
+                    Main.Settings.ChangedByModConfig();
                 },
-                defaultValue: Settings.default_instantColorPick1));
+                defaultValue: Main.Settings.default_instantColorPick1));
 
             groupAll.Add(new ItemInput(Category_Hotkeys, "Instant Color Pick (Bind 2)",
-                getter: () => Settings.instantColorPick2,
+                getter: () => Main.Settings.instantColorPick2,
                 setter: (combination) =>
                 {
-                    Settings.instantColorPick2 = combination;
-                    Settings.ChangedByModConfig();
+                    Main.Settings.instantColorPick2 = combination;
+                    Main.Settings.ChangedByModConfig();
                 },
-                defaultValue: Settings.default_instantColorPick2));
+                defaultValue: Main.Settings.default_instantColorPick2));
 
             groupAll.Add(new ItemInput(Category_Hotkeys, "Replace Color Mode (Bind 1)",
-                getter: () => Settings.replaceColorMode1,
+                getter: () => Main.Settings.replaceColorMode1,
                 setter: (combination) =>
                 {
-                    Settings.replaceColorMode1 = combination;
-                    Settings.ChangedByModConfig();
+                    Main.Settings.replaceColorMode1 = combination;
+                    Main.Settings.ChangedByModConfig();
                 },
-                defaultValue: Settings.default_replaceColorMode1));
+                defaultValue: Main.Settings.default_replaceColorMode1));
 
             groupAll.Add(new ItemInput(Category_Hotkeys, "Replace Color Mode (Bind 2)",
-                getter: () => Settings.replaceColorMode2,
+                getter: () => Main.Settings.replaceColorMode2,
                 setter: (combination) =>
                 {
-                    Settings.replaceColorMode2 = combination;
-                    Settings.ChangedByModConfig();
+                    Main.Settings.replaceColorMode2 = combination;
+                    Main.Settings.ChangedByModConfig();
                 },
-                defaultValue: Settings.default_replaceColorMode2));
+                defaultValue: Main.Settings.default_replaceColorMode2));
             #endregion Hotkeys
 
-            Settings.SettingsLoaded += SettingsLoaded;
+            Main.Settings.SettingsLoaded += SettingsLoaded;
         }
 
         #region Helper methods

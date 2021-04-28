@@ -28,7 +28,7 @@ namespace Digi.PaintGun.Features.Palette
         [ProtoMember(3)]
         public readonly int? Z;
 
-        public bool HasMirroring => X.HasValue || Y.HasValue || Z.HasValue;
+        public readonly bool HasMirroring;
 
         public MirrorPlanes(IMyCubeGrid grid)
         {
@@ -46,6 +46,8 @@ namespace Digi.PaintGun.Features.Palette
                 Z = grid.ZSymmetryPlane.Value.Z;
             else
                 Z = null;
+
+            HasMirroring = X.HasValue || Y.HasValue || Z.HasValue;
         }
     }
 
