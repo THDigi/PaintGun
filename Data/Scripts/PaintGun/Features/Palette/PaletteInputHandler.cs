@@ -4,6 +4,7 @@ using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character.Components;
 using Sandbox.ModAPI;
 using VRage.Game;
+using VRage.Game.ModAPI;
 using VRageMath;
 
 namespace Digi.PaintGun.Features.Palette
@@ -33,18 +34,34 @@ namespace Digi.PaintGun.Features.Palette
 
         protected override void UpdateInput(bool anyKeyOrMouse, bool inMenu, bool paused)
         {
+            IMyPlayer player = MyAPIGateway.Session.Player;
+
             // monitor selected color slot while in color picker GUI
             if(inMenu && MyAPIGateway.Gui.ActiveGamePlayScreen == "ColorPick")
             {
-                LocalInfo.SelectedColorIndex = MyAPIGateway.Session.Player.SelectedBuildColorSlot;
-                LocalInfo.SetColorAt(LocalInfo.SelectedColorIndex, MyAPIGateway.Session.Player.BuildColorSlots[LocalInfo.SelectedColorIndex]);
+#if false // color swap feature, doesn't visually update right away and can be confusing.
+                if(MyAPIGateway.Input.IsRightMousePressed())
+                {
+                    if(LocalInfo.SelectedColorIndex != player.SelectedBuildColorSlot)
+                    {
+                        MyAPIGateway.Utilities.ShowMessage("DEBUG", $"Swap {LocalInfo.SelectedColorIndex} with {player.SelectedBuildColorSlot}");
+
+                        Vector3 oldColor = LocalInfo.ColorsMasks[LocalInfo.SelectedColorIndex];
+                        player.BuildColorSlots[LocalInfo.SelectedColorIndex] = player.BuildColorSlots[player.SelectedBuildColorSlot];
+                        player.BuildColorSlots[player.SelectedBuildColorSlot] = oldColor;
+                    }
+                }
+#endif
+
+                LocalInfo.SelectedColorIndex = player.SelectedBuildColorSlot;
+                LocalInfo.SetColorAt(LocalInfo.SelectedColorIndex, player.BuildColorSlots[LocalInfo.SelectedColorIndex]);
                 return;
             }
 
             if(paused)
                 return;
 
-            bool controllingLocalChar = (MyAPIGateway.Session.ControlledObject == MyAPIGateway.Session.Player?.Character);
+            bool controllingLocalChar = (MyAPIGateway.Session.ControlledObject == player?.Character);
             if(controllingLocalChar)
             {
                 bool inputReadable = (InputHandler.IsInputReadable() && !MyAPIGateway.Session.IsCameraUserControlledSpectator);
