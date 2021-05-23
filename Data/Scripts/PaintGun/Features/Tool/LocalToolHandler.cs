@@ -348,12 +348,12 @@ namespace Digi.PaintGun.Features.Tool
                 return;
             }
 
+            // HACK copied and converted from MyDrillSensorRayCast.ReadEntitiesInRange() + MyCasterComponent.OnWorldPosChanged()
+            #region Welder-like block selection
             hits.Clear();
             detections.Clear();
             rayOverlapResults.Clear();
 
-            // HACK copied and converted from MyDrillSensorRayCast.ReadEntitiesInRange()
-            #region Welder-like block selection
             MyAPIGateway.Physics.CastRay(rayFrom, rayTo, hits, 24);
 
             foreach(var hit in hits)
@@ -366,7 +366,13 @@ namespace Digi.PaintGun.Features.Tool
 
                 var grid = parent as IMyCubeGrid;
                 if(grid != null)
-                    hitPos += (grid.GridSizeEnum == MyCubeSize.Small ? (hit.Normal * -0.02f) : (hit.Normal * -0.08f));
+                {
+                    // just how it's set in game code /shrug
+                    if(grid.GridSizeEnum == MyCubeSize.Large)
+                        hitPos += hit.Normal * -0.08f;
+                    else
+                        hitPos += hit.Normal * -0.02f;
+                }
 
                 DetectionInfo detected;
 
@@ -467,10 +473,11 @@ namespace Digi.PaintGun.Features.Tool
             if(targetGrid == null)
                 return;
 
-            var localHitPos = Vector3D.Transform(closest.DetectionPoint, targetGrid.WorldMatrixNormalizedInv);
-            Vector3I blockGridPos;
-            targetGrid.FixTargetCube(out blockGridPos, localHitPos / targetGrid.GridSize);
-            targetBlock = targetGrid.GetCubeBlock(blockGridPos);
+            Vector3D offset = rayDir * (targetGrid.GridSizeEnum == MyCubeSize.Large ? 0.05f : -0.007f); // just how it's set in game code /shrug
+            Vector3D localPos = Vector3D.Transform(closest.DetectionPoint - offset, targetGrid.WorldMatrixNormalizedInv);
+            Vector3I cube;
+            targetGrid.FixTargetCube(out cube, localPos / targetGrid.GridSize);
+            targetBlock = targetGrid.GetCubeBlock(cube);
         }
 
         bool GetTargetCharacter(Vector3D rayFrom, Vector3D rayDir, double rayLength, IMyCharacter character, ref IMyPlayer targetPlayer)
