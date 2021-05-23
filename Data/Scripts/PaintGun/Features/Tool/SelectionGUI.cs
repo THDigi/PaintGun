@@ -32,6 +32,11 @@ namespace Digi.PaintGun.Features.Tool
         Vector2D uiTextBgPosition = new Vector2D(0, -0.071);
         Vector2D uiProgressBarPosition = new Vector2D(0.005, -0.079);
 
+        // used by selection
+        IMySlimBlock LastAimedBlock;
+        readonly Vector3D[] Corners = new Vector3D[8];
+        readonly Dictionary<IMySlimBlock, BoundingBoxD> LocalBBCache = new Dictionary<IMySlimBlock, BoundingBoxD>();
+
         const float UI_BOX_WIDTH = 0.337f * (16f / 9f);
 
         const float UI_TITLE_SCALE = 1f;
@@ -72,13 +77,11 @@ namespace Digi.PaintGun.Features.Tool
 
         readonly MyStringId SYMMETRY_PLANES_MATERIAL = MyStringId.GetOrCompute("Square");
         const float SYMMETRY_PLANES_ALPHA = 0.4f;
-        const BlendTypeEnum SYMMETRY_PLANES_BLENDTYPE = BlendTypeEnum.SDR;
+        const BlendTypeEnum SYMMETRY_PLANES_BLENDTYPE = BlendTypeEnum.PostPP;
 
-        readonly MyStringId BLOCK_SELECTION_LINE_MATERIAL = MyStringId.GetOrCompute("Square");
-        const BlendTypeEnum BLOCK_SELECTION_LINE_BLENDTYPE = BlendTypeEnum.SDR;
-
-        readonly MyStringId CHARACTER_SELECTION_LINE_MATERIAL = MyStringId.GetOrCompute("Square");
-        const BlendTypeEnum CHARACTER_SELECTION_LINE_BLENDTYPE = BlendTypeEnum.SDR;
+        readonly MyStringId SelectionLineMaterial = MyStringId.GetOrCompute("PaintGun_Laser");
+        readonly MyStringId SelectionCornerMaterial = MyStringId.GetOrCompute("PaintGun_LaserDot");
+        const BlendTypeEnum SelectionBlendType = BlendTypeEnum.PostPP;
 
         public SelectionGUI(PaintGunMod main) : base(main)
         {
@@ -105,7 +108,7 @@ namespace Digi.PaintGun.Features.Tool
         public void SetGUIStatus(int line, string text, string colorNameOrRGB = null)
         {
             if(line < 0 || line >= blockInfoStatus.Length)
-                throw new ArgumentException($"Given line={line} is negative or above {blockInfoStatus.Length - 1}");
+                throw new ArgumentException($"Given line={line.ToString()} is negative or above {(blockInfoStatus.Length - 1).ToString()}");
 
             blockInfoStatus[line] = (colorNameOrRGB != null ? $"<color={colorNameOrRGB}>{text}" : text);
         }
@@ -181,27 +184,16 @@ namespace Digi.PaintGun.Features.Tool
         #region Selection draw
         void DrawCharacterSelection()
         {
-            var aimedCharacter = Main.LocalToolHandler.AimedPlayer.Character;
-
+            IMyCharacter aimedCharacter = Main.LocalToolHandler.AimedPlayer.Character;
             if(aimedCharacter == null || aimedCharacter.MarkedForClose || aimedCharacter.Closed || !aimedCharacter.Visible)
             {
                 Main.LocalToolHandler.AimedPlayer = null;
                 return;
             }
 
-            DrawCharacterSelection(aimedCharacter);
-        }
-
-        void DrawCharacterSelection(IMyCharacter character)
-        {
-            var color = Color.Lime;
-            var material = CHARACTER_SELECTION_LINE_MATERIAL;
-
-            var matrix = character.WorldMatrix;
-            var localBox = (BoundingBoxD)character.LocalAABB;
-            var worldToLocal = character.WorldMatrixInvScaled;
-
-            MySimpleObjectDraw.DrawAttachedTransparentBox(ref matrix, ref localBox, ref color, character.Render.GetRenderObjectID(), ref worldToLocal, MySimpleObjectRasterizer.Wireframe, Vector3I.One, 0.005f, null, CHARACTER_SELECTION_LINE_MATERIAL, false, blendType: CHARACTER_SELECTION_LINE_BLENDTYPE);
+            MatrixD matrix = aimedCharacter.WorldMatrix;
+            BoundingBoxD localBB = (BoundingBoxD)aimedCharacter.LocalAABB;
+            DrawSelectionLines(ref matrix, ref localBB, Color.Lime, 0.025f);
         }
 
         void DrawSymmetry()
@@ -209,14 +201,13 @@ namespace Digi.PaintGun.Features.Tool
             if(!Main.LocalToolHandler.SymmetryInputAvailable || !MyAPIGateway.CubeBuilder.UseSymmetry || Main.LocalToolHandler.AimedBlock == null)
                 return;
 
-            var selectedGrid = Main.LocalToolHandler.AimedBlock.CubeGrid;
-
+            IMyCubeGrid selectedGrid = Main.LocalToolHandler.AimedBlock.CubeGrid;
             if(!selectedGrid.XSymmetryPlane.HasValue && !selectedGrid.YSymmetryPlane.HasValue && !selectedGrid.ZSymmetryPlane.HasValue)
                 return;
 
-            var matrix = selectedGrid.WorldMatrix;
-            var quad = new MyQuadD();
-            var gridSizeHalf = selectedGrid.GridSize * 0.5f;
+            MatrixD matrix = selectedGrid.WorldMatrix;
+            MyQuadD quad = new MyQuadD();
+            float gridSizeHalf = selectedGrid.GridSize * 0.5f;
             Vector3D gridSize = (Vector3I.One + (selectedGrid.Max - selectedGrid.Min)) * gridSizeHalf;
 
             if(selectedGrid.XSymmetryPlane.HasValue)
@@ -273,7 +264,13 @@ namespace Digi.PaintGun.Features.Tool
 
         void DrawBlockSelection()
         {
-            var block = Main.LocalToolHandler.AimedBlock;
+            IMySlimBlock block = Main.LocalToolHandler.AimedBlock;
+
+            if(block != LastAimedBlock)
+            {
+                LastAimedBlock = block;
+                LocalBBCache.Clear();
+            }
 
             if(block == null)
                 return;
@@ -284,9 +281,9 @@ namespace Digi.PaintGun.Features.Tool
                 return;
             }
 
-            DrawBlockSelection(block, Main.LocalToolHandler.AimedState);
+            DrawBlockSelection(block, Main.LocalToolHandler.AimedState, primarySelection: true);
 
-            var grid = Main.LocalToolHandler.AimedBlock.CubeGrid;
+            IMyCubeGrid grid = Main.LocalToolHandler.AimedBlock.CubeGrid;
 
             // symmetry highlight
             if(Main.SymmetryAccess && !Main.Palette.ReplaceMode && !Main.Palette.ColorPickMode && MyCubeBuilder.Static.UseSymmetry && (grid.XSymmetryPlane.HasValue || grid.YSymmetryPlane.HasValue || grid.ZSymmetryPlane.HasValue))
@@ -314,41 +311,207 @@ namespace Digi.PaintGun.Features.Tool
                 if(grid.XSymmetryPlane.HasValue && mirrorYZ.HasValue) // XYZ
                     MirrorHighlight(grid, 0, mirrorYZ.Value, alreadyMirrored);
 
-                Main.Notifications.Show(3, $"Mirror paint will affect {mirroredValid} of {mirroredValidTotal} blocks.", MyFontEnum.Debug, 32);
+                Main.Notifications.Show(3, $"Mirror paint will affect {mirroredValid.ToString()} of {mirroredValidTotal.ToString()} blocks.", MyFontEnum.Debug, 32);
             }
         }
 
-        void DrawBlockSelection(IMySlimBlock block, SelectionState state)
+        void DrawBlockSelection(IMySlimBlock block, SelectionState state, bool primarySelection = false)
         {
-            var grid = block.CubeGrid;
-            var def = (MyCubeBlockDefinition)block.BlockDefinition;
+            IMyCubeGrid grid = block.CubeGrid;
+            MyCubeBlockDefinition def = (MyCubeBlockDefinition)block.BlockDefinition;
 
-            var color = (state == SelectionState.InvalidButMirrorValid ? Color.Yellow : (state == SelectionState.Valid ? Color.Green : Color.Red));
-            var lineWidth = (grid.GridSizeEnum == MyCubeSize.Large ? 0.01f : 0.008f);
+            Color color = (state == SelectionState.InvalidButMirrorValid ? Color.Yellow : (state == SelectionState.Valid ? Color.Green : Color.Red));
 
             MatrixD worldMatrix;
             BoundingBoxD localBB;
 
-            if(block.FatBlock != null)
+            #region Compute box
+            MyCubeBlock fatBlock = block.FatBlock as MyCubeBlock;
+            if(fatBlock != null)
             {
-                var inflate = new Vector3(0.05f) / grid.GridSize;
-                worldMatrix = block.FatBlock.WorldMatrix;
-                localBB = new BoundingBoxD(block.FatBlock.LocalAABB.Min - inflate, block.FatBlock.LocalAABB.Max + inflate);
+                worldMatrix = fatBlock.PositionComp.WorldMatrixRef;
+
+                if(Main.Tick % (Constants.TICKS_PER_SECOND / 4) == 0 || !LocalBBCache.TryGetValue(block, out localBB))
+                {
+                    BoundingBox localAABB = fatBlock.PositionComp.LocalAABB;
+                    localBB = new BoundingBoxD(localAABB.Min, localAABB.Max);
+
+                    #region Subpart localBB inclusion
+                    if(fatBlock.Subparts != null)
+                    {
+                        MatrixD transformToBlockLocal = fatBlock.PositionComp.WorldMatrixInvScaled;
+
+                        foreach(VRage.Game.Entity.MyEntitySubpart s1 in fatBlock.Subparts.Values)
+                        {
+                            MyOrientedBoundingBoxD obbS1 = new MyOrientedBoundingBoxD(s1.PositionComp.LocalAABB, s1.PositionComp.WorldMatrixRef);
+                            obbS1.GetCorners(Corners, 0);
+
+                            for(int i = 0; i < Corners.Length; i++)
+                            {
+                                Vector3D corner = Corners[i];
+                                localBB.Include(Vector3D.Transform(corner, transformToBlockLocal));
+                            }
+
+                            if(s1.Subparts != null)
+                                foreach(VRage.Game.Entity.MyEntitySubpart s2 in s1.Subparts.Values)
+                                {
+                                    MyOrientedBoundingBoxD obbS2 = new MyOrientedBoundingBoxD(s2.PositionComp.LocalAABB, s2.PositionComp.WorldMatrixRef);
+                                    obbS2.GetCorners(Corners, 0);
+
+                                    for(int i = 0; i < Corners.Length; i++)
+                                    {
+                                        Vector3D corner = Corners[i];
+                                        localBB.Include(Vector3D.Transform(corner, transformToBlockLocal));
+                                    }
+
+                                    if(s2.Subparts != null)
+                                        foreach(VRage.Game.Entity.MyEntitySubpart s3 in s2.Subparts.Values)
+                                        {
+                                            MyOrientedBoundingBoxD obbS3 = new MyOrientedBoundingBoxD(s3.PositionComp.LocalAABB, s3.PositionComp.WorldMatrixRef);
+                                            obbS3.GetCorners(Corners, 0);
+
+                                            for(int i = 0; i < Corners.Length; i++)
+                                            {
+                                                Vector3D corner = Corners[i];
+                                                localBB.Include(Vector3D.Transform(corner, transformToBlockLocal));
+                                            }
+
+                                            if(s3.Subparts != null)
+                                                foreach(VRage.Game.Entity.MyEntitySubpart s4 in s3.Subparts.Values)
+                                                {
+                                                    MyOrientedBoundingBoxD obbS4 = new MyOrientedBoundingBoxD(s4.PositionComp.LocalAABB, s4.PositionComp.WorldMatrixRef);
+                                                    obbS4.GetCorners(Corners, 0);
+
+                                                    for(int i = 0; i < Corners.Length; i++)
+                                                    {
+                                                        Vector3D corner = Corners[i];
+                                                        localBB.Include(Vector3D.Transform(corner, transformToBlockLocal));
+                                                    }
+                                                }
+                                        }
+                                }
+                        }
+                    }
+                    #endregion
+
+                    LocalBBCache[block] = localBB;
+                }
             }
             else
             {
                 Matrix localMatrix;
                 block.Orientation.GetMatrix(out localMatrix);
-                worldMatrix = localMatrix * Matrix.CreateTranslation(block.Position) * Matrix.CreateScale(grid.GridSize) * grid.WorldMatrix;
+                localMatrix.Translation = new Vector3(block.Position) * grid.GridSize;
+                worldMatrix = localMatrix * grid.WorldMatrix;
 
-                var inflate = new Vector3(0.05f);
-                var offset = new Vector3(0.5f);
-                localBB = new BoundingBoxD(-def.Center - offset - inflate, def.Size - def.Center - offset + inflate);
+                Vector3 halfSize = def.Size * (grid.GridSize * 0.5f);
+                localBB = new BoundingBoxD(-halfSize, halfSize);
             }
+            #endregion
 
-            // TODO: draw lines of consistent width between fatblock == null and fatblock != null
+            localBB.Inflate((grid.GridSizeEnum == MyCubeSize.Large ? 0.1 : 0.03));
+            float lineWidth;
 
-            MySimpleObjectDraw.DrawTransparentBox(ref worldMatrix, ref localBB, ref color, MySimpleObjectRasterizer.Wireframe, 1, lineWidth, null, BLOCK_SELECTION_LINE_MATERIAL, blendType: BLOCK_SELECTION_LINE_BLENDTYPE);
+            if(primarySelection)
+                lineWidth = (grid.GridSizeEnum == MyCubeSize.Large ? 0.02f : 0.016f);
+            else
+                lineWidth = (grid.GridSizeEnum == MyCubeSize.Large ? 0.25f : 0.1f); // thicker mirrored selections to see better in distance
+
+            DrawSelectionLines(ref worldMatrix, ref localBB, color, lineWidth);
+        }
+
+        void DrawSelectionLines(ref MatrixD worldMatrix, ref BoundingBoxD localBB, Color color, float lineWidth)
+        {
+            #region Selection lines
+            const float LineLength = 2f; // directions are half-long
+
+            Vector3D center = Vector3D.Transform((localBB.Min + localBB.Max) * 0.5, worldMatrix);
+            Vector3D halfExtent = (localBB.Max - localBB.Min) * 0.5;
+            Vector3D left = worldMatrix.Left * halfExtent.X;
+            Vector3D up = worldMatrix.Up * halfExtent.Y;
+            Vector3D back = worldMatrix.Backward * halfExtent.Z;
+
+            Vector3D top = center + up;
+            Vector3D bottom = center - up;
+
+            Vector3D cornerTop1 = top + left + back;
+            MyTransparentGeometry.AddLineBillboard(SelectionLineMaterial, color, cornerTop1, -left, LineLength, lineWidth, SelectionBlendType);
+            MyTransparentGeometry.AddLineBillboard(SelectionLineMaterial, color, cornerTop1, -up, LineLength, lineWidth, SelectionBlendType);
+            MyTransparentGeometry.AddLineBillboard(SelectionLineMaterial, color, cornerTop1, -back, LineLength, lineWidth, SelectionBlendType);
+
+            Vector3D cornerTop2 = top - left - back;
+            MyTransparentGeometry.AddLineBillboard(SelectionLineMaterial, color, cornerTop2, left, LineLength, lineWidth, SelectionBlendType);
+            MyTransparentGeometry.AddLineBillboard(SelectionLineMaterial, color, cornerTop2, -up, LineLength, lineWidth, SelectionBlendType);
+            MyTransparentGeometry.AddLineBillboard(SelectionLineMaterial, color, cornerTop2, back, LineLength, lineWidth, SelectionBlendType);
+
+            Vector3D cornerBottom1 = bottom + left - back;
+            MyTransparentGeometry.AddLineBillboard(SelectionLineMaterial, color, cornerBottom1, -left, LineLength, lineWidth, SelectionBlendType);
+            MyTransparentGeometry.AddLineBillboard(SelectionLineMaterial, color, cornerBottom1, up, LineLength, lineWidth, SelectionBlendType);
+            MyTransparentGeometry.AddLineBillboard(SelectionLineMaterial, color, cornerBottom1, back, LineLength, lineWidth, SelectionBlendType);
+
+            Vector3D cornerBottom2 = bottom - left + back;
+            MyTransparentGeometry.AddLineBillboard(SelectionLineMaterial, color, cornerBottom2, left, LineLength, lineWidth, SelectionBlendType);
+            MyTransparentGeometry.AddLineBillboard(SelectionLineMaterial, color, cornerBottom2, up, LineLength, lineWidth, SelectionBlendType);
+            MyTransparentGeometry.AddLineBillboard(SelectionLineMaterial, color, cornerBottom2, -back, LineLength, lineWidth, SelectionBlendType);
+            #endregion Selection lines
+
+            #region Selection corners
+            float cornerRadius = lineWidth;
+            Vector4 colorCorner = color;
+
+            MyTransparentGeometry.AddPointBillboard(SelectionCornerMaterial, colorCorner, cornerTop1, cornerRadius, 0, blendType: SelectionBlendType);
+            MyTransparentGeometry.AddPointBillboard(SelectionCornerMaterial, colorCorner, cornerTop2, cornerRadius, 0, blendType: SelectionBlendType);
+            MyTransparentGeometry.AddPointBillboard(SelectionCornerMaterial, colorCorner, cornerBottom1, cornerRadius, 0, blendType: SelectionBlendType);
+            MyTransparentGeometry.AddPointBillboard(SelectionCornerMaterial, colorCorner, cornerBottom2, cornerRadius, 0, blendType: SelectionBlendType);
+
+            Vector3D cornerTop3 = top - left + back;
+            MyTransparentGeometry.AddPointBillboard(SelectionCornerMaterial, colorCorner, cornerTop3, cornerRadius, 0, blendType: SelectionBlendType);
+            Vector3D cornerTop4 = top + left - back;
+            MyTransparentGeometry.AddPointBillboard(SelectionCornerMaterial, colorCorner, cornerTop4, cornerRadius, 0, blendType: SelectionBlendType);
+
+            Vector3D cornerBottom3 = bottom - left - back;
+            MyTransparentGeometry.AddPointBillboard(SelectionCornerMaterial, colorCorner, cornerBottom3, cornerRadius, 0, blendType: SelectionBlendType);
+            Vector3D cornerBottom4 = bottom + left + back;
+            MyTransparentGeometry.AddPointBillboard(SelectionCornerMaterial, colorCorner, cornerBottom4, cornerRadius, 0, blendType: SelectionBlendType);
+            #endregion corners
+
+            #region See-through-walls lines
+            MatrixD camMatrix = MyAPIGateway.Session.Camera.WorldMatrix;
+
+            const float DepthRatio = 0.01f;
+            lineWidth *= DepthRatio * 0.5f; // and half as thin
+            color *= 0.5f; // half opacity too
+
+            center = camMatrix.Translation + ((center - camMatrix.Translation) * DepthRatio);
+
+            //halfExtent *= DepthRatio;
+            left *= DepthRatio;
+            up *= DepthRatio;
+            back *= DepthRatio;
+
+            top = center + up;
+            bottom = center - up;
+
+            cornerTop1 = top + left + back;
+            MyTransparentGeometry.AddLineBillboard(SelectionLineMaterial, color, cornerTop1, -left, LineLength, lineWidth, SelectionBlendType);
+            MyTransparentGeometry.AddLineBillboard(SelectionLineMaterial, color, cornerTop1, -up, LineLength, lineWidth, SelectionBlendType);
+            MyTransparentGeometry.AddLineBillboard(SelectionLineMaterial, color, cornerTop1, -back, LineLength, lineWidth, SelectionBlendType);
+
+            cornerTop2 = top - left - back;
+            MyTransparentGeometry.AddLineBillboard(SelectionLineMaterial, color, cornerTop2, left, LineLength, lineWidth, SelectionBlendType);
+            MyTransparentGeometry.AddLineBillboard(SelectionLineMaterial, color, cornerTop2, -up, LineLength, lineWidth, SelectionBlendType);
+            MyTransparentGeometry.AddLineBillboard(SelectionLineMaterial, color, cornerTop2, back, LineLength, lineWidth, SelectionBlendType);
+
+            cornerBottom1 = bottom + left - back;
+            MyTransparentGeometry.AddLineBillboard(SelectionLineMaterial, color, cornerBottom1, -left, LineLength, lineWidth, SelectionBlendType);
+            MyTransparentGeometry.AddLineBillboard(SelectionLineMaterial, color, cornerBottom1, up, LineLength, lineWidth, SelectionBlendType);
+            MyTransparentGeometry.AddLineBillboard(SelectionLineMaterial, color, cornerBottom1, back, LineLength, lineWidth, SelectionBlendType);
+
+            cornerBottom2 = bottom - left + back;
+            MyTransparentGeometry.AddLineBillboard(SelectionLineMaterial, color, cornerBottom2, left, LineLength, lineWidth, SelectionBlendType);
+            MyTransparentGeometry.AddLineBillboard(SelectionLineMaterial, color, cornerBottom2, up, LineLength, lineWidth, SelectionBlendType);
+            MyTransparentGeometry.AddLineBillboard(SelectionLineMaterial, color, cornerBottom2, -back, LineLength, lineWidth, SelectionBlendType);
+            #endregion
         }
 
         Vector3I? MirrorHighlight(IMyCubeGrid grid, int axis, Vector3I originalPosition, List<Vector3I> alreadyMirrored)
@@ -653,6 +816,8 @@ namespace Digi.PaintGun.Features.Tool
 
         void LocalToolHolstered(PaintGunItem item)
         {
+            LocalBBCache.Clear();
+            LastAimedBlock = null;
             SetGUIVisible(false);
         }
 
