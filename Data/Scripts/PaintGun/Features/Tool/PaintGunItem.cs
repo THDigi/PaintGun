@@ -5,6 +5,7 @@ using Digi.PaintGun.Utilities;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Weapons;
+using VRage;
 using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
@@ -19,7 +20,7 @@ namespace Digi.PaintGun.Features.Tool
         public IMyAutomaticRifleGun Rifle;
         public bool Spraying;
         public int SprayCooldown;
-        public int Ammo => Rifle.CurrentAmmunition;
+        public int Ammo;
 
         /// <summary>
         /// Used for outside event triggering, only true for a really short time.
@@ -201,6 +202,12 @@ namespace Digi.PaintGun.Features.Tool
         {
             if(Rifle == null || Rifle.MarkedForClose)
                 return false;
+
+            if(Main.Tick % 30 == 0)
+            {
+                MyFixedPoint? amount = Rifle?.Owner?.GetInventory()?.GetItemAmount(Main.Constants.PAINT_MAG_ID);
+                Ammo = (amount.HasValue ? (int)amount.Value : 0);
+            }
 
             if(soundEmitter == null)
             {

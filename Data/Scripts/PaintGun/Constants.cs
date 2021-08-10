@@ -8,11 +8,13 @@ namespace Digi.PaintGun
         public const string PAINTGUN_ID = "PaintGun";
         public const string PAINTGUN_PHYSITEMID = "PhysicalPaintGun";
         public const string PAINTGUN_WEAPONID = "WeaponPaintGun";
-        public const string PAINT_MAGAZINE_ID = "PaintGunMag";
+        public const string PAINT_MAG_SUBTYPEID = "PaintGunMag";
+
+        public readonly MyDefinitionId PAINT_MAG_ID = new MyDefinitionId(typeof(MyObjectBuilder_AmmoMagazine), PAINT_MAG_SUBTYPEID);
 
         public readonly MyObjectBuilder_AmmoMagazine PAINT_MAG_ITEM = new MyObjectBuilder_AmmoMagazine()
         {
-            SubtypeName = PAINT_MAGAZINE_ID,
+            SubtypeName = PAINT_MAG_SUBTYPEID,
             ProjectilesCount = 1
         };
 
