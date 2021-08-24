@@ -98,10 +98,9 @@ namespace Digi.PaintGun.Features.Palette
             if(LocalInfo == null)
                 return;
 
-            if(!MyAPIGateway.Input.IsAnyAltKeyPressed() && MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.CUBE_COLOR_CHANGE))
+            if(!MyAPIGateway.Input.IsAnyAltKeyPressed() && InputHandler.IsControlPressedIgnoreBlock(MyControlsSpace.CUBE_COLOR_CHANGE, newPress: true))
             {
                 bool skin = MyAPIGateway.Input.IsAnyShiftKeyPressed();
-
                 if(skin)
                     LocalInfo.ApplySkin = !LocalInfo.ApplySkin;
                 else
