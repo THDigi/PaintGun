@@ -585,6 +585,27 @@ namespace Digi
             return !MyAPIGateway.Gui.ChatEntryVisible && !MyAPIGateway.Gui.IsCursorVisible;
         }
 
+        /// <summary>
+        /// Reads the bound button or key from the given control to bypass control blocking.
+        /// </summary>
+        public static bool IsControlPressedIgnoreBlock(MyStringId controlId, bool newPress = false)
+        {
+            IMyControl control = MyAPIGateway.Input.GetGameControl(controlId);
+
+            if(newPress)
+            {
+                return MyAPIGateway.Input.IsNewMousePressed(control.GetMouseControl())
+                    || MyAPIGateway.Input.IsNewKeyPressed(control.GetKeyboardControl())
+                    || MyAPIGateway.Input.IsNewKeyPressed(control.GetSecondKeyboardControl());
+            }
+            else
+            {
+                return MyAPIGateway.Input.IsMousePressed(control.GetMouseControl())
+                    || MyAPIGateway.Input.IsKeyPress(control.GetKeyboardControl())
+                    || MyAPIGateway.Input.IsKeyPress(control.GetSecondKeyboardControl());
+            }
+        }
+
         public static void AppendNiceNamePrefix(string key, object obj, StringBuilder str)
         {
             if(obj is MyKeys)
