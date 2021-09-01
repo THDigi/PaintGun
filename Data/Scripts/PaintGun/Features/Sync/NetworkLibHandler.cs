@@ -4,8 +4,7 @@ namespace Digi.PaintGun.Features.Sync
 {
     public class NetworkLibHandler : ModComponent
     {
-        public PacketPaint PacketPaint;
-        public PacketReplacePaint PacketReplacePaint;
+        public PacketConsumeAmmo PacketConsumeAmmo;
 
         public PacketPaletteUpdate PacketPaletteUpdate;
         public PacketPaletteSetColor PacketPaletteSetColor;
@@ -13,9 +12,6 @@ namespace Digi.PaintGun.Features.Sync
 
         public PacketToolSpraying PacketToolSpraying;
         public PacketWarningMessage PacketWarningMessage;
-
-        public PacketOwnershipTestRequest PacketOwnershipTestRequest;
-        public PacketOwnershipTestResults PacketOwnershipTestResults;
 
         public Network Lib;
 
@@ -26,8 +22,7 @@ namespace Digi.PaintGun.Features.Sync
             Lib = new Network(Constants.NETWORK_CHANNEL);
 
             // needed here because they call an API method on creation
-            PacketPaint = new PacketPaint();
-            PacketReplacePaint = new PacketReplacePaint();
+            PacketConsumeAmmo = new PacketConsumeAmmo();
 
             PacketPaletteUpdate = new PacketPaletteUpdate();
             PacketPaletteSetColor = new PacketPaletteSetColor();
@@ -35,9 +30,6 @@ namespace Digi.PaintGun.Features.Sync
 
             PacketToolSpraying = new PacketToolSpraying();
             PacketWarningMessage = new PacketWarningMessage();
-
-            PacketOwnershipTestRequest = new PacketOwnershipTestRequest();
-            PacketOwnershipTestResults = new PacketOwnershipTestResults();
         }
 
         protected override void RegisterComponent()

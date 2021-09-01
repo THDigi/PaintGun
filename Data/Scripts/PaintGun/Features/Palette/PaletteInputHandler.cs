@@ -167,8 +167,8 @@ namespace Digi.PaintGun.Features.Palette
             if(cycleDir == 0)
                 return;
 
-            if(cycleSkins && Main.Palette.OwnedSkinsCount == 0)
-                return; // no skins yet, ignore for now
+            if(cycleSkins && Main.Palette.SkinsForHUD.Count <= 0)
+                return;
 
             // skin or color applying is off, can't cycle turned off palette
             if(cycleSkins ? !LocalInfo.ApplySkin : !LocalInfo.ApplyColor)

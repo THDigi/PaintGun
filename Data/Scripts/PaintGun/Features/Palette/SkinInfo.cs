@@ -34,7 +34,7 @@ namespace Digi.PaintGun.Features.Palette
 
             // mod-added DLC-less skins are always owned
             AlwaysOwned = Definition == null || (!Definition.Context.IsBaseGame && (Definition.DLCs == null || Definition.DLCs.Length == 0));
-            LocallyOwned = Definition == null || AlwaysOwned;
+            LocallyOwned = true; // HACK: just using sync'd paint API to let it decide on its own
         }
     }
 }

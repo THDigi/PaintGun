@@ -1,16 +1,33 @@
 ﻿using System.Collections.Generic;
+using Digi.ComponentLib;
 using Digi.PaintGun.Utilities;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.ModAPI;
+using VRage.Utils;
 using VRageMath;
 
 namespace Digi.PaintGun.Features.Palette
 {
     public class Painting : ModComponent
     {
-        HashSet<IMyCubeGrid> ConnectedGrids = new HashSet<IMyCubeGrid>();
+        struct CheckData
+        {
+            public readonly MyStringHash SkinId;
+            public readonly int ReadAtTick;
+
+            public CheckData(MyStringHash skinId)
+            {
+                SkinId = skinId;
+                ReadAtTick = PaintGunMod.Instance.Tick + Constants.TICKS_PER_SECOND * 2; // must be constant because of how the queue works
+            }
+        }
+
+        readonly Dictionary<IMySlimBlock, CheckData> CheckSkinned = new Dictionary<IMySlimBlock, CheckData>();
+        readonly List<IMySlimBlock> RemoveKeys = new List<IMySlimBlock>();
+
+        readonly HashSet<IMyCubeGrid> ConnectedGrids = new HashSet<IMyCubeGrid>();
 
         public Painting(PaintGunMod main) : base(main)
         {
@@ -24,14 +41,58 @@ namespace Digi.PaintGun.Features.Palette
         {
         }
 
-        public void PaintBlock(IMyCubeGrid grid, Vector3I gridPosition, PaintMaterial paint, ulong originalSenderSteamId)
+        protected override void UpdateAfterSim(int tick)
         {
-            // NOTE getting a MySlimBlock and sending it straight to arguments avoids getting prohibited errors.
-            var gridInternal = (MyCubeGrid)grid;
-            gridInternal.ChangeColorAndSkin(gridInternal.GetCubeBlock(gridPosition), paint.ColorMask, paint.Skin);
+            if(tick % 30 != 0)
+                return;
+
+            foreach(KeyValuePair<IMySlimBlock, CheckData> kv in CheckSkinned)
+            {
+                IMySlimBlock slim = kv.Key;
+                CheckData data = kv.Value;
+
+                if(data.ReadAtTick > tick)
+                    continue;
+
+                if(slim.SkinSubtypeId != data.SkinId)
+                {
+                    SkinInfo skinInfo = Main.Palette.GetSkinInfo(data.SkinId);
+                    string name = skinInfo?.Name ?? $"Unknown:{data.SkinId.String}";
+                    Main.Notifications.Show(3, $"[{name}] skin not applied, likely not owned. Consider hiding it in PaintGun's config (Chat then F2).", MyFontEnum.Red, 5000);
+                }
+
+                RemoveKeys.Add(slim);
+            }
+
+            foreach(var key in RemoveKeys)
+            {
+                CheckSkinned.Remove(key);
+            }
+
+            RemoveKeys.Clear();
+
+            if(CheckSkinned.Count <= 0)
+            {
+                SetUpdateMethods(UpdateFlags.UPDATE_AFTER_SIM, false);
+            }
         }
 
-        public void ReplaceColorInGrid(IMyCubeGrid selectedGrid, BlockMaterial oldPaint, PaintMaterial paint, bool includeSubgrids, ulong originalSenderSteamId)
+        public void PaintBlockClient(IMyCubeGrid grid, Vector3I gridPosition, PaintMaterial paint)
+        {
+            grid.SkinBlocks(gridPosition, gridPosition, paint.ColorMask, paint.Skin?.String ?? null);
+
+            if(paint.Skin.HasValue)
+            {
+                IMySlimBlock slim = grid.GetCubeBlock(gridPosition);
+                if(!CheckSkinned.ContainsKey(slim))
+                {
+                    CheckSkinned[slim] = new CheckData(paint.Skin.Value);
+                    SetUpdateMethods(UpdateFlags.UPDATE_AFTER_SIM, true);
+                }
+            }
+        }
+
+        public void ReplaceColorInGridClient(IMyCubeGrid selectedGrid, BlockMaterial oldPaint, PaintMaterial paint, bool includeSubgrids)
         {
             //long timeStart = Stopwatch.GetTimestamp();
 
@@ -45,29 +106,21 @@ namespace Digi.PaintGun.Features.Palette
             //int total = 0;
             int affected = 0;
 
-            foreach(MyCubeGrid grid in ConnectedGrids)
+            foreach(IMyCubeGrid grid in ConnectedGrids)
             {
-                // avoiding GetCubeBlock() lookup by feeding MySlimBlock directly
-                var enumerator = grid.CubeBlocks.GetEnumerator();
-                try
+                MyCubeGrid internalGrid = (MyCubeGrid)grid;
+                foreach(IMySlimBlock block in internalGrid.CubeBlocks)
                 {
-                    while(enumerator.MoveNext())
-                    {
-                        var blockMaterial = new BlockMaterial(enumerator.Current);
+                    BlockMaterial blockMaterial = new BlockMaterial(block);
 
-                        if(paint.ColorMask.HasValue && !Utils.ColorMaskEquals(blockMaterial.ColorMask, oldPaint.ColorMask))
-                            continue;
+                    if(paint.ColorMask.HasValue && !Utils.ColorMaskEquals(blockMaterial.ColorMask, oldPaint.ColorMask))
+                        continue;
 
-                        if(paint.Skin.HasValue && blockMaterial.Skin != oldPaint.Skin)
-                            continue;
+                    if(paint.Skin.HasValue && blockMaterial.Skin != oldPaint.Skin)
+                        continue;
 
-                        grid.ChangeColorAndSkin(enumerator.Current, paint.ColorMask, paint.Skin);
-                        affected++;
-                    }
-                }
-                finally
-                {
-                    enumerator.Dispose();
+                    grid.SkinBlocks(block.Position, block.Position, paint.ColorMask, paint.Skin?.String ?? null);
+                    affected++;
                 }
 
                 //total += grid.CubeBlocks.Count;
@@ -75,7 +128,7 @@ namespace Digi.PaintGun.Features.Palette
 
             //long timeEnd = Stopwatch.GetTimestamp();
 
-            if(originalSenderSteamId == MyAPIGateway.Multiplayer.MyId)
+            //if(originalSenderSteamId == MyAPIGateway.Multiplayer.MyId)
             {
                 Main.Notifications.Show(2, $"Replaced color for {affected.ToString()} blocks.", MyFontEnum.Debug, 5000);
 
@@ -91,36 +144,36 @@ namespace Digi.PaintGun.Features.Palette
         }
 
         #region Symmetry
-        public void PaintBlockSymmetry(IMyCubeGrid grid, Vector3I gridPosition, PaintMaterial paint, MirrorPlanes mirrorPlanes, OddAxis odd, ulong originalSenderSteamId)
+        public void PaintBlockSymmetryClient(IMyCubeGrid grid, Vector3I gridPosition, PaintMaterial paint, MirrorPlanes mirrorPlanes, OddAxis odd)
         {
-            PaintBlock(grid, gridPosition, paint, originalSenderSteamId);
+            PaintBlockClient(grid, gridPosition, paint);
 
             bool oddX = (odd & OddAxis.X) == OddAxis.X;
             bool oddY = (odd & OddAxis.Y) == OddAxis.Y;
             bool oddZ = (odd & OddAxis.Z) == OddAxis.Z;
 
-            var alreadyMirrored = Main.Caches.AlreadyMirrored;
+            List<Vector3I> alreadyMirrored = Main.Caches.AlreadyMirrored;
             alreadyMirrored.Clear();
 
-            var mirrorX = MirrorPaint(grid, 0, mirrorPlanes, oddX, gridPosition, paint, alreadyMirrored, originalSenderSteamId); // X
-            var mirrorY = MirrorPaint(grid, 1, mirrorPlanes, oddY, gridPosition, paint, alreadyMirrored, originalSenderSteamId); // Y
-            var mirrorZ = MirrorPaint(grid, 2, mirrorPlanes, oddZ, gridPosition, paint, alreadyMirrored, originalSenderSteamId); // Z
+            Vector3I? mirrorX = MirrorPaint(grid, 0, mirrorPlanes, oddX, gridPosition, paint, alreadyMirrored); // X
+            Vector3I? mirrorY = MirrorPaint(grid, 1, mirrorPlanes, oddY, gridPosition, paint, alreadyMirrored); // Y
+            Vector3I? mirrorZ = MirrorPaint(grid, 2, mirrorPlanes, oddZ, gridPosition, paint, alreadyMirrored); // Z
             Vector3I? mirrorYZ = null;
 
             if(mirrorX.HasValue && mirrorPlanes.Y > int.MinValue) // XY
-                MirrorPaint(grid, 1, mirrorPlanes, oddY, mirrorX.Value, paint, alreadyMirrored, originalSenderSteamId);
+                MirrorPaint(grid, 1, mirrorPlanes, oddY, mirrorX.Value, paint, alreadyMirrored);
 
             if(mirrorX.HasValue && mirrorPlanes.Z > int.MinValue) // XZ
-                MirrorPaint(grid, 2, mirrorPlanes, oddZ, mirrorX.Value, paint, alreadyMirrored, originalSenderSteamId);
+                MirrorPaint(grid, 2, mirrorPlanes, oddZ, mirrorX.Value, paint, alreadyMirrored);
 
             if(mirrorY.HasValue && mirrorPlanes.Z > int.MinValue) // YZ
-                mirrorYZ = MirrorPaint(grid, 2, mirrorPlanes, oddZ, mirrorY.Value, paint, alreadyMirrored, originalSenderSteamId);
+                mirrorYZ = MirrorPaint(grid, 2, mirrorPlanes, oddZ, mirrorY.Value, paint, alreadyMirrored);
 
             if(mirrorPlanes.X > int.MinValue && mirrorYZ.HasValue) // XYZ
-                MirrorPaint(grid, 0, mirrorPlanes, oddX, mirrorYZ.Value, paint, alreadyMirrored, originalSenderSteamId);
+                MirrorPaint(grid, 0, mirrorPlanes, oddX, mirrorYZ.Value, paint, alreadyMirrored);
         }
 
-        Vector3I? MirrorPaint(IMyCubeGrid grid, int axis, MirrorPlanes mirrorPlanes, bool odd, Vector3I originalPosition, PaintMaterial paint, List<Vector3I> alreadyMirrored, ulong originalSenderSteamId)
+        Vector3I? MirrorPaint(IMyCubeGrid grid, int axis, MirrorPlanes mirrorPlanes, bool odd, Vector3I originalPosition, PaintMaterial paint, List<Vector3I> alreadyMirrored)
         {
             Vector3I? mirrorPosition = null;
 
@@ -145,7 +198,7 @@ namespace Digi.PaintGun.Features.Palette
             if(mirrorPosition.HasValue && originalPosition != mirrorPosition.Value && !alreadyMirrored.Contains(mirrorPosition.Value) && grid.CubeExists(mirrorPosition.Value))
             {
                 alreadyMirrored.Add(mirrorPosition.Value);
-                PaintBlock(grid, mirrorPosition.Value, paint, originalSenderSteamId);
+                PaintBlockClient(grid, mirrorPosition.Value, paint);
             }
 
             return mirrorPosition;

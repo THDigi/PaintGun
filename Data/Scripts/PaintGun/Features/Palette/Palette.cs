@@ -18,9 +18,7 @@ namespace Digi.PaintGun.Features.Palette
         const int PLAYER_INFO_CLEANUP_TICKS = Constants.TICKS_PER_SECOND * 60 * 5;
 
         public List<SkinInfo> BlockSkins;
-        public List<SkinInfo> OwnedSkins;
         public List<SkinInfo> SkinsForHUD;
-        public int OwnedSkinsCount => (OwnedSkins == null ? 0 : OwnedSkins.Count);
 
         public PlayerInfo LocalInfo;
         public bool ReplaceMode = false;
@@ -30,6 +28,8 @@ namespace Digi.PaintGun.Features.Palette
             get { return LocalInfo.ColorPickMode; }
             set { LocalInfo.ColorPickMode = value; }
         }
+
+        public IEnumerable<object> OwnedSkins { get; private set; }
 
         public Vector3 DefaultColorMask = new Vector3(0, -1, 0);
 
@@ -107,8 +107,7 @@ namespace Digi.PaintGun.Features.Palette
             }
 
             BlockSkins = new List<SkinInfo>(foundSkins + 1); // include "No Skin" too.
-            OwnedSkins = new List<SkinInfo>(BlockSkins.Capacity);
-            SkinsForHUD = new List<SkinInfo>(OwnedSkins.Capacity);
+            SkinsForHUD = new List<SkinInfo>(BlockSkins.Capacity);
             var sb = new StringBuilder(128);
 
             foreach(var assetDef in MyDefinitionManager.Static.GetAssetModifierDefinitions())
@@ -456,19 +455,6 @@ namespace Digi.PaintGun.Features.Palette
             return pi;
         }
 
-        public void ComputeOwnedSkins()
-        {
-            OwnedSkins.Clear();
-
-            foreach(SkinInfo skin in BlockSkins)
-            {
-                if(skin.LocallyOwned)
-                    OwnedSkins.Add(skin);
-            }
-
-            ComputeShownSkins();
-        }
-
         void ComputeShownSkins()
         {
             if(SkinsForHUD == null)
@@ -476,7 +462,7 @@ namespace Digi.PaintGun.Features.Palette
 
             SkinsForHUD.Clear();
 
-            foreach(var skin in OwnedSkins)
+            foreach(SkinInfo skin in BlockSkins)
             {
                 skin.ShowOnPalette = !Main.Settings.hideSkinsFromPalette.Contains(skin.SubtypeId.String);
                 if(skin.Selectable)
@@ -484,7 +470,7 @@ namespace Digi.PaintGun.Features.Palette
             }
 
             // change selection if it's an unselectable skin
-            var selectedSkin = GetSkinInfo(LocalInfo.SelectedSkinIndex);
+            SkinInfo selectedSkin = GetSkinInfo(LocalInfo.SelectedSkinIndex);
             if(!selectedSkin.Selectable)
             {
                 LocalInfo.SelectedSkinIndex = 0;

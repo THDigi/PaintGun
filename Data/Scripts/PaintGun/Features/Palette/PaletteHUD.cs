@@ -23,8 +23,6 @@ namespace Digi.PaintGun.Features.Palette
         bool skinLabelVisible = false;
         bool skinLabelUpdate;
 
-        HudAPIv2.HUDMessage skinTestStatus;
-
         public readonly MyStringId MATERIAL_DOT = MyStringId.GetOrCompute("WhiteDot");
         public const BlendTypeEnum AIM_DOT_BLEND_TYPE = BlendTypeEnum.SDR;
 
@@ -104,7 +102,7 @@ namespace Digi.PaintGun.Features.Palette
 
         void DrawPaletteHUD()
         {
-            var localInfo = Main.Palette.LocalInfo;
+            PlayerInfo localInfo = Main.Palette.LocalInfo;
             if(localInfo == null)
                 return;
 
@@ -126,29 +124,12 @@ namespace Digi.PaintGun.Features.Palette
 
                 DrawColorSelector(camMatrix, worldPos, scaleFOV, bgAlpha);
                 DrawSkinSelector(camMatrix, worldPos, scaleFOV, bgAlpha);
-
-                if(Main.TextAPI.IsEnabled && Main.Palette.OwnedSkinsCount <= 0)
-                {
-                    var labelPos = Main.Settings.paletteScreenPos + new Vector2D(0, 0.08);
-
-                    if(skinTestStatus == null)
-                    {
-                        skinTestStatus = new HudAPIv2.HUDMessage(Main.OwnershipTestPlayer.Status, labelPos, Scale: 0.8, HideHud: true, Shadowing: true, Blend: BlendTypeEnum.PostPP);
-                        skinTestStatus.TimeToLive = Constants.TICKS_PER_SECOND * 60 * 2; // delete after this time in case nothing else hides it
-                    }
-
-                    skinTestStatus.Origin = labelPos;
-                    skinTestStatus.Visible = true;
-
-                    var textLen = skinTestStatus.GetTextLength();
-                    skinTestStatus.Offset = new Vector2D(textLen.X * -0.5, 0); // centered
-                }
             }
         }
 
         void DrawColorSelector(MatrixD camMatrix, Vector3D worldPos, float scaleFOV, float bgAlpha)
         {
-            var localInfo = Main.Palette.LocalInfo;
+            PlayerInfo localInfo = Main.Palette.LocalInfo;
             if(!localInfo.ApplyColor)
                 return;
 
@@ -187,8 +168,8 @@ namespace Digi.PaintGun.Features.Palette
 
         void DrawSkinSelector(MatrixD camMatrix, Vector3D worldPos, float scaleFOV, float bgAlpha)
         {
-            var localInfo = Main.Palette.LocalInfo;
-            if(!localInfo.ApplySkin || Main.Palette.OwnedSkinsCount <= 0)
+            PlayerInfo localInfo = Main.Palette.LocalInfo;
+            if(!localInfo.ApplySkin || Main.Palette.SkinsForHUD.Count <= 0)
                 return;
 
             List<SkinInfo> skins = Main.Palette.SkinsForHUD;
@@ -198,13 +179,6 @@ namespace Digi.PaintGun.Features.Palette
             int skinsCount = skins.Count;
             if(skinsCount <= 0)
                 return;
-
-            if(skinTestStatus != null)
-            {
-                skinTestStatus.Visible = false;
-                skinTestStatus.DeleteMessage();
-                skinTestStatus = null;
-            }
 
             float iconSize = 0.0024f * scaleFOV;
             float selectedIconSize = 0.003f * scaleFOV;
@@ -301,16 +275,16 @@ namespace Digi.PaintGun.Features.Palette
             if(!Main.TextAPI.IsEnabled)
                 return;
 
-            var localInfo = Main.Palette.LocalInfo;
+            PlayerInfo localInfo = Main.Palette.LocalInfo;
 
             float scale = Main.Settings.paletteScale;
-            var labelPos = Main.Settings.paletteScreenPos + new Vector2D(0, 0.06 * 2 * scale); // TODO FIX: needs to move relatively with the scale of the elements below it, but it doesn't...
+            Vector2D labelPos = Main.Settings.paletteScreenPos + new Vector2D(0, 0.06 * 2 * scale); // TODO FIX: needs to move relatively with the scale of the elements below it, but it doesn't...
 
             if(localInfo.ApplyColor)
                 labelPos += new Vector2D(0, 0.08); // this needs fixing too
 
-            var skin = Main.Palette.GetSkinInfo(selectedSkinIndex);
-            var text = skin.Name;
+            SkinInfo skin = Main.Palette.GetSkinInfo(selectedSkinIndex);
+            string text = skin.Name;
 
             const double TextScaleOffset = 1.8;
 

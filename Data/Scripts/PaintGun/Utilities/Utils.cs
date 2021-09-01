@@ -47,42 +47,6 @@ namespace Digi.PaintGun.Utilities
         /// </summary>
         public static T CastHax<T>(T pointerForType, object val) => (T)val;
 
-        public static bool ValidateSkinOwnership(ulong steamId, SerializedPaintMaterial paint)
-        {
-            // PlayerInfo.OwnedSkinIndexes is only assigned and filled server-side
-            if(MyAPIGateway.Session.IsServer && paint.SkinIndex.HasValue && paint.SkinIndex.Value != 0)
-            {
-                var pi = Main.Palette.GetPlayerInfo(steamId);
-
-                // DEBUG ValidateSkinOwnership
-
-                if(pi == null)
-                {
-                    Log.Info($"DEBUG: ValidateSkinOwnership() :: {steamId.ToString()} has no PlayerInfo!");
-
-                    return false;
-                }
-
-                if(pi.OwnedSkinIndexes == null)
-                {
-                    Log.Info($"DEBUG: ValidateSkinOwnership() :: {steamId.ToString()} has no OwnedSkinIndexes list, is this before ownership testing was completed?");
-
-                    return false;
-                }
-
-                if(!pi.OwnedSkinIndexes.Contains(paint.SkinIndex.Value))
-                {
-                    Log.Info($"DEBUG: ValidateSkinOwnership() :: {steamId.ToString()} tried to paint with a skin ({Utils.PrintSkinName(paint.SkinIndex)}) they don't own... ?");
-                    Log.Info($"DEBUG: ValidateSkinOwnership() :: ownedIds={string.Join(", ", pi.OwnedSkinIndexes)}");
-                    Log.Info($"DEBUG: ValidateSkinOwnership() :: MyId={MyAPIGateway.Multiplayer.MyId.ToString()}; players={MyAPIGateway.Multiplayer.Players.Count.ToString()}; PlayerInfos={Main.Palette.PlayerInfo.Count.ToString()}");
-
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
         public static StringBuilder AppendLimitedChars(this StringBuilder sb, string text, int maxChars, bool addDots = true)
         {
             var originalLen = sb.Length;

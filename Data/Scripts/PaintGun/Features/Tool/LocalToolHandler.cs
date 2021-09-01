@@ -269,12 +269,36 @@ namespace Digi.PaintGun.Features.Tool
 
                 if(Main.Palette.ReplaceMode && Main.ReplaceColorAccess)
                 {
-                    Main.NetworkLibHandler.PacketReplacePaint.Send(targetGrid, blockMaterial, finalMaterial, Main.Palette.ReplaceShipWide);
+                    Main.Painting.ReplaceColorInGridClient(targetGrid, blockMaterial, finalMaterial, Main.Palette.ReplaceShipWide);
                 }
                 else
                 {
                     bool useMirroring = (Main.SymmetryAccess && MyAPIGateway.CubeBuilder.UseSymmetry);
-                    Main.NetworkLibHandler.PacketPaint.Send(targetGrid, targetBlock.Position, finalMaterial, useMirroring);
+                    if(useMirroring)
+                    {
+                        OddAxis oddAxis = OddAxis.NONE;
+                        MirrorPlanes mirrorPlanes = default(MirrorPlanes);
+
+                        if(targetGrid.XSymmetryPlane.HasValue || targetGrid.YSymmetryPlane.HasValue || targetGrid.ZSymmetryPlane.HasValue)
+                        {
+                            mirrorPlanes = new MirrorPlanes(targetGrid);
+
+                            if(targetGrid.XSymmetryOdd)
+                                oddAxis |= OddAxis.X;
+                            if(targetGrid.YSymmetryOdd)
+                                oddAxis |= OddAxis.Y;
+                            if(targetGrid.ZSymmetryOdd)
+                                oddAxis |= OddAxis.Z;
+                        }
+
+                        Main.Painting.PaintBlockSymmetryClient(targetGrid, targetBlock.Position, finalMaterial, mirrorPlanes, oddAxis);
+                    }
+                    else
+                    {
+                        Main.Painting.PaintBlockClient(targetGrid, targetBlock.Position, finalMaterial);
+                    }
+
+                    Main.NetworkLibHandler.PacketConsumeAmmo.Send();
                 }
             }
         }

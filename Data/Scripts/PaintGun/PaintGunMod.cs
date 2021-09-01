@@ -3,7 +3,6 @@ using Digi.PaintGun.Features;
 using Digi.PaintGun.Features.ChatCommands;
 using Digi.PaintGun.Features.Debug;
 using Digi.PaintGun.Features.Palette;
-using Digi.PaintGun.Features.SkinOwnershipTest;
 using Digi.PaintGun.Features.Sync;
 using Digi.PaintGun.Features.ConfigMenu;
 using Digi.PaintGun.Features.Tool;
@@ -44,8 +43,6 @@ namespace Digi.PaintGun
         public ToolHandler ToolHandler;
         public ChatCommands ChatCommands;
         public Notifications Notifications;
-        public SkinTestServer OwnershipTestServer;
-        public SkinTestPlayer OwnershipTestPlayer;
         public ColorPickerGUIWarning ColorPickerGUIWarning;
         public ConfigMenuHandler ConfigMenuHandler;
         public DebugComp Debug;
@@ -60,7 +57,7 @@ namespace Digi.PaintGun
 
         public PaintGunMod(PaintGun_GameSession session) : base(MOD_NAME, session)
         {
-            var msg = "### PaintGun v21";
+            string msg = "### PaintGun v22";
             VRage.Utils.MyLog.Default.WriteLineAndConsole(msg);
             Log.Info(msg);
 
@@ -85,11 +82,6 @@ namespace Digi.PaintGun
             Palette = new Palette(this);
             Painting = new Painting(this);
 
-            if(IsServer)
-            {
-                OwnershipTestServer = new SkinTestServer(this);
-            }
-
             if(IsPlayer)
             {
                 CheckPlayerField = new CheckPlayerField(this);
@@ -103,7 +95,6 @@ namespace Digi.PaintGun
                 ToolHandler = new ToolHandler(this);
                 ChatCommands = new ChatCommands(this);
                 Notifications = new Notifications(this);
-                OwnershipTestPlayer = new SkinTestPlayer(this);
                 PaletteHUD = new PaletteHUD(this);
                 ColorPickerGUIWarning = new ColorPickerGUIWarning(this);
                 ConfigMenuHandler = new ConfigMenuHandler(this);
@@ -116,11 +107,11 @@ namespace Digi.PaintGun
         void DisablePaintGunVanillaShoot()
         {
             // make the paintgun (which is a rifle) not be able to shoot normally, to avoid needing to add ammo back and skips that stupid hardcoded screen shake
-            var weaponDef = MyDefinitionManager.Static.GetWeaponDefinition(new MyDefinitionId(typeof(MyObjectBuilder_WeaponDefinition), Constants.PAINTGUN_WEAPONID));
+            MyWeaponDefinition weaponDef = MyDefinitionManager.Static.GetWeaponDefinition(new MyDefinitionId(typeof(MyObjectBuilder_WeaponDefinition), Constants.PAINTGUN_WEAPONID));
 
             for(int i = 0; i < weaponDef.WeaponAmmoDatas.Length; i++)
             {
-                var ammoData = weaponDef.WeaponAmmoDatas[i];
+                MyWeaponDefinition.MyWeaponAmmoData ammoData = weaponDef.WeaponAmmoDatas[i];
                 if(ammoData != null)
                     ammoData.ShootIntervalInMiliseconds = int.MaxValue;
             }
