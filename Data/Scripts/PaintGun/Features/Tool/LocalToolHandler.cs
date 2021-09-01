@@ -799,8 +799,8 @@ namespace Digi.PaintGun.Features.Tool
                 return paintMaterial;
             }
 
-            var paintColorMask = (paintMaterial.ColorMask.HasValue ? paintMaterial.ColorMask.Value : blockMaterial.ColorMask);
-            var blockColorMask = blockMaterial.ColorMask;
+            Vector3 paintColorMask = (paintMaterial.ColorMask.HasValue ? paintMaterial.ColorMask.Value : blockMaterial.ColorMask);
+            Vector3 blockColorMask = blockMaterial.ColorMask;
 
             // If hue is within reason change saturation and value directly.
             if(Math.Abs(blockColorMask.X - paintColorMask.X) < PAINT_HUE_TOLERANCE)

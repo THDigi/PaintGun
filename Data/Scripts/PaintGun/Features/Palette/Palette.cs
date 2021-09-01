@@ -148,15 +148,8 @@ namespace Digi.PaintGun.Features.Palette
                         icon = SKIN_ICON_UNKNOWN;
                     }
 
-                    var skinInfo = new SkinInfo(assetDef.Id.SubtypeId, name, icon);
+                    var skinInfo = new SkinInfo(assetDef, name, icon);
                     BlockSkins.Add(skinInfo);
-
-                    // likely mod-added skin
-                    if(!assetDef.Context.IsBaseGame && (assetDef.DLCs == null || assetDef.DLCs.Length == 0))
-                    {
-                        skinInfo.LocallyOwned = true;
-                        skinInfo.Mod = assetDef.Context;
-                    }
                 }
             }
 
@@ -164,7 +157,7 @@ namespace Digi.PaintGun.Features.Palette
             BlockSkins.Sort((a, b) => a.SubtypeId.String.CompareTo(b.SubtypeId.String));
 
             // "no skin" is always first
-            BlockSkins.Insert(0, new SkinInfo(MyStringHash.NullOrEmpty, "No Skin", SKIN_ICON_PREFIX + "NoSkin", locallyOwned: true));
+            BlockSkins.Insert(0, new SkinInfo(null, "No Skin", SKIN_ICON_PREFIX + "NoSkin"));
 
             bool neonSkinExists = false;
 
@@ -179,7 +172,7 @@ namespace Digi.PaintGun.Features.Palette
 
                 if(Constants.SKIN_INIT_LOGGING)
                 {
-                    Log.Info($"Defined skin #{i.ToString()} - {skin.Name} ({skin.SubtypeId.String}){(skin.Icon.String == SKIN_ICON_UNKNOWN ? "; No Icon!" : "")}{(skin.Mod != null ? $"; Mod={skin.Mod.ModName}" : "")}");
+                    Log.Info($"Defined skin #{i.ToString()} - {skin.Name} ({skin.SubtypeId.String}){(skin.Icon.String == SKIN_ICON_UNKNOWN ? "; No Icon!" : "")}{(skin.Definition?.Context != null ? $"; Mod={skin.Definition.Context.ModName}" : "")}");
                 }
             }
 

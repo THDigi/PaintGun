@@ -208,7 +208,7 @@ namespace Digi.PaintGun.Features.SkinOwnershipTest
                         // also add mod-added skins as they are always owned
                         foreach(var skin in blockSkins)
                         {
-                            if(skin.Mod != null)
+                            if(skin.AlwaysOwned)
                                 pi.OwnedSkinIndexes.Add(skin.Index);
                         }
 

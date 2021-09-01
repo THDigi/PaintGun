@@ -177,9 +177,25 @@ namespace Digi.PaintGun.Features.Palette
                     Main.HUDSounds.PlayUnable();
 
                 // there's no gamepad equivalent to toggle palettes so it'll just show kb/m binds for both.
-                var assigned = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.CUBE_COLOR_CHANGE));
-                Main.Notifications.Show(0, cycleSkins ? "Skin applying is turned off." : "Color applying is turned off.", MyFontEnum.Red, 1000);
-                Main.Notifications.Show(1, cycleSkins ? $"Press [Shift] + [{assigned}] to enable" : $"Press [{assigned}] to enable", MyFontEnum.Debug, 1000);
+                string assigned = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.CUBE_COLOR_CHANGE));
+
+                bool showBind = true;
+                string message = cycleSkins ? "Skin applying is turned off." : "Color applying is turned off.";
+
+                if(!cycleSkins)
+                {
+                    SkinInfo skin = Main.Palette.GetSkinInfo(LocalInfo.SelectedSkinIndex);
+                    if(skin?.Definition != null && skin.Definition.DefaultColor.HasValue)
+                    {
+                        message = $"[{skin.Name}] skin cannot be recolored.";
+                        showBind = false;
+                    }
+                }
+
+                Main.Notifications.Show(0, message, MyFontEnum.Red, 1000);
+
+                if(showBind)
+                    Main.Notifications.Show(1, cycleSkins ? $"Press [Shift] + [{assigned}] to enable" : $"Press [{assigned}] to enable", MyFontEnum.Debug, 1000);
                 return;
             }
 

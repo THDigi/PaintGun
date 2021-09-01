@@ -109,7 +109,17 @@ namespace Digi.PaintGun.Features.Palette
         bool _applyColor = true;
         public bool ApplyColor
         {
-            get { return _applyColor; }
+            get
+            {
+                if(!_applyColor)
+                    return false;
+
+                SkinInfo skin = Main.Palette.GetSkinInfo(_selectedSkinIndex);
+                if(skin?.Definition != null && skin.Definition.DefaultColor.HasValue)
+                    return false;
+
+                return true;
+            }
             set
             {
                 if(_applyColor != value)
