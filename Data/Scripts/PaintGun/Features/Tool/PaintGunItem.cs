@@ -203,7 +203,8 @@ namespace Digi.PaintGun.Features.Tool
             if(Rifle == null || Rifle.MarkedForClose)
                 return false;
 
-            if(Main.Tick % 30 == 0)
+            int updateRate = (OwnerIsLocalPlayer ? LocalToolHandler.PAINT_UPDATE_TICKS : Constants.TICKS_PER_SECOND);
+            if(Main.Tick % updateRate == 0)
             {
                 MyFixedPoint? amount = Rifle?.Owner?.GetInventory()?.GetItemAmount(Main.Constants.PAINT_MAG_ID);
                 Ammo = (amount.HasValue ? (int)amount.Value : 0);
