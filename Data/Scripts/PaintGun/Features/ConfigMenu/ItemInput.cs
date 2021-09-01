@@ -77,7 +77,7 @@ namespace Digi.PaintGun.Features.ConfigMenu
             if(key == MyKeys.None) // unbind
                 return true;
 
-            var input = InputHandler.inputNames.GetValueOrDefault(key, null);
+            string input = InputHandler.inputNames.GetValueOrDefault(key, null);
             if(input == null)
             {
                 MyAPIGateway.Utilities.ShowNotification($"Unknown key: {key.ToString()}", 5000, MyFontEnum.Red);

@@ -92,15 +92,15 @@ namespace Digi.PaintGun.Features.Palette
             if(Constants.SKIN_INIT_LOGGING)
                 Log.Info("Finding block skins...");
 
-            var definedIcons = new HashSet<string>();
-            foreach(var def in MyDefinitionManager.Static.GetTransparentMaterialDefinitions())
+            HashSet<string> definedIcons = new HashSet<string>();
+            foreach(MyTransparentMaterialDefinition def in MyDefinitionManager.Static.GetTransparentMaterialDefinitions())
             {
                 if(def.Id.SubtypeName.StartsWith(SKIN_ICON_PREFIX))
                     definedIcons.Add(def.Id.SubtypeName);
             }
 
             int foundSkins = 0;
-            foreach(var assetDef in MyDefinitionManager.Static.GetAssetModifierDefinitions())
+            foreach(MyAssetModifierDefinition assetDef in MyDefinitionManager.Static.GetAssetModifierDefinitions())
             {
                 if(IsSkinAsset(assetDef))
                     foundSkins++;
@@ -108,9 +108,9 @@ namespace Digi.PaintGun.Features.Palette
 
             BlockSkins = new List<SkinInfo>(foundSkins + 1); // include "No Skin" too.
             SkinsForHUD = new List<SkinInfo>(BlockSkins.Capacity);
-            var sb = new StringBuilder(128);
+            StringBuilder sb = new StringBuilder(128);
 
-            foreach(var assetDef in MyDefinitionManager.Static.GetAssetModifierDefinitions())
+            foreach(MyAssetModifierDefinition assetDef in MyDefinitionManager.Static.GetAssetModifierDefinitions())
             {
                 if(IsSkinAsset(assetDef))
                 {
@@ -121,13 +121,13 @@ namespace Digi.PaintGun.Features.Palette
                     if(name.EndsWith(ARMOR_SUFFIX))
                         sb.Length -= ARMOR_SUFFIX.Length;
 
-                    var nameId = sb.ToString();
+                    string nameId = sb.ToString();
 
                     // Add spaces before upper case letters except first.
                     // Or replace _ with space.
                     for(int i = 1; i < sb.Length; ++i)
                     {
-                        var c = sb[i];
+                        char c = sb[i];
 
                         if(c == '_')
                             sb[i] = ' ';
@@ -137,7 +137,7 @@ namespace Digi.PaintGun.Features.Palette
                     }
 
                     name = sb.ToString();
-                    var icon = SKIN_ICON_PREFIX + nameId;
+                    string icon = SKIN_ICON_PREFIX + nameId;
 
                     if(!definedIcons.Contains(icon))
                     {
@@ -147,7 +147,7 @@ namespace Digi.PaintGun.Features.Palette
                         icon = SKIN_ICON_UNKNOWN;
                     }
 
-                    var skinInfo = new SkinInfo(assetDef, name, icon);
+                    SkinInfo skinInfo = new SkinInfo(assetDef, name, icon);
                     BlockSkins.Add(skinInfo);
                 }
             }
@@ -163,7 +163,7 @@ namespace Digi.PaintGun.Features.Palette
             // assign final index to the value too
             for(int i = 0; i < BlockSkins.Count; ++i)
             {
-                var skin = BlockSkins[i];
+                SkinInfo skin = BlockSkins[i];
                 skin.Index = i;
 
                 if(skin.SubtypeId.String == "Neon_Colorable_Surface")
@@ -200,7 +200,7 @@ namespace Digi.PaintGun.Features.Palette
 
                 if(assetDef.Icons != null)
                 {
-                    foreach(var icon in assetDef.Icons)
+                    foreach(string icon in assetDef.Icons)
                     {
                         if(icon == null)
                             continue;
@@ -212,7 +212,7 @@ namespace Digi.PaintGun.Features.Palette
 
                 if(assetDef.Textures != null)
                 {
-                    foreach(var texture in assetDef.Textures)
+                    foreach(MyObjectBuilder_AssetModifierDefinition.MyAssetTexture texture in assetDef.Textures)
                     {
                         if(texture.Location == null)
                             continue;
@@ -248,8 +248,8 @@ namespace Digi.PaintGun.Features.Palette
             if(!Main.CheckPlayerField.Ready)
                 return;
 
-            var newColors = MyAPIGateway.Session.Player.BuildColorSlots;
-            var storedColors = LocalInfo.ColorsMasks;
+            List<Vector3> newColors = MyAPIGateway.Session.Player.BuildColorSlots;
+            IReadOnlyList<Vector3> storedColors = LocalInfo.ColorsMasks;
 
             if(storedColors.Count == 0)
             {
@@ -294,7 +294,7 @@ namespace Digi.PaintGun.Features.Palette
         {
             for(int i = 0; i < BlockSkins.Count; i++)
             {
-                var skin = BlockSkins[i];
+                SkinInfo skin = BlockSkins[i];
 
                 if(skin.SubtypeId == skinSubtypeId)
                     return skin;
@@ -333,7 +333,7 @@ namespace Digi.PaintGun.Features.Palette
                 return false;
             }
 
-            var currentMaterial = GetLocalPaintMaterial();
+            PaintMaterial currentMaterial = GetLocalPaintMaterial();
 
             if(currentMaterial.PaintEquals(pickedMaterial))
             {
@@ -394,7 +394,7 @@ namespace Digi.PaintGun.Features.Palette
 
                 if(GetSkinInfo(LocalInfo.SelectedSkinIndex).SubtypeId != pickedMaterial.Skin.Value)
                 {
-                    var skin = GetSkinInfo(pickedMaterial.Skin.Value);
+                    SkinInfo skin = GetSkinInfo(pickedMaterial.Skin.Value);
 
                     if(skin != null)
                     {

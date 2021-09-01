@@ -6,6 +6,7 @@ using Digi.PaintGun.Features.Palette;
 using Digi.PaintGun.Utilities;
 using ProtoBuf;
 using Sandbox.ModAPI;
+using VRage.Game.ModAPI;
 using VRageMath;
 
 namespace Digi.PaintGun.Features.Sync
@@ -49,7 +50,7 @@ namespace Digi.PaintGun.Features.Sync
             if(PackedColorMasks == null)
                 PackedColorMasks = new uint[Constants.COLOR_PALETTE_SIZE];
 
-            var colors = pi.ColorsMasks;
+            IReadOnlyList<Vector3> colors = pi.ColorsMasks;
 
             if(colors.Count != PackedColorMasks.Length)
             {
@@ -89,13 +90,12 @@ namespace Digi.PaintGun.Features.Sync
                 if(Constants.NETWORK_ACTION_LOGGING)
                     Log.Info($"{GetType().Name} :: received {Utils.PrintPlayerName(SteamId)}'s palette; Reply={Reply.ToString()}");
 
-                var player = Utils.GetPlayerBySteamId(SteamId);
-
+                IMyPlayer player = Utils.GetPlayerBySteamId(SteamId);
                 if(player == null)
                     return;
 
                 // apply palette info
-                var pi = Main.Palette.GetOrAddPlayerInfo(SteamId);
+                PlayerInfo pi = Main.Palette.GetOrAddPlayerInfo(SteamId);
                 pi.SelectedColorIndex = SelectedColorIndex;
                 pi.SelectedSkinIndex = SelectedSkinIndex;
                 pi.ApplyColor = ApplyColor;
@@ -109,7 +109,7 @@ namespace Digi.PaintGun.Features.Sync
                 if(Constants.NETWORK_ACTION_LOGGING)
                     Log.Info($"+ sending all players' palettes back to original sender.");
 
-                foreach(var kv in Main.Palette.PlayerInfo)
+                foreach(KeyValuePair<ulong, PlayerInfo> kv in Main.Palette.PlayerInfo)
                 {
                     if(kv.Key == SteamId)
                         continue; // don't send their own palette back to them

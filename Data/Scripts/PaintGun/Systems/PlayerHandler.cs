@@ -67,7 +67,7 @@ namespace Digi.PaintGun.Systems
 
             // DEBUG player handler
 
-            foreach(var player in ConnectedPlayers.Values)
+            foreach(IMyPlayer player in ConnectedPlayers.Values)
             {
                 if(!Players.Contains(player))
                 {
@@ -88,7 +88,7 @@ namespace Digi.PaintGun.Systems
 
             if(RemoveConnected.Count != 0)
             {
-                foreach(var key in RemoveConnected)
+                foreach(ulong key in RemoveConnected)
                 {
                     ConnectedPlayers.Remove(key);
                 }
@@ -96,7 +96,7 @@ namespace Digi.PaintGun.Systems
                 RemoveConnected.Clear();
             }
 
-            foreach(var player in Players)
+            foreach(IMyPlayer player in Players)
             {
                 if(!ConnectedPlayers.ContainsKey(player.SteamUserId))
                 {

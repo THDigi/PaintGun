@@ -28,7 +28,7 @@ namespace Digi.PaintGun.Features
             if(line < 0 || line >= notifications.Length)
                 throw new ArgumentException($"Notification line ({line.ToString()}) is either negative or above max of {(notifications.Length - 1).ToString()}.");
 
-            var notify = notifications[line];
+            IMyHudNotification notify = notifications[line];
 
             if(text == null)
             {

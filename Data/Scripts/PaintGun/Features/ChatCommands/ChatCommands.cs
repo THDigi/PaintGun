@@ -45,7 +45,7 @@ namespace Digi.PaintGun.Features.ChatCommands
         {
             CommandHandlers.Add(handler);
 
-            foreach(var alias in handler.Aliases)
+            foreach(string alias in handler.Aliases)
             {
                 AliasToCommandHandler.Add(alias, handler);
             }
@@ -67,7 +67,7 @@ namespace Digi.PaintGun.Features.ChatCommands
 
                 send = false;
 
-                var alias = argParser.Argument(1) ?? string.Empty;
+                string alias = argParser.Argument(1) ?? string.Empty;
                 CommandHandlerBase handler;
 
                 if(AliasToCommandHandler.TryGetValue(alias, out handler))

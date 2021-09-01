@@ -1,4 +1,5 @@
 ﻿using Digi.NetworkLib;
+using Digi.PaintGun.Features.Palette;
 using ProtoBuf;
 
 namespace Digi.PaintGun.Features.Sync
@@ -66,7 +67,7 @@ namespace Digi.PaintGun.Features.Sync
 
             relay = true;
 
-            var pi = Main.Palette.GetOrAddPlayerInfo(SteamId);
+            PlayerInfo pi = Main.Palette.GetOrAddPlayerInfo(SteamId);
 
             if(SelectedColorIndex.HasValue)
                 pi.SelectedColorIndex = SelectedColorIndex.Value;

@@ -78,7 +78,7 @@ namespace Digi.PaintGun.Features.Palette
             {
                 if(_selectedColorSlot != value)
                 {
-                    var oldValue = _selectedColorSlot;
+                    int oldValue = _selectedColorSlot;
                     _selectedColorSlot = value;
                     OnColorSlotSelected?.Invoke(this, oldValue, _selectedColorSlot);
 
@@ -96,7 +96,7 @@ namespace Digi.PaintGun.Features.Palette
             {
                 if(_selectedSkinIndex != value)
                 {
-                    var oldValue = _selectedSkinIndex;
+                    int oldValue = _selectedSkinIndex;
                     _selectedSkinIndex = value;
                     OnSkinIndexSelected?.Invoke(this, oldValue, _selectedSkinIndex);
 
@@ -166,7 +166,7 @@ namespace Digi.PaintGun.Features.Palette
                         if(SteamId == MyAPIGateway.Multiplayer.MyId)
                             Main.NetworkLibHandler.PacketPaletteUpdate.Send(colorPickMode: ColorPickMode);
 
-                        var tool = Main.ToolHandler.GetToolHeldBy(SteamId);
+                        PaintGunItem tool = Main.ToolHandler.GetToolHeldBy(SteamId);
                         if(tool != null)
                             tool.SprayCooldown = PaintGunItem.SPRAY_COOLDOWN_COLORPICKMODE;
                     }
@@ -197,7 +197,7 @@ namespace Digi.PaintGun.Features.Palette
 
             _colorsMasks = new Vector3[Constants.COLOR_PALETTE_SIZE];
 
-            var redColor = new Vector3(0, 1, 1);
+            Vector3 redColor = new Vector3(0, 1, 1);
             for(int i = 0; i < Constants.COLOR_PALETTE_SIZE; i++)
             {
                 _colorsMasks[i] = redColor;

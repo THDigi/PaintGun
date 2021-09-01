@@ -9,6 +9,7 @@ using VRage;
 using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
+using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
 using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
@@ -106,7 +107,7 @@ namespace Digi.PaintGun.Features.Tool
             if(MyAPIGateway.Session == null)
                 throw new NullReferenceException($"{GetType().Name} :: MyAPIGateway.Session == null");
 
-            var charEnt = MyAPIGateway.Session.ControlledObject as IMyCharacter;
+            IMyCharacter charEnt = MyAPIGateway.Session.ControlledObject as IMyCharacter;
 
             if(charEnt != null && charEnt == Rifle.Owner)
             {
@@ -116,7 +117,7 @@ namespace Digi.PaintGun.Features.Tool
 
             if(OwnerSteamId == 0)
             {
-                var players = Main.Caches?.Players.Get();
+                List<IMyPlayer> players = Main.Caches?.Players.Get();
 
                 if(players == null)
                     throw new NullReferenceException($"{GetType().Name} :: players cache is null");
@@ -126,7 +127,7 @@ namespace Digi.PaintGun.Features.Tool
 
                 MyAPIGateway.Players.GetPlayers(players);
 
-                foreach(var player in players)
+                foreach(IMyPlayer player in players)
                 {
                     if(player?.Character != null && player.Character.EntityId == Rifle.Owner.EntityId)
                     {
@@ -264,32 +265,31 @@ namespace Digi.PaintGun.Features.Tool
             if(!Main.Settings.sprayParticles)
                 return false;
 
-            var camera = MyAPIGateway.Session?.Camera;
-
+            IMyCamera camera = MyAPIGateway.Session?.Camera;
             if(camera == null)
                 return false;
 
-            var matrix = Rifle.WorldMatrix;
+            MatrixD matrix = Rifle.WorldMatrix;
 
             if(Vector3D.DistanceSquared(camera.WorldMatrix.Translation, matrix.Translation) > SPRAY_MAX_VIEW_DISTANCE_SQ)
                 return false;
 
-            var paused = Main.IsPaused;
+            bool paused = Main.IsPaused;
 
             if(!paused && spawn)
             {
-                var particle = Main.ToolHandler.GetPooledParticle();
+                Particle particle = Main.ToolHandler.GetPooledParticle();
                 particle.Init(matrix, PaintColorRGB);
                 particles.Add(particle);
             }
 
             if(particles.Count > 0)
             {
-                var muzzleWorldPos = matrix.Translation + matrix.Up * NOZZLE_POSITION_Y + matrix.Forward * NOZZLE_POSITION_Z;
+                Vector3D muzzleWorldPos = matrix.Translation + matrix.Up * NOZZLE_POSITION_Y + matrix.Forward * NOZZLE_POSITION_Z;
 
                 for(int i = particles.Count - 1; i >= 0; i--)
                 {
-                    var p = particles[i];
+                    Particle p = particles[i];
 
                     MyTransparentGeometry.AddPointBillboard(SPRAY_MATERIAL, p.Color, muzzleWorldPos + p.RelativePosition, p.Radius, p.Angle, blendType: SPRAY_BLEND_TYPE);
 
@@ -322,7 +322,7 @@ namespace Digi.PaintGun.Features.Tool
 
         void ClearParticles()
         {
-            foreach(var particle in particles)
+            foreach(Particle particle in particles)
             {
                 Main.ToolHandler.ReturnParticleToPool(particle);
             }

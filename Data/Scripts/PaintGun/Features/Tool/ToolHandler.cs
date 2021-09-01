@@ -46,7 +46,7 @@ namespace Digi.PaintGun.Features.Tool
         {
             MyAPIGateway.Entities.OnEntityAdd -= EntityAdded;
 
-            foreach(var tool in Tools)
+            foreach(PaintGunItem tool in Tools)
             {
                 tool.Unload();
             }
@@ -56,7 +56,7 @@ namespace Digi.PaintGun.Features.Tool
         {
             for(int i = Tools.Count - 1; i >= 0; --i)
             {
-                var tool = Tools[i];
+                PaintGunItem tool = Tools[i];
 
                 if(tool.OwnerSteamId == steamId)
                     return tool;
@@ -79,7 +79,7 @@ namespace Digi.PaintGun.Features.Tool
         {
             try
             {
-                var rifle = entity as IMyAutomaticRifleGun;
+                IMyAutomaticRifleGun rifle = entity as IMyAutomaticRifleGun;
 
                 if(rifle != null && rifle.DefinitionId.SubtypeName == Constants.PAINTGUN_ID)
                 {
@@ -102,7 +102,7 @@ namespace Digi.PaintGun.Features.Tool
             {
                 for(int i = spawnedRifles.Count - 1; i >= 0; --i)
                 {
-                    var rifle = spawnedRifles[i];
+                    IMyAutomaticRifleGun rifle = spawnedRifles[i];
 
                     if(!rifle.MarkedForClose && rifle.Owner != null)
                         AddTool(rifle);
@@ -116,7 +116,7 @@ namespace Digi.PaintGun.Features.Tool
 
             for(int i = Tools.Count - 1; i >= 0; --i)
             {
-                var item = Tools[i];
+                PaintGunItem item = Tools[i];
 
                 if(!item.UpdateSimulation())
                 {
@@ -138,7 +138,7 @@ namespace Digi.PaintGun.Features.Tool
 
         void AddTool(IMyAutomaticRifleGun rifle)
         {
-            var item = itemPool.Get();
+            PaintGunItem item = itemPool.Get();
 
             if(!item.Init(rifle))
             {

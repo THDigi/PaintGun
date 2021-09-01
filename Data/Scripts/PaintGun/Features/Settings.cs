@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Digi.PaintGun.Features.Palette;
 using Sandbox.ModAPI;
 using VRageMath;
 
@@ -184,8 +185,8 @@ namespace Digi.PaintGun.Features
                         continue;
                     }
 
-                    var key = args[0].Trim().ToLower();
-                    var value = args[1];
+                    string key = args[0].Trim().ToLower();
+                    string value = args[1];
 
                     switch(key)
                     {
@@ -227,11 +228,11 @@ namespace Digi.PaintGun.Features
                             continue;
                         case "palettescreenpos":
                         case "aiminfoscreenpos":
-                            var vars = value.Split(SEPARATOR);
+                            string[] vars = value.Split(SEPARATOR);
                             double x, y;
                             if(vars.Length == 2 && double.TryParse(vars[0], out x) && double.TryParse(vars[1], out y))
                             {
-                                var vec = new Vector2D(x, y);
+                                Vector2D vec = new Vector2D(x, y);
 
                                 if(key == "aiminfoscreenpos")
                                 {
@@ -310,7 +311,7 @@ namespace Digi.PaintGun.Features
                         case "pickcolormode-input1":
                         case "pickcolormode-input2":
                         {
-                            var obj = ControlCombination.CreateFrom(value, true);
+                            ControlCombination obj = ControlCombination.CreateFrom(value, true);
                             if(value.Length == 0 || obj != null)
                             {
                                 if(key.EndsWith("1"))
@@ -325,7 +326,7 @@ namespace Digi.PaintGun.Features
                         case "instantpickcolor-input1":
                         case "instantpickcolor-input2":
                         {
-                            var obj = ControlCombination.CreateFrom(value, true);
+                            ControlCombination obj = ControlCombination.CreateFrom(value, true);
                             if(value.Length == 0 || obj != null)
                             {
                                 if(key.EndsWith("1"))
@@ -342,7 +343,7 @@ namespace Digi.PaintGun.Features
                         case "replacemodeinput1": // backwards compatibility
                         case "replacemodeinput2": // backwards compatibility
                         {
-                            var obj = ControlCombination.CreateFrom(value, true);
+                            ControlCombination obj = ControlCombination.CreateFrom(value, true);
                             if(value.Length == 0 || obj != null)
                             {
                                 if(key.EndsWith("1"))
@@ -358,7 +359,7 @@ namespace Digi.PaintGun.Features
                         {
                             string[] values = value.Split(SEPARATOR, StringSplitOptions.RemoveEmptyEntries);
                             hideSkinsFromPalette.Clear();
-                            foreach(var val in values)
+                            foreach(string val in values)
                             {
                                 hideSkinsFromPalette.Add(val.Trim());
                             }
@@ -432,7 +433,7 @@ namespace Digi.PaintGun.Features
                 sb.Append("// All detected skins: ");
 
                 int num = 99999; // start with a newline
-                var skins = Main.Palette.BlockSkins;
+                List<SkinInfo> skins = Main.Palette.BlockSkins;
                 for(int i = 1; i < skins.Count; ++i) // skipping index 0 intentionally
                 {
                     if(++num > 7)
@@ -441,7 +442,7 @@ namespace Digi.PaintGun.Features
                         sb.AppendLine().Append("//     ");
                     }
 
-                    var skin = skins[i];
+                    SkinInfo skin = skins[i];
                     sb.Append(skin.SubtypeId.String).Append(", ");
                 }
 
@@ -488,7 +489,7 @@ namespace Digi.PaintGun.Features
 
                 int characters = 0;
                 sb.Append("// Key names: ").AppendLine().Append("//     ");
-                foreach(var kv in InputHandler.inputs)
+                foreach(KeyValuePair<string, object> kv in InputHandler.inputs)
                 {
                     if(kv.Key.StartsWith(InputHandler.MOUSE_PREFIX, StringComparison.Ordinal)
                        || kv.Key.StartsWith(InputHandler.GAMEPAD_PREFIX, StringComparison.Ordinal)
@@ -510,7 +511,7 @@ namespace Digi.PaintGun.Features
 
                 characters = 0;
                 sb.Append("// Mouse button names: ").AppendLine().Append("//     ");
-                foreach(var kv in InputHandler.inputs)
+                foreach(KeyValuePair<string, object> kv in InputHandler.inputs)
                 {
                     if(kv.Key.StartsWith(InputHandler.MOUSE_PREFIX, StringComparison.Ordinal))
                     {
@@ -530,7 +531,7 @@ namespace Digi.PaintGun.Features
 
                 characters = 0;
                 sb.Append("// Gamepad button/axes names: ").AppendLine().Append("//     ");
-                foreach(var kv in InputHandler.inputs)
+                foreach(KeyValuePair<string, object> kv in InputHandler.inputs)
                 {
                     if(kv.Key.StartsWith(InputHandler.GAMEPAD_PREFIX, StringComparison.Ordinal))
                     {
@@ -550,7 +551,7 @@ namespace Digi.PaintGun.Features
 
                 characters = 0;
                 sb.Append("// Control names: ").AppendLine().Append("//     ");
-                foreach(var kv in InputHandler.inputs)
+                foreach(KeyValuePair<string, object> kv in InputHandler.inputs)
                 {
                     if(kv.Key.StartsWith(InputHandler.CONTROL_PREFIX, StringComparison.Ordinal))
                     {

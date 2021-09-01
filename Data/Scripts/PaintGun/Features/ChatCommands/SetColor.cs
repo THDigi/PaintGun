@@ -18,12 +18,12 @@ namespace Digi.PaintGun.Features.ChatCommands
 
         public override void Execute(MyCommandLine parser)
         {
-            var rgb = (parser.Argument(1) == "rgb");
-            var values = new float[3];
+            bool rgb = (parser.Argument(1) == "rgb");
+            float[] values = new float[3];
 
             if(rgb && parser.Argument(2).StartsWith("#", COMPARE_TYPE))
             {
-                var hexText = parser.Argument(2);
+                string hexText = parser.Argument(2);
 
                 if(hexText.Length < 7)
                 {
@@ -48,7 +48,7 @@ namespace Digi.PaintGun.Features.ChatCommands
 
                 for(int i = 0; i < 3; i++)
                 {
-                    var arg = parser.Argument(i + 2);
+                    string arg = parser.Argument(i + 2);
                     if(!float.TryParse(arg, out values[i]))
                     {
                         Utils.ShowColoredChatMessage(PaintGunMod.MOD_NAME, $"'{arg}' is not a valid number!", MyFontEnum.Red);
@@ -68,7 +68,7 @@ namespace Digi.PaintGun.Features.ChatCommands
                 colorMask = Utils.HSVToColorMask(new Vector3(MathHelper.Clamp(values[0], 0f, 360f) / 360.0f, MathHelper.Clamp(values[1], 0f, 100f) / 100.0f, MathHelper.Clamp(values[2], 0f, 100f) / 100.0f));
             }
 
-            var material = new PaintMaterial(colorMask, Main.Palette.GetLocalPaintMaterial().Skin);
+            PaintMaterial material = new PaintMaterial(colorMask, Main.Palette.GetLocalPaintMaterial().Skin);
 
             Main.Palette.GrabPaletteFromPaint(material);
         }

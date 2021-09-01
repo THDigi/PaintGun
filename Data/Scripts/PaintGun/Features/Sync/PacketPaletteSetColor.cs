@@ -1,4 +1,5 @@
 ﻿using Digi.NetworkLib;
+using Digi.PaintGun.Features.Palette;
 using Digi.PaintGun.Utilities;
 using ProtoBuf;
 using VRageMath;
@@ -34,7 +35,7 @@ namespace Digi.PaintGun.Features.Sync
             if(Constants.NETWORK_ACTION_LOGGING)
                 Log.Info($"{GetType().Name} :: Received palette slot update; player={Utils.PrintPlayerName(SteamId)}, slot={ColorIndex.ToString()}; color={ColorExtensions.UnpackHSVFromUint(ColorMaskPacked).ToString()}");
 
-            var pi = Main.Palette.GetOrAddPlayerInfo(SteamId);
+            PlayerInfo pi = Main.Palette.GetOrAddPlayerInfo(SteamId);
             pi.SetColorAt(ColorIndex, ColorExtensions.UnpackHSVFromUint(ColorMaskPacked));
         }
     }

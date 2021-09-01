@@ -60,8 +60,8 @@ namespace Digi.PaintGun.Features.Tool
 
             RequiresRefresh = false;
 
-            var defId = new MyDefinitionId(typeof(MyObjectBuilder_PhysicalGunObject), Constants.PAINTGUN_PHYSITEMID);
-            var itemDef = MyDefinitionManager.Static.GetPhysicalItemDefinition(defId);
+            MyDefinitionId defId = new MyDefinitionId(typeof(MyObjectBuilder_PhysicalGunObject), Constants.PAINTGUN_PHYSITEMID);
+            MyPhysicalItemDefinition itemDef = MyDefinitionManager.Static.GetPhysicalItemDefinition(defId);
             if(itemDef == null)
                 throw new Exception($"Can't find '{defId.ToString()}' hand item definition!");
 

@@ -114,7 +114,7 @@ namespace Digi.PaintGun.Features
             {
                 text = new HudAPIv2.HUDMessage(new StringBuilder(MyTexts.GetString(Text)), TextPosition, Scale: TextScale, Shadowing: true, Blend: BlendTypeEnum.PostPP);
 
-                var textSize = text.GetTextLength();
+                Vector2D textSize = text.GetTextLength();
                 text.Offset = new Vector2D(-textSize.X, textSize.Y); // pivot top-right
             }
 

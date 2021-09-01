@@ -8,6 +8,7 @@ using Digi.PaintGun.Utilities;
 using Draygo.API;
 using Sandbox.ModAPI;
 using VRage.Game;
+using VRage.Game.ModAPI;
 using VRage.Utils;
 using VRageMath;
 using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
@@ -112,8 +113,7 @@ namespace Digi.PaintGun.Features.Palette
 
                 float scaleFOV = (Main.DrawUtils.ScaleFOV * Main.Settings.paletteScale);
 
-                var character = MyAPIGateway.Session.Player.Character;
-
+                IMyCharacter character = MyAPIGateway.Session.Player.Character;
                 if(Utils.IsAimingDownSights(character))
                 {
                     MyTransparentGeometry.AddPointBillboard(MATERIAL_DOT, Color.Lime, camMatrix.Translation + camMatrix.Forward * LocalToolHandler.PAINT_AIM_START_OFFSET, 0.005f, 0, blendType: AIM_DOT_BLEND_TYPE);
@@ -144,15 +144,15 @@ namespace Digi.PaintGun.Features.Palette
             const float BG_WIDTH_MUL = 3.85f;
             const float BG_HEIGHT_MUL = 1.3f;
 
-            var bgColor = Utils.HUDColorAlpha(PALETTE_BG_COLOR, bgAlpha);
+            Color bgColor = Utils.HUDColorAlpha(PALETTE_BG_COLOR, bgAlpha);
             MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_BACKGROUND, bgColor, worldPos, camMatrix.Left, camMatrix.Up, (float)(spacingWidth * BG_WIDTH_MUL), (float)(spacingHeight * BG_HEIGHT_MUL), Vector2.Zero, GUI_BG_BLENDTYPE);
 
-            var pos = worldPos + camMatrix.Left * (spacingWidth * (MIDDLE_INDEX / 2)) + camMatrix.Up * (spacingHeight / 2);
+            Vector3D pos = worldPos + camMatrix.Left * (spacingWidth * (MIDDLE_INDEX / 2)) + camMatrix.Up * (spacingHeight / 2);
 
             for(int i = 0; i < localInfo.ColorsMasks.Count; i++)
             {
-                var colorMask = localInfo.ColorsMasks[i];
-                var rgb = Utils.ColorMaskToRGB(colorMask);
+                Vector3 colorMask = localInfo.ColorsMasks[i];
+                Color rgb = Utils.ColorMaskToRGB(colorMask);
 
                 if(i == MIDDLE_INDEX)
                     pos += camMatrix.Left * (spacingWidth * MIDDLE_INDEX) + camMatrix.Down * spacingHeight;
@@ -182,7 +182,7 @@ namespace Digi.PaintGun.Features.Palette
 
             float iconSize = 0.0024f * scaleFOV;
             float selectedIconSize = 0.003f * scaleFOV;
-            var selectedSkinIndex = localInfo.SelectedSkinIndex;
+            int selectedSkinIndex = localInfo.SelectedSkinIndex;
             double iconSpacingAdd = (selectedIconSize - iconSize); // 0.0012 * scaleFOV;
             double iconSpacingWidth = (iconSize * 2) + iconSpacingAdd;
             float iconBgSpacingAddWidth = 0.0004f * scaleFOV;
@@ -190,7 +190,7 @@ namespace Digi.PaintGun.Features.Palette
             //float iconBgSpacingAddWidth = 0.0006f * scaleFOV;
             //float iconBgSpacingAddHeight = 0.0008f * scaleFOV;
 
-            var pos = worldPos;
+            Vector3D pos = worldPos;
 
             if(localInfo.ApplyColor)
                 pos += camMatrix.Up * (0.0075f * scaleFOV);
@@ -213,7 +213,7 @@ namespace Digi.PaintGun.Features.Palette
 
                 for(int i = 0; i < skinsCount; ++i)
                 {
-                    var skin = skins[i];
+                    SkinInfo skin = skins[i];
 
                     if(skin.Index == selectedSkinIndex)
                     {
@@ -234,7 +234,7 @@ namespace Digi.PaintGun.Features.Palette
                     if(index >= skinsCount)
                         index %= skinsCount;
 
-                    var skin = skins[index];
+                    SkinInfo skin = skins[index];
 
                     float alpha = 1f - (Math.Abs(a) * alphaSubtractStep);
 
@@ -256,7 +256,7 @@ namespace Digi.PaintGun.Features.Palette
 
                 pos += camMatrix.Left * ((iconSpacingWidth * halfOwnedSkins) - (iconSpacingWidth * 0.5));
 
-                foreach(var skin in skins)
+                foreach(SkinInfo skin in skins)
                 {
                     if(selectedSkinIndex == skin.Index)
                     {
@@ -313,7 +313,7 @@ namespace Digi.PaintGun.Features.Palette
                 skinLabel.Scale = scale * TextScaleOffset;
                 skinLabelShadow.Scale = scale * TextScaleOffset;
 
-                var textLen = skinLabel.GetTextLength();
+                Vector2D textLen = skinLabel.GetTextLength();
                 skinLabel.Offset = new Vector2D(textLen.X * -0.5, 0); // centered
                 skinLabelShadow.Offset = skinLabel.Offset + new Vector2D(0.0015, -0.0015); // centered + small offset
             }

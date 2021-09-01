@@ -10,6 +10,7 @@ using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
+using VRage.ModAPI;
 using VRageMath;
 
 namespace Digi.PaintGun.Features.Tool
@@ -187,7 +188,7 @@ namespace Digi.PaintGun.Features.Tool
             AimedState = SelectionState.Invalid;
             SymmetryInputAvailable = false;
 
-            var character = MyAPIGateway.Session.Player.Character;
+            IMyCharacter character = MyAPIGateway.Session.Player.Character;
             IMyCubeGrid targetGrid;
             IMySlimBlock targetBlock;
             IMyPlayer targetPlayer;
@@ -233,8 +234,8 @@ namespace Digi.PaintGun.Features.Tool
 
             Main.SelectionGUI.UpdateSymmetryStatus(targetBlock);
 
-            var paintMaterial = Main.Palette.GetLocalPaintMaterial();
-            var blockMaterial = new BlockMaterial(targetBlock);
+            PaintMaterial paintMaterial = Main.Palette.GetLocalPaintMaterial();
+            BlockMaterial blockMaterial = new BlockMaterial(targetBlock);
             AimedBlock = targetBlock;
 
             if(Main.Palette.ColorPickMode)
@@ -246,7 +247,7 @@ namespace Digi.PaintGun.Features.Tool
             if(!ValidateMainBlock(targetBlock, paintMaterial, blockMaterial, trigger))
                 return;
 
-            var blockName = Utils.GetBlockName(targetBlock);
+            string blockName = Utils.GetBlockName(targetBlock);
 
             if(!Main.IgnoreAmmoConsumption && LocalTool.Ammo == 0)
             {
@@ -265,7 +266,7 @@ namespace Digi.PaintGun.Features.Tool
             if(trigger)
             {
                 float paintSpeed = (1.0f / Utils.GetBlockSurface(targetBlock));
-                var finalMaterial = HandleTool_PaintProcess(paintMaterial, blockMaterial, paintSpeed, blockName);
+                PaintMaterial finalMaterial = HandleTool_PaintProcess(paintMaterial, blockMaterial, paintSpeed, blockName);
 
                 if(Main.Palette.ReplaceMode && Main.ReplaceColorAccess)
                 {
@@ -305,7 +306,7 @@ namespace Digi.PaintGun.Features.Tool
 
         void HandleTool_ColorPickFromPlayer(bool trigger, IMyPlayer targetPlayer)
         {
-            var pi = Main.Palette.GetPlayerInfo(targetPlayer.SteamUserId);
+            PlayerInfo pi = Main.Palette.GetPlayerInfo(targetPlayer.SteamUserId);
 
             if(pi == null)
             {
@@ -342,15 +343,15 @@ namespace Digi.PaintGun.Features.Tool
             targetBlock = null;
             targetPlayer = null;
 
-            var aiming = Utils.IsAimingDownSights(character);
-            var head = character.GetHeadMatrix(false, true);
-            var rayDir = head.Forward;
-            var rayFrom = head.Translation;
+            bool aiming = Utils.IsAimingDownSights(character);
+            MatrixD head = character.GetHeadMatrix(false, true);
+            Vector3D rayDir = head.Forward;
+            Vector3D rayFrom = head.Translation;
 
             if(aiming)
                 rayFrom += rayDir * PAINT_AIM_START_OFFSET;
 
-            var rayTo = head.Translation + rayDir * PAINT_DISTANCE;
+            Vector3D rayTo = head.Translation + rayDir * PAINT_DISTANCE;
             aimPoint = rayTo;
 
             targetGrid = MyAPIGateway.CubeBuilder.FindClosestGrid();
@@ -364,7 +365,7 @@ namespace Digi.PaintGun.Features.Tool
             // older selection behavior when aiming down sights
             if(aiming)
             {
-                var blockPos = targetGrid.RayCastBlocks(rayFrom, rayTo);
+                Vector3I? blockPos = targetGrid.RayCastBlocks(rayFrom, rayTo);
 
                 if(blockPos.HasValue)
                     targetBlock = targetGrid.GetCubeBlock(blockPos.Value);
@@ -380,15 +381,15 @@ namespace Digi.PaintGun.Features.Tool
 
             MyAPIGateway.Physics.CastRay(rayFrom, rayTo, hits, 24);
 
-            foreach(var hit in hits)
+            foreach(IHitInfo hit in hits)
             {
                 if(hit.HitEntity == null)
                     continue;
 
-                var hitPos = hit.Position;
-                var parent = hit.HitEntity.GetTopMostParent();
+                Vector3D hitPos = hit.Position;
+                IMyEntity parent = hit.HitEntity.GetTopMostParent();
 
-                var grid = parent as IMyCubeGrid;
+                IMyCubeGrid grid = parent as IMyCubeGrid;
                 if(grid != null)
                 {
                     // just how it's set in game code /shrug
@@ -416,30 +417,28 @@ namespace Digi.PaintGun.Features.Tool
 
             hits.Clear();
 
-            var line = new LineD(rayFrom, rayTo);
+            LineD line = new LineD(rayFrom, rayTo);
             MyGamePruningStructure.GetAllEntitiesInRay(ref line, rayOverlapResults);
 
-            foreach(var result in rayOverlapResults)
+            foreach(MyLineSegmentOverlapResult<MyEntity> result in rayOverlapResults)
             {
                 if(result.Element == null)
                     continue;
 
-                var block = result.Element as IMyCubeBlock;
-
+                IMyCubeBlock block = result.Element as IMyCubeBlock;
                 if(block == null)
                     continue;
 
-                var def = (MyCubeBlockDefinition)block.SlimBlock.BlockDefinition;
-
+                MyCubeBlockDefinition def = (MyCubeBlockDefinition)block.SlimBlock.BlockDefinition;
                 if(def.HasPhysics)
                     continue;
 
-                var parent = result.Element.GetTopMostParent();
+                MyEntity parent = result.Element.GetTopMostParent();
 
-                var blockInvMatrix = block.PositionComp.WorldMatrixNormalizedInv;
-                var localRayFrom = Vector3D.Transform(rayFrom, ref blockInvMatrix);
-                var localRayTo = Vector3D.Transform(rayTo, ref blockInvMatrix);
-                var localLine = new Line(localRayFrom, localRayTo);
+                MatrixD blockInvMatrix = block.PositionComp.WorldMatrixNormalizedInv;
+                Vector3D localRayFrom = Vector3D.Transform(rayFrom, ref blockInvMatrix);
+                Vector3D localRayTo = Vector3D.Transform(rayTo, ref blockInvMatrix);
+                Line localLine = new Line(localRayFrom, localRayTo);
 
                 //float? dist = new Ray(localRayFrom, Vector3.Normalize(localRayTo - localRayFrom)).Intersects(block.PositionComp.LocalAABB) + 0.01f;
 
@@ -448,13 +447,13 @@ namespace Digi.PaintGun.Features.Tool
                 if(!block.PositionComp.LocalAABB.Intersects(localLine, out dist))
                     continue;
 
-                var hitPos = rayFrom + rayDir * dist;
+                Vector3D hitPos = rayFrom + rayDir * dist;
                 DetectionInfo detected;
 
                 if(detections.TryGetValue(parent.EntityId, out detected))
                 {
-                    var dist1 = Vector3.DistanceSquared(detected.DetectionPoint, rayFrom);
-                    var dist2 = Vector3.DistanceSquared(hitPos, rayFrom);
+                    float dist1 = Vector3.DistanceSquared(detected.DetectionPoint, rayFrom);
+                    float dist2 = Vector3.DistanceSquared(hitPos, rayFrom);
 
                     if(dist1 > dist2)
                         detections[parent.EntityId] = new DetectionInfo(parent, hitPos);
@@ -473,10 +472,9 @@ namespace Digi.PaintGun.Features.Tool
             float num = float.MaxValue;
             DetectionInfo closest = new DetectionInfo(null, Vector3D.Zero);
 
-            foreach(var detected in detections.Values)
+            foreach(DetectionInfo detected in detections.Values)
             {
-                var ent = detected.Entity;
-
+                IMyEntity ent = detected.Entity;
                 if(ent.Physics == null || !ent.Physics.Enabled)
                     continue;
 
@@ -493,7 +491,6 @@ namespace Digi.PaintGun.Features.Tool
             #endregion Welder-like block selection
 
             targetGrid = closest.Entity as IMyCubeGrid;
-
             if(targetGrid == null)
                 return;
 
@@ -506,24 +503,24 @@ namespace Digi.PaintGun.Features.Tool
 
         bool GetTargetCharacter(Vector3D rayFrom, Vector3D rayDir, double rayLength, IMyCharacter character, ref IMyPlayer targetPlayer)
         {
-            var players = Main.Caches.Players.Get();
+            List<IMyPlayer> players = Main.Caches.Players.Get();
             MyAPIGateway.Players.GetPlayers(players);
 
-            var ray = new RayD(rayFrom, rayDir);
+            RayD ray = new RayD(rayFrom, rayDir);
 
-            foreach(var p in players)
+            foreach(IMyPlayer p in players)
             {
-                var c = p.Character;
+                IMyCharacter c = p.Character;
 
                 if(c == null || c == character)
                     continue;
 
-                var sphere = Utils.GetCharacterSelectionSphere(c);
+                BoundingSphereD sphere = Utils.GetCharacterSelectionSphere(c);
 
                 if(Vector3D.DistanceSquared(rayFrom, sphere.Center) > (rayLength * rayLength))
                     continue;
 
-                var dist = sphere.Intersects(ray);
+                double? dist = sphere.Intersects(ray);
 
                 if(!dist.HasValue || dist.Value > rayLength)
                     continue;
@@ -554,7 +551,7 @@ namespace Digi.PaintGun.Features.Tool
             if(!Utils.SafeZoneCanPaint(block, MyAPIGateway.Multiplayer.MyId))
                 return false;
 
-            var blockMaterial = new BlockMaterial(block);
+            BlockMaterial blockMaterial = new BlockMaterial(block);
             bool materialEquals = paintMaterial.PaintEquals(blockMaterial);
 
             if(Main.Palette.ReplaceMode)
@@ -562,7 +559,7 @@ namespace Digi.PaintGun.Features.Tool
 
             if(!Main.InstantPaintAccess)
             {
-                var def = (MyCubeBlockDefinition)block.BlockDefinition;
+                MyCubeBlockDefinition def = (MyCubeBlockDefinition)block.BlockDefinition;
                 bool built = (block.BuildLevelRatio >= def.CriticalIntegrityRatio);
 
                 if(!built || block.CurrentDamage > (block.MaxIntegrity / 10.0f))
@@ -578,7 +575,7 @@ namespace Digi.PaintGun.Features.Tool
         {
             if(!paintMaterial.ColorMask.HasValue && !paintMaterial.Skin.HasValue)
             {
-                var assigned = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.CUBE_COLOR_CHANGE));
+                string assigned = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.CUBE_COLOR_CHANGE));
 
                 Main.Notifications.Show(0, "No paint or skin enabled.", MyFontEnum.Red);
                 Main.Notifications.Show(1, $"Press [{assigned}] to toggle color or combined with [Shift] to toggle skin.", MyFontEnum.Debug);
@@ -620,7 +617,7 @@ namespace Digi.PaintGun.Features.Tool
             {
                 AimedState = (materialEquals ? SelectionState.Invalid : SelectionState.Valid);
 
-                var assigned = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.USE_SYMMETRY));
+                string assigned = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.USE_SYMMETRY));
 
                 if(AimedState == SelectionState.Invalid)
                     Main.SelectionGUI.SetGUIStatus(0, "Already this material.", "red");
@@ -634,7 +631,7 @@ namespace Digi.PaintGun.Features.Tool
 
             if(!Main.InstantPaintAccess)
             {
-                var def = (MyCubeBlockDefinition)block.BlockDefinition;
+                MyCubeBlockDefinition def = (MyCubeBlockDefinition)block.BlockDefinition;
                 bool built = (block.BuildLevelRatio >= def.CriticalIntegrityRatio);
 
                 if(!built || block.CurrentDamage > (block.MaxIntegrity / 10.0f))
@@ -653,7 +650,7 @@ namespace Digi.PaintGun.Features.Tool
                 }
             }
 
-            var grid = (MyCubeGrid)block.CubeGrid;
+            MyCubeGrid grid = (MyCubeGrid)block.CubeGrid;
             bool symmetry = Main.SymmetryAccess && MyCubeBuilder.Static.UseSymmetry && (grid.XSymmetryPlane.HasValue || grid.YSymmetryPlane.HasValue || grid.ZSymmetryPlane.HasValue);
             bool symmetrySameColor = true;
 
@@ -759,7 +756,7 @@ namespace Digi.PaintGun.Features.Tool
 
             if(mirrorPosition.HasValue)
             {
-                var slim = grid.GetCubeBlock(mirrorPosition.Value);
+                IMySlimBlock slim = grid.GetCubeBlock(mirrorPosition.Value);
 
                 if(slim != null)
                     return paintMaterial.PaintEquals(slim);
@@ -851,14 +848,14 @@ namespace Digi.PaintGun.Features.Tool
                 }
                 else
                 {
-                    var percent = Utils.ColorPercent(blockColorMask, paintColorMask);
+                    int percent = Utils.ColorPercent(blockColorMask, paintColorMask);
 
                     Main.SelectionGUI.SetGUIStatus(0, $"Painting {percent.ToString()}%...");
                 }
             }
             else // if hue is too far off, first "remove" the paint.
             {
-                var defaultColorMask = Main.Palette.DefaultColorMask;
+                Vector3 defaultColorMask = Main.Palette.DefaultColorMask;
 
                 paintSpeed *= DEPAINT_SPEED * PAINT_UPDATE_TICKS;
                 paintSpeed *= MyAPIGateway.Session.GrinderSpeedMultiplier;
@@ -890,7 +887,7 @@ namespace Digi.PaintGun.Features.Tool
                 }
                 else
                 {
-                    var percent = Utils.ColorPercent(blockColorMask, defaultColorMask);
+                    int percent = Utils.ColorPercent(blockColorMask, defaultColorMask);
 
                     Main.SelectionGUI.SetGUIStatus(0, $"Removing paint {percent.ToString()}%...");
                 }

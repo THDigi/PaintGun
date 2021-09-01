@@ -1,6 +1,9 @@
-﻿using Digi.NetworkLib;
+﻿using System.Collections.Generic;
+using Digi.NetworkLib;
+using Digi.PaintGun.Features.Tool;
 using Digi.PaintGun.Utilities;
 using ProtoBuf;
+using VRage.Game.ModAPI;
 
 namespace Digi.PaintGun.Features.Sync
 {
@@ -24,14 +27,13 @@ namespace Digi.PaintGun.Features.Sync
 
             if(Main.IsPlayer)
             {
-                var player = Utils.GetPlayerBySteamId(SteamId);
-
+                IMyPlayer player = Utils.GetPlayerBySteamId(SteamId);
                 if(player == null)
                     return;
 
-                var tools = Main.ToolHandler.Tools;
+                List<PaintGunItem> tools = Main.ToolHandler.Tools;
 
-                foreach(var tool in tools)
+                foreach(PaintGunItem tool in tools)
                 {
                     if(tool.OwnerSteamId == SteamId)
                     {

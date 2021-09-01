@@ -1,4 +1,6 @@
-﻿using Digi.ComponentLib;
+﻿using System.Collections.Generic;
+using Digi.ComponentLib;
+using Digi.PaintGun.Features.Palette;
 using Sandbox.ModAPI;
 using VRageMath;
 using static Draygo.API.HudAPIv2;
@@ -209,7 +211,7 @@ namespace Digi.PaintGun.Features.ConfigMenu
                     {
                         for(int i = 1; i < Main.Palette.BlockSkins.Count; i++) // intentionally skipping 0
                         {
-                            var skin = Main.Palette.BlockSkins[i];
+                            SkinInfo skin = Main.Palette.BlockSkins[i];
                             Main.Settings.hideSkinsFromPalette.Add(skin.SubtypeId.String);
                         }
                     }
@@ -219,11 +221,11 @@ namespace Digi.PaintGun.Features.ConfigMenu
                 },
                 defaultValue: true));
 
-            var skins = Main.Palette.BlockSkins;
+            List<SkinInfo> skins = Main.Palette.BlockSkins;
             for(int i = 1; i < skins.Count; i++) // intentionally skipping 0
             {
-                var skin = skins[i];
-                var item = new ItemToggle(Category_HideSkins, skin.Name,
+                SkinInfo skin = skins[i];
+                ItemToggle item = new ItemToggle(Category_HideSkins, skin.Name,
                     getter: () => !Main.Settings.hideSkinsFromPalette.Contains(skin.SubtypeId.String),
                     setter: (v) =>
                     {
@@ -372,7 +374,7 @@ namespace Digi.PaintGun.Features.ConfigMenu
         #region Helper methods
         private MenuCategoryBase AddCategory(string name, MenuCategoryBase parent, string header = null, ItemGroup group = null)
         {
-            var item = new ItemSubMenu(parent, name, header);
+            ItemSubMenu item = new ItemSubMenu(parent, name, header);
             group?.Add(item);
             return item.Item;
         }

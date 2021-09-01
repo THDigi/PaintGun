@@ -2,6 +2,7 @@
 using Digi.ComponentLib;
 using Sandbox.Game;
 using Sandbox.ModAPI;
+using VRageMath;
 
 namespace Digi.PaintGun.Systems
 {
@@ -95,13 +96,13 @@ namespace Digi.PaintGun.Systems
 
             HudBackgroundOpacity = MyAPIGateway.Session.Config?.HUDBkOpacity ?? 0.6f;
 
-            var viewportSize = MyAPIGateway.Session.Camera.ViewportSize;
+            Vector2 viewportSize = MyAPIGateway.Session.Camera.ViewportSize;
             AspectRatio = (double)viewportSize.X / (double)viewportSize.Y;
         }
 
         void UpdateHudState()
         {
-            var prevState = HudState;
+            HudState prevState = HudState;
             HudState = (HudState)(MyAPIGateway.Session.Config?.HudState ?? (int)HudState.HINTS);
             HudStateChanged?.Invoke(prevState, HudState);
         }

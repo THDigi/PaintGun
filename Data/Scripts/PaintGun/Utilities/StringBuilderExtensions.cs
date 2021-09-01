@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using Sandbox.ModAPI;
 using VRage.Input;
+using VRage.ModAPI;
 using VRage.Utils;
 
 namespace Digi.PaintGun.Utilities
@@ -9,7 +10,7 @@ namespace Digi.PaintGun.Utilities
     {
         public static StringBuilder AppendInputBind(this StringBuilder sb, MyStringId controlId)
         {
-            var control = MyAPIGateway.Input.GetGameControl(controlId);
+            IMyControl control = MyAPIGateway.Input.GetGameControl(controlId);
             if(control == null)
                 return sb.Append("<Unknown:").Append(controlId.String).Append(">");
 

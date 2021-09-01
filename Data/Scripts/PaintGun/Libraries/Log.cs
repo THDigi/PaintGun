@@ -215,7 +215,7 @@ namespace Digi
 
             if(task.Exceptions != null && task.Exceptions.Length > 0)
             {
-                foreach(var e in task.Exceptions)
+                foreach(Exception e in task.Exceptions)
                 {
                     Error($"Error in {taskName} thread!\n{e}");
                 }
@@ -316,7 +316,7 @@ namespace Digi
                 Info($"{modName} WARNING: there are log messages before the mod initialized!", PRINT_MESSAGE, 10000);
                 Info($"--- pre-init messages ---");
 
-                foreach(var msg in preInitMessages)
+                foreach(string msg in preInitMessages)
                 {
                     Info(msg);
                 }
@@ -485,7 +485,7 @@ namespace Digi
             private ulong GetWorkshopID(string modId)
             {
                 // NOTE: workaround for MyModContext not having the actual workshop ID number.
-                foreach(var mod in MyAPIGateway.Session.Mods)
+                foreach(MyObjectBuilder_Checkpoint.ModItem mod in MyAPIGateway.Session.Mods)
                 {
                     if(mod.Name == modId)
                         return mod.PublishedFileId;

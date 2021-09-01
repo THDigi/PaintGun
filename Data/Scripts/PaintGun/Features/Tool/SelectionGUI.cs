@@ -122,12 +122,12 @@ namespace Digi.PaintGun.Features.Tool
 
             if(!Main.Palette.ReplaceMode && Main.SymmetryAccess)
             {
-                var grid = block.CubeGrid;
+                IMyCubeGrid grid = block.CubeGrid;
 
                 if(grid.XSymmetryPlane.HasValue || grid.YSymmetryPlane.HasValue || grid.ZSymmetryPlane.HasValue)
                 {
                     bool inputReadable = (InputHandler.IsInputReadable() && !MyAPIGateway.Session.IsCameraUserControlledSpectator);
-                    var assigned = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.USE_SYMMETRY));
+                    string assigned = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.USE_SYMMETRY));
 
                     if(inputReadable)
                     {
@@ -212,12 +212,12 @@ namespace Digi.PaintGun.Features.Tool
 
             if(selectedGrid.XSymmetryPlane.HasValue)
             {
-                var center = matrix.Translation + matrix.Right * ((selectedGrid.XSymmetryPlane.Value.X * selectedGrid.GridSize) - (selectedGrid.XSymmetryOdd ? gridSizeHalf : 0));
+                Vector3D center = matrix.Translation + matrix.Right * ((selectedGrid.XSymmetryPlane.Value.X * selectedGrid.GridSize) - (selectedGrid.XSymmetryOdd ? gridSizeHalf : 0));
 
-                var minY = matrix.Up * ((selectedGrid.Min.Y - 1.5f) * selectedGrid.GridSize);
-                var maxY = matrix.Up * ((selectedGrid.Max.Y + 1.5f) * selectedGrid.GridSize);
-                var minZ = matrix.Backward * ((selectedGrid.Min.Z - 1.5f) * selectedGrid.GridSize);
-                var maxZ = matrix.Backward * ((selectedGrid.Max.Z + 1.5f) * selectedGrid.GridSize);
+                Vector3D minY = matrix.Up * ((selectedGrid.Min.Y - 1.5f) * selectedGrid.GridSize);
+                Vector3D maxY = matrix.Up * ((selectedGrid.Max.Y + 1.5f) * selectedGrid.GridSize);
+                Vector3D minZ = matrix.Backward * ((selectedGrid.Min.Z - 1.5f) * selectedGrid.GridSize);
+                Vector3D maxZ = matrix.Backward * ((selectedGrid.Max.Z + 1.5f) * selectedGrid.GridSize);
 
                 quad.Point0 = center + maxY + maxZ;
                 quad.Point1 = center + maxY + minZ;
@@ -229,12 +229,12 @@ namespace Digi.PaintGun.Features.Tool
 
             if(selectedGrid.YSymmetryPlane.HasValue)
             {
-                var center = matrix.Translation + matrix.Up * ((selectedGrid.YSymmetryPlane.Value.Y * selectedGrid.GridSize) - (selectedGrid.YSymmetryOdd ? gridSizeHalf : 0));
+                Vector3D center = matrix.Translation + matrix.Up * ((selectedGrid.YSymmetryPlane.Value.Y * selectedGrid.GridSize) - (selectedGrid.YSymmetryOdd ? gridSizeHalf : 0));
 
-                var minZ = matrix.Backward * ((selectedGrid.Min.Z - 1.5f) * selectedGrid.GridSize);
-                var maxZ = matrix.Backward * ((selectedGrid.Max.Z + 1.5f) * selectedGrid.GridSize);
-                var minX = matrix.Right * ((selectedGrid.Min.X - 1.5f) * selectedGrid.GridSize);
-                var maxX = matrix.Right * ((selectedGrid.Max.X + 1.5f) * selectedGrid.GridSize);
+                Vector3D minZ = matrix.Backward * ((selectedGrid.Min.Z - 1.5f) * selectedGrid.GridSize);
+                Vector3D maxZ = matrix.Backward * ((selectedGrid.Max.Z + 1.5f) * selectedGrid.GridSize);
+                Vector3D minX = matrix.Right * ((selectedGrid.Min.X - 1.5f) * selectedGrid.GridSize);
+                Vector3D maxX = matrix.Right * ((selectedGrid.Max.X + 1.5f) * selectedGrid.GridSize);
 
                 quad.Point0 = center + maxZ + maxX;
                 quad.Point1 = center + maxZ + minX;
@@ -246,12 +246,12 @@ namespace Digi.PaintGun.Features.Tool
 
             if(selectedGrid.ZSymmetryPlane.HasValue)
             {
-                var center = matrix.Translation + matrix.Backward * ((selectedGrid.ZSymmetryPlane.Value.Z * selectedGrid.GridSize) + (selectedGrid.ZSymmetryOdd ? gridSizeHalf : 0));
+                Vector3D center = matrix.Translation + matrix.Backward * ((selectedGrid.ZSymmetryPlane.Value.Z * selectedGrid.GridSize) + (selectedGrid.ZSymmetryOdd ? gridSizeHalf : 0));
 
-                var minY = matrix.Up * ((selectedGrid.Min.Y - 1.5f) * selectedGrid.GridSize);
-                var maxY = matrix.Up * ((selectedGrid.Max.Y + 1.5f) * selectedGrid.GridSize);
-                var minX = matrix.Right * ((selectedGrid.Min.X - 1.5f) * selectedGrid.GridSize);
-                var maxX = matrix.Right * ((selectedGrid.Max.X + 1.5f) * selectedGrid.GridSize);
+                Vector3D minY = matrix.Up * ((selectedGrid.Min.Y - 1.5f) * selectedGrid.GridSize);
+                Vector3D maxY = matrix.Up * ((selectedGrid.Max.Y + 1.5f) * selectedGrid.GridSize);
+                Vector3D minX = matrix.Right * ((selectedGrid.Min.X - 1.5f) * selectedGrid.GridSize);
+                Vector3D maxX = matrix.Right * ((selectedGrid.Max.X + 1.5f) * selectedGrid.GridSize);
 
                 quad.Point0 = center + maxY + maxX;
                 quad.Point1 = center + maxY + minX;
@@ -288,15 +288,15 @@ namespace Digi.PaintGun.Features.Tool
             // symmetry highlight
             if(Main.SymmetryAccess && !Main.Palette.ReplaceMode && !Main.Palette.ColorPickMode && MyCubeBuilder.Static.UseSymmetry && (grid.XSymmetryPlane.HasValue || grid.YSymmetryPlane.HasValue || grid.ZSymmetryPlane.HasValue))
             {
-                var alreadyMirrored = Main.Caches.AlreadyMirrored;
+                List<Vector3I> alreadyMirrored = Main.Caches.AlreadyMirrored;
                 alreadyMirrored.Clear();
 
                 mirroredValid = (Main.LocalToolHandler.AimedState == SelectionState.Valid ? 1 : 0);
                 mirroredValidTotal = 1;
 
-                var mirrorX = MirrorHighlight(grid, 0, block.Position, alreadyMirrored); // X
-                var mirrorY = MirrorHighlight(grid, 1, block.Position, alreadyMirrored); // Y
-                var mirrorZ = MirrorHighlight(grid, 2, block.Position, alreadyMirrored); // Z
+                Vector3I? mirrorX = MirrorHighlight(grid, 0, block.Position, alreadyMirrored); // X
+                Vector3I? mirrorY = MirrorHighlight(grid, 1, block.Position, alreadyMirrored); // Y
+                Vector3I? mirrorZ = MirrorHighlight(grid, 2, block.Position, alreadyMirrored); // Z
                 Vector3I? mirrorYZ = null;
 
                 if(mirrorX.HasValue && grid.YSymmetryPlane.HasValue) // XY
@@ -538,13 +538,13 @@ namespace Digi.PaintGun.Features.Tool
             {
                 alreadyMirrored.Add(mirrorPosition.Value);
 
-                var block = grid.GetCubeBlock(mirrorPosition.Value);
+                IMySlimBlock block = grid.GetCubeBlock(mirrorPosition.Value);
 
                 if(block != null)
                 {
                     mirroredValidTotal++;
 
-                    var paintMaterial = Main.Palette.GetLocalPaintMaterial();
+                    PaintMaterial paintMaterial = Main.Palette.GetLocalPaintMaterial();
                     bool validSelection = Main.LocalToolHandler.IsMirrorBlockValid(block, paintMaterial);
 
                     if(validSelection)
@@ -596,9 +596,9 @@ namespace Digi.PaintGun.Features.Tool
                 return;
 
             PaintMaterial targetMaterial;
-            var paint = Main.Palette.GetLocalPaintMaterial();
+            PaintMaterial paint = Main.Palette.GetLocalPaintMaterial();
             int ammo = (Main.LocalToolHandler.LocalTool != null ? Main.LocalToolHandler.LocalTool.Ammo : 0);
-            var title = uiTitle.Message.Clear().Append("<color=220,244,252>");
+            StringBuilder title = uiTitle.Message.Clear().Append("<color=220,244,252>");
             float progress = 0f;
 
             if(targetCharacter)
@@ -615,7 +615,7 @@ namespace Digi.PaintGun.Features.Tool
             {
                 uiTargetColor.Material = MATERIAL_ICON_GENERIC_BLOCK;
 
-                var block = Main.LocalToolHandler.AimedBlock;
+                IMySlimBlock block = Main.LocalToolHandler.AimedBlock;
                 targetMaterial = new PaintMaterial(block.ColorMaskHSV, block.SkinSubtypeId);
 
                 uiTargetColor.BillBoardColor = Utils.ColorMaskToRGB(targetMaterial.ColorMask.Value);
@@ -625,18 +625,18 @@ namespace Digi.PaintGun.Features.Tool
                 else if(paint.Skin.HasValue)
                     progress = (targetMaterial.Skin == paint.Skin.Value ? 1f : 0.25f);
 
-                var selectedDef = (MyCubeBlockDefinition)block.BlockDefinition;
+                MyCubeBlockDefinition selectedDef = (MyCubeBlockDefinition)block.BlockDefinition;
 
                 title.AppendLimitedChars(selectedDef.DisplayNameText, GUI_TITLE_MAX_CHARS);
             }
 
             uiPaintColor.BillBoardColor = (paint.ColorMask.HasValue ? Utils.ColorMaskToRGB(paint.ColorMask.Value) : Color.Gray);
 
-            var height = UI_PROGRESSBAR_HEIGHT * progress;
+            float height = UI_PROGRESSBAR_HEIGHT * progress;
             uiProgressBar.Height = height;
             uiProgressBar.Offset = new Vector2D(uiProgressBar.Width * 0.5, -UI_PROGRESSBAR_HEIGHT + uiProgressBar.Height * 0.5) + uiProgressBarPosition;
 
-            var text = uiText.Message;
+            StringBuilder text = uiText.Message;
             text.Clear().Append(blockInfoStatus[0]);
             text.Append('\n');
             text.Append('\n');
@@ -667,7 +667,7 @@ namespace Digi.PaintGun.Features.Tool
                 text.Append("<color=white>        Skin: ");
                 if(targetMaterial.Skin.HasValue)
                 {
-                    var targetSkin = Main.Palette.GetSkinInfo(targetMaterial.Skin.Value);
+                    SkinInfo targetSkin = Main.Palette.GetSkinInfo(targetMaterial.Skin.Value);
 
                     if(targetSkin != null)
                     {
@@ -722,7 +722,7 @@ namespace Digi.PaintGun.Features.Tool
                 {
                     text.Append("        <color=white>Skin: ");
 
-                    var skin = Main.Palette.GetSkinInfo(paint.Skin.Value);
+                    SkinInfo skin = Main.Palette.GetSkinInfo(paint.Skin.Value);
                     if(skin != null)
                     {
                         if(skin.Index == 0)
@@ -753,7 +753,7 @@ namespace Digi.PaintGun.Features.Tool
 
             SetUIOption(HudAPIv2.Options.HideHud, Main.Settings.hidePaletteWithHUD);
 
-            var alpha = (Main.Settings.aimInfoBackgroundOpacity < 0 ? Main.GameConfig.HudBackgroundOpacity : Main.Settings.aimInfoBackgroundOpacity);
+            float alpha = (Main.Settings.aimInfoBackgroundOpacity < 0 ? Main.GameConfig.HudBackgroundOpacity : Main.Settings.aimInfoBackgroundOpacity);
 
             uiTitleBg.BillBoardColor = Utils.HUDColorAlpha(UI_TITLE_BG_COLOR, alpha);
             uiTextBg.BillBoardColor = Utils.HUDColorAlpha(UI_TEXT_BG_COLOR, alpha);
@@ -766,17 +766,17 @@ namespace Digi.PaintGun.Features.Tool
 
             for(int i = 0; i < ui.Length; ++i)
             {
-                var msgBase = ui[i];
+                HudAPIv2.MessageBase msgBase = ui[i];
 
                 if(msgBase is HudAPIv2.HUDMessage)
                 {
-                    var obj = (HudAPIv2.HUDMessage)msgBase;
+                    HudAPIv2.HUDMessage obj = (HudAPIv2.HUDMessage)msgBase;
 
                     obj.Origin = uiPosition;
                 }
                 else if(msgBase is HudAPIv2.BillBoardHUDMessage)
                 {
-                    var obj = (HudAPIv2.BillBoardHUDMessage)msgBase;
+                    HudAPIv2.BillBoardHUDMessage obj = (HudAPIv2.BillBoardHUDMessage)msgBase;
 
                     obj.Origin = uiPosition;
                 }
@@ -844,7 +844,7 @@ namespace Digi.PaintGun.Features.Tool
 
             for(int i = 0; i < ui.Length; ++i)
             {
-                var msgBase = ui[i];
+                HudAPIv2.MessageBase msgBase = ui[i];
 
                 // just in case this issue comes back I wanna know if it's it specifically
                 if(msgBase.BackingObject == null)
@@ -853,7 +853,7 @@ namespace Digi.PaintGun.Features.Tool
                     continue;
                 }
 
-                var hudMessage = msgBase as HudAPIv2.HUDMessage;
+                HudAPIv2.HUDMessage hudMessage = msgBase as HudAPIv2.HUDMessage;
                 if(hudMessage != null)
                 {
                     if(set)
@@ -863,7 +863,7 @@ namespace Digi.PaintGun.Features.Tool
                     continue;
                 }
 
-                var hudBillboard = msgBase as HudAPIv2.BillBoardHUDMessage;
+                HudAPIv2.BillBoardHUDMessage hudBillboard = msgBase as HudAPIv2.BillBoardHUDMessage;
                 if(hudBillboard != null)
                 {
                     if(set)

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 using Digi.PaintGun.Features.Palette;
 using Sandbox.Game;
@@ -25,9 +26,9 @@ namespace Digi.PaintGun.Utilities
 
         public static bool SafeZoneCanPaint(IMySlimBlock block, ulong playerSteamId)
         {
-            var gridSize = block.CubeGrid.GridSize;
-            var gridSizeHalf = gridSize * 0.5f;
-            var worldAABB = new BoundingBoxD(block.Min * gridSize - gridSizeHalf, block.Max * gridSize + gridSizeHalf).TransformFast(block.CubeGrid.WorldMatrix);
+            float gridSize = block.CubeGrid.GridSize;
+            float gridSizeHalf = gridSize * 0.5f;
+            BoundingBoxD worldAABB = new BoundingBoxD(block.Min * gridSize - gridSizeHalf, block.Max * gridSize + gridSizeHalf).TransformFast(block.CubeGrid.WorldMatrix);
 
             return MySessionComponentSafeZones.IsActionAllowed(worldAABB, CastHax(MySessionComponentSafeZones.AllowedActions, Constants.SAFE_ZONE_ACCES_FOR_PAINT), 0, playerSteamId);
         }
@@ -49,7 +50,7 @@ namespace Digi.PaintGun.Utilities
 
         public static StringBuilder AppendLimitedChars(this StringBuilder sb, string text, int maxChars, bool addDots = true)
         {
-            var originalLen = sb.Length;
+            int originalLen = sb.Length;
 
             sb.Append(text);
 
@@ -71,7 +72,7 @@ namespace Digi.PaintGun.Utilities
 
         public static string ColorMaskToHSVText(Vector3 colorMask)
         {
-            var hsv = ColorMaskToFriendlyHSV(colorMask);
+            Vector3 hsv = ColorMaskToFriendlyHSV(colorMask);
             return $"HSV: {hsv.X.ToString("0.0")}°, {hsv.Y.ToString("0.0")}%, {hsv.Z.ToString("0.0")}%";
         }
 
@@ -83,9 +84,9 @@ namespace Digi.PaintGun.Utilities
 
         public static float ColorScalar(Vector3 blockColor, Vector3 paintColor)
         {
-            var blockHSV = ColorMaskToHSV(blockColor);
-            var paintHSV = ColorMaskToHSV(paintColor);
-            var defaultHSV = ColorMaskToHSV(Main.Palette.DefaultColorMask);
+            Vector3 blockHSV = ColorMaskToHSV(blockColor);
+            Vector3 paintHSV = ColorMaskToHSV(paintColor);
+            Vector3 defaultHSV = ColorMaskToHSV(Main.Palette.DefaultColorMask);
 
             float addPaint = 1 - ((Math.Abs(paintHSV.X - blockHSV.X) + Math.Abs(paintHSV.Y - blockHSV.Y) + Math.Abs(paintHSV.Z - blockHSV.Z)) / 3f);
             float removePaint = 1 - ((Math.Abs(defaultHSV.Y - blockHSV.Y) + Math.Abs(defaultHSV.Z - blockHSV.Z)) * 0.5f);
@@ -93,7 +94,7 @@ namespace Digi.PaintGun.Utilities
 
             bool needsToAddPaint = Math.Abs(paintColor.X - blockColor.X) < 0.0001f;
 
-            var progress = addPaint;
+            float progress = addPaint;
 
             if(needsToAddPaint)
                 progress = 0.5f + MathHelper.Clamp(addPaint - 0.5f, 0, 0.5f); // 0.5f + (((addPaint - def2paint) / (1 - def2paint)) * 0.5f);
@@ -105,7 +106,7 @@ namespace Digi.PaintGun.Utilities
 
         public static string ColorMaskToString(Vector3 colorMask)
         {
-            var hsv = ColorMaskToFriendlyHSV(colorMask);
+            Vector3 hsv = ColorMaskToFriendlyHSV(colorMask);
             return $"{hsv.X.ToString("0.0")}°, {hsv.Y.ToString("0.0")}%, {hsv.Z.ToString("0.0")}%";
         }
 
@@ -131,7 +132,7 @@ namespace Digi.PaintGun.Utilities
         /// </summary>
         public static Vector3 ColorMaskToFriendlyHSV(Vector3 colorMask)
         {
-            var hsv = ColorMaskToHSV(colorMask);
+            Vector3 hsv = ColorMaskToHSV(colorMask);
             return new Vector3(Math.Round(hsv.X * 360, 1), Math.Round(hsv.Y * 100, 1), Math.Round(hsv.Z * 100, 1));
         }
 
@@ -183,11 +184,11 @@ namespace Digi.PaintGun.Utilities
 
         public static IMyPlayer GetPlayerBySteamId(ulong steamId)
         {
-            var players = Main.Caches.Players.Get();
+            List<IMyPlayer> players = Main.Caches.Players.Get();
             MyAPIGateway.Players.GetPlayers(players);
             IMyPlayer player = null;
 
-            foreach(var p in players)
+            foreach(IMyPlayer p in players)
             {
                 if(p.SteamUserId == steamId)
                 {
@@ -202,11 +203,11 @@ namespace Digi.PaintGun.Utilities
 
         public static IMyPlayer GetPlayerByIdentityId(long identityId)
         {
-            var players = Main.Caches.Players.Get();
+            List<IMyPlayer> players = Main.Caches.Players.Get();
             MyAPIGateway.Players.GetPlayers(players);
             IMyPlayer player = null;
 
-            foreach(var p in players)
+            foreach(IMyPlayer p in players)
             {
                 if(p.IdentityId == identityId)
                 {
@@ -228,7 +229,7 @@ namespace Digi.PaintGun.Utilities
 
             foreach(long owner in grid.BigOwners)
             {
-                var relation = GetRelationBetweenPlayers(owner, identityId);
+                MyRelationsBetweenPlayerAndBlock relation = GetRelationBetweenPlayers(owner, identityId);
 
                 // vanilla only checks Self/Owner, this mod allows allies to paint aswell
                 if(relation == MyRelationsBetweenPlayerAndBlock.FactionShare || relation == MyRelationsBetweenPlayerAndBlock.Owner)
@@ -253,7 +254,7 @@ namespace Digi.PaintGun.Utilities
             if(f1 == f2)
                 return MyRelationsBetweenPlayerAndBlock.FactionShare;
 
-            var factionRelation = MyAPIGateway.Session.Factions.GetRelationBetweenFactions(f1.FactionId, f2.FactionId);
+            MyRelationsBetweenFactions factionRelation = MyAPIGateway.Session.Factions.GetRelationBetweenFactions(f1.FactionId, f2.FactionId);
 
             if(factionRelation == MyRelationsBetweenFactions.Neutral)
                 return MyRelationsBetweenPlayerAndBlock.Neutral;
@@ -272,17 +273,17 @@ namespace Digi.PaintGun.Utilities
 
         public static bool IsAimingDownSights(IMyCharacter character)
         {
-            var weaponPosComp = character?.Components?.Get<MyCharacterWeaponPositionComponent>();
+            MyCharacterWeaponPositionComponent weaponPosComp = character?.Components?.Get<MyCharacterWeaponPositionComponent>();
             return (weaponPosComp != null ? weaponPosComp.IsInIronSight : false);
         }
 
         public static BoundingSphereD GetCharacterSelectionSphere(IMyCharacter character)
         {
-            var sphere = character.WorldVolume;
+            BoundingSphereD sphere = character.WorldVolume;
             sphere.Center += character.WorldMatrix.Up * 0.2;
             sphere.Radius *= 0.6;
 
-            var crouching = (MyCharacterMovement.GetMode(character.CurrentMovementState) == MyCharacterMovement.Crouching);
+            bool crouching = (MyCharacterMovement.GetMode(character.CurrentMovementState) == MyCharacterMovement.Crouching);
             if(crouching)
             {
                 sphere.Center += character.WorldMatrix.Up * 0.1;
@@ -294,7 +295,7 @@ namespace Digi.PaintGun.Utilities
 
         public static IMyPlayer GetPlayerOrError(object caller, ulong steamId)
         {
-            var player = GetPlayerBySteamId(steamId);
+            IMyPlayer player = GetPlayerBySteamId(steamId);
 
             if(player == null)
                 Log.Error($"{caller?.GetType().Name} Player ({steamId.ToString()}) not found!", Log.PRINT_MESSAGE);
@@ -318,7 +319,7 @@ namespace Digi.PaintGun.Utilities
             if(character == null)
                 return null;
 
-            var inv = character.GetInventory();
+            IMyInventory inv = character.GetInventory();
 
             if(inv == null)
                 Log.Error($"{caller?.GetType().Name} Player {character.DisplayName} has no inventory (entId={character.EntityId.ToString()})", Log.PRINT_MESSAGE);
@@ -337,7 +338,7 @@ namespace Digi.PaintGun.Utilities
                 return null;
             }
 
-            var casted = ent as T;
+            T casted = ent as T;
 
             if(casted == null)
             {
@@ -351,9 +352,9 @@ namespace Digi.PaintGun.Utilities
 
         public static bool IsLocalMod()
         {
-            var modContext = Main.Session.ModContext;
+            IMyModContext modContext = Main.Session.ModContext;
 
-            foreach(var mod in MyAPIGateway.Session.Mods)
+            foreach(MyObjectBuilder_Checkpoint.ModItem mod in MyAPIGateway.Session.Mods)
             {
                 if(mod.Name == modContext.ModId)
                 {
@@ -366,7 +367,7 @@ namespace Digi.PaintGun.Utilities
 
         public static string PrintPlayerName(ulong steamId)
         {
-            var player = GetPlayerBySteamId(steamId);
+            IMyPlayer player = GetPlayerBySteamId(steamId);
 
             if(player == null)
                 return $"[NotFound!] ({steamId.ToString()})";
@@ -387,7 +388,7 @@ namespace Digi.PaintGun.Utilities
             if(!id.HasValue)
                 return $"(NoSkinId)";
 
-            var skin = Main.Palette.GetSkinInfo(id.Value);
+            SkinInfo skin = Main.Palette.GetSkinInfo(id.Value);
             if(skin != null)
                 return $"{skin.SubtypeId.ToString()} (idx={id.Value.ToString()})";
 

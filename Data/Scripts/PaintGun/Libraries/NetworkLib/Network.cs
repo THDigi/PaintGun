@@ -75,7 +75,7 @@ namespace Digi.NetworkLib
 
             MyAPIGateway.Players.GetPlayers(players);
 
-            foreach(var player in players)
+            foreach(IMyPlayer player in players)
             {
                 if(player.SteamUserId == MyAPIGateway.Multiplayer.ServerId)
                     continue;
@@ -96,7 +96,7 @@ namespace Digi.NetworkLib
         {
             try
             {
-                var packet = MyAPIGateway.Utilities.SerializeFromBinary<PacketBase>(rawData);
+                PacketBase packet = MyAPIGateway.Utilities.SerializeFromBinary<PacketBase>(rawData);
                 HandlePacket(packet, rawData);
             }
             catch(Exception e)

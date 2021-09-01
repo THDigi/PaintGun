@@ -33,12 +33,12 @@ namespace Digi.PaintGun.Features.ChatCommands
 
         public override void PrintHelp(StringBuilder text)
         {
-            foreach(var alias in Aliases)
+            foreach(string alias in Aliases)
             {
                 text.Append(ChatCommands.MAIN_COMMAND).Append(' ').Append(alias).Append('\n');
             }
 
-            var assignedLG = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.LANDING_GEAR));
+            string assignedLG = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.LANDING_GEAR));
 
             text.Append("  Activate color picker mode (hotkey: Shift+").Append(assignedLG).Append(')').Append('\n');
             text.Append('\n');

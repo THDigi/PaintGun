@@ -64,7 +64,7 @@ namespace Digi.PaintGun.Features.Palette
                 RemoveKeys.Add(slim);
             }
 
-            foreach(var key in RemoveKeys)
+            foreach(IMySlimBlock key in RemoveKeys)
             {
                 CheckSkinned.Remove(key);
             }

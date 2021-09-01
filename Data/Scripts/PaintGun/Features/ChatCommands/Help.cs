@@ -15,14 +15,14 @@ namespace Digi.PaintGun.Features.ChatCommands
 
         public override void Execute(MyCommandLine parser = null)
         {
-            var assignedLG = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.LANDING_GEAR));
-            var assignedSecondaryClick = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.SECONDARY_TOOL_ACTION));
-            var assignedCubeSize = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.CUBE_BUILDER_CUBESIZE_MODE));
-            var assignedColorBlock = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.CUBE_COLOR_CHANGE));
-            var assignedColorPrev = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.SWITCH_LEFT));
-            var assignedColorNext = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.SWITCH_RIGHT));
+            string assignedLG = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.LANDING_GEAR));
+            string assignedSecondaryClick = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.SECONDARY_TOOL_ACTION));
+            string assignedCubeSize = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.CUBE_BUILDER_CUBESIZE_MODE));
+            string assignedColorBlock = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.CUBE_COLOR_CHANGE));
+            string assignedColorPrev = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.SWITCH_LEFT));
+            string assignedColorNext = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.SWITCH_RIGHT));
 
-            var ch = PaintGunMod.Instance.ChatCommands;
+            ChatCommands ch = PaintGunMod.Instance.ChatCommands;
             if(sb == null)
                 sb = new StringBuilder((ch.CommandHandlers.Count * 128) + 512);
 
@@ -38,12 +38,12 @@ namespace Digi.PaintGun.Features.ChatCommands
             sb.Append(SegmentPrefix).Append("Chat Commands").Append(SegmentSuffix).Append('\n');
             sb.Append('\n');
 
-            foreach(var handler in ch.CommandHandlers)
+            foreach(CommandHandlerBase handler in ch.CommandHandlers)
             {
                 handler.PrintHelp(sb);
             }
 
-            var constants = PaintGunMod.Instance.Constants;
+            Constants constants = PaintGunMod.Instance.Constants;
 
             sb.Append(SegmentPrefix).Append("Hotkeys").Append(SegmentSuffix).Append('\n');
             sb.Append('\n');

@@ -3,7 +3,9 @@ using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character.Components;
 using Sandbox.ModAPI;
+using Sandbox.ModAPI.Weapons;
 using VRage.Game;
+using VRage.Game.Entity.UseObject;
 using VRage.Game.ModAPI;
 using VRageMath;
 
@@ -130,7 +132,7 @@ namespace Digi.PaintGun.Features.Palette
 
                 if(!cycleSkins)
                 {
-                    var useObject = MyAPIGateway.Session?.Player?.Character?.Components?.Get<MyCharacterDetectorComponent>()?.UseObject;
+                    IMyUseObject useObject = MyAPIGateway.Session?.Player?.Character?.Components?.Get<MyCharacterDetectorComponent>()?.UseObject;
                     if(useObject != null)
                         return; // aiming at an interactive object while pressing only X, ignore
                 }
@@ -203,7 +205,7 @@ namespace Digi.PaintGun.Features.Palette
             {
                 if(cycleSkins)
                 {
-                    var index = LocalInfo.SelectedSkinIndex;
+                    int index = LocalInfo.SelectedSkinIndex;
                     do
                     {
                         if(++index >= Main.Palette.BlockSkins.Count)
@@ -215,7 +217,7 @@ namespace Digi.PaintGun.Features.Palette
                 }
                 else
                 {
-                    var index = LocalInfo.SelectedColorIndex;
+                    int index = LocalInfo.SelectedColorIndex;
                     if(Main.Settings.selectColorZigZag)
                     {
                         if(index >= 13)
@@ -238,7 +240,7 @@ namespace Digi.PaintGun.Features.Palette
             {
                 if(cycleSkins)
                 {
-                    var index = LocalInfo.SelectedSkinIndex;
+                    int index = LocalInfo.SelectedSkinIndex;
                     do
                     {
                         if(--index < 0)
@@ -250,7 +252,7 @@ namespace Digi.PaintGun.Features.Palette
                 }
                 else
                 {
-                    var index = LocalInfo.SelectedColorIndex;
+                    int index = LocalInfo.SelectedColorIndex;
                     if(Main.Settings.selectColorZigZag)
                     {
                         if(index >= 7)
@@ -396,7 +398,7 @@ namespace Digi.PaintGun.Features.Palette
 
         private void PreventIronSight()
         {
-            var holdingTool = Main.LocalToolHandler?.LocalTool?.Rifle;
+            IMyAutomaticRifleGun holdingTool = Main.LocalToolHandler?.LocalTool?.Rifle;
             if(holdingTool == null)
                 return;
 
