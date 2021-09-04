@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using Digi.ComponentLib;
 using Digi.PaintGun.Utilities;
 using ProtoBuf;
 using Sandbox.Definitions;
-using Sandbox.Game;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.ModAPI;
+using VRage.Library.Utils;
 using VRage.Utils;
 using VRageMath;
 
@@ -540,8 +541,6 @@ namespace Digi.PaintGun.Features.Palette
 
         void FixModTexturePaths(MyAssetModifierDefinition assetDef)
         {
-            // TODO: fix paths for asset modifier definitions - need to know if the file exists in mod directory
-#if false
             try
             {
                 if(assetDef.Textures == null || assetDef.Textures.Count <= 0)
@@ -562,21 +561,31 @@ namespace Digi.PaintGun.Features.Palette
                     if(string.IsNullOrEmpty(texture.Filepath))
                         continue;
 
-                    //if(texture.Filepath.StartsWith(@"..\"))
-                    //    continue; // modder used hax path, leave it be
-
-                    // DEBUG ... keep feature?
-                    //if(texture.Filepath.IndexOf("modtextures", StringComparison.OrdinalIgnoreCase) == -1)
-                    //    continue; // modder didn't specify they want this path fixed
+                    if(texture.Filepath.StartsWith(".."))
+                        continue; // some fix already applied
 
                     string fixedPath = Path.Combine(assetDef.Context.ModPath, texture.Filepath);
                     //fixedPath = Path.GetFullPath(fixedPath);
 
+                    try
+                    {
+                        MyImageHeaderUtils.DDS_HEADER header;
+                        if(!MyImageHeaderUtils.Read_DDS_HeaderData(fixedPath, out header))
+                            continue; // file not found in mod path... or first bytes as uint32 are not 542327876 /shrug
+                    }
+                    catch(Exception e)
+                    {
+                        if(e.GetType().Name != "EndOfStreamException")
+                            continue;
+
+                        // it exists so that's all I care about
+                    }
+
+                    //Log.Info($"Fixed paths for mod '{assetDef.Context.ModName}' --- {texture.Location}: '{texture.Filepath}' to '{fixedPath}'");
+
                     // has no direct effect on the skin, the render thing after does, but this is for consistency
                     texture.Filepath = fixedPath;
                     assetDef.Textures[i] = texture;
-
-                    //Log.Info($"Fixed paths for mod '{assetDef.Context.ModName}' --- {texture.Location}: '{texture.Filepath}' to '{fixedPath}'");
 
                     DoTextureChange texChange = TextureChanges.GetValueOrDefault(texture.Location);
                     switch((TextureType)texture.Type)
@@ -602,13 +611,12 @@ namespace Digi.PaintGun.Features.Palette
                     assetModifierForRender.SkinTextureChanges[kv.Key] = DeserializeAs(xml, assetModifierForRender.SkinTextureChanges);
                 }
 
-                Log.Info($"Fixed paths for skin '{assetDef.Id.SubtypeName}' from mod '{assetDef.Context.ModName}'");
+                Log.Info($"Fixed mod-relative paths for skin '{assetDef.Id.SubtypeName}' from mod '{assetDef.Context.ModName}'");
             }
             catch(Exception e)
             {
                 Log.Error($"Error in IsSkinAsset() for asset={assetDef.Id.ToString()}\n{e}");
             }
-#endif
         }
 
         static T DeserializeAs<T>(string xml, Dictionary<string, T> objForType) => MyAPIGateway.Utilities.SerializeFromXML<T>(xml);

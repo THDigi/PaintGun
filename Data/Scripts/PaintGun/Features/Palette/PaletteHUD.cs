@@ -201,7 +201,7 @@ namespace Digi.PaintGun.Features.Palette
             //const double MAX_VIEW_SKINS_HALF_D_BG = ((MAX_VIEW_SKINS - 4) / 2d);
 
             int showSkinsCount = shownSkins.Count;
-            if(showSkinsCount >= MAX_VIEW_SKINS)
+            if(showSkinsCount >= MAX_VIEW_SKINS) // scrolling skin bar
             {
                 //var bgPos = pos + camMatrix.Right * ((iconSpacingWidth * 0.5) - (iconSpacingWidth * 0.5));
                 //MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_BACKGROUND, PALETTE_COLOR_BG * bgAlpha, bgPos, camMatrix.Left, camMatrix.Up, (float)(iconSpacingWidth * MAX_VIEW_SKINS_HALF_D_BG) + iconBgSpacingAddWidth, iconSize + iconBgSpacingAddHeight, Vector2.Zero, UI_BG_BLENDTYPE);
@@ -246,7 +246,7 @@ namespace Digi.PaintGun.Features.Palette
                     index++;
                 }
             }
-            else
+            else // static skin bar with moving selection
             {
                 double halfOwnedSkins = showSkinsCount * 0.5;
 
