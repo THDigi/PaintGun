@@ -174,7 +174,7 @@ namespace Digi.PaintGun.Features.Palette
                 return;
 
             // skin or color applying is off, can't cycle turned off palette
-            if(cycleSkins ? !LocalInfo.ApplySkin : !LocalInfo.ApplyColor)
+            if(cycleSkins ? !LocalInfo.ApplySkin : !LocalInfo.UseColor)
             {
                 Main.HUDSounds.PlayUnable();
 
@@ -184,14 +184,10 @@ namespace Digi.PaintGun.Features.Palette
                 bool showBind = true;
                 string message = cycleSkins ? "Skin applying is turned off." : "Color applying is turned off.";
 
-                if(!cycleSkins)
+                if(!cycleSkins && !LocalInfo.SkinAllowsColor)
                 {
-                    SkinInfo skin = Main.Palette.GetSkinInfo(LocalInfo.SelectedSkin);
-                    if(skin?.Definition != null && skin.Definition.DefaultColor.HasValue)
-                    {
-                        message = $"[{skin.Name}] skin cannot be recolored.";
-                        showBind = false;
-                    }
+                    message = $"[{LocalInfo.SelectedSkinInfo.Name}] skin cannot be colored.";
+                    showBind = false;
                 }
 
                 Main.Notifications.Show(0, message, MyFontEnum.Red, 1000);

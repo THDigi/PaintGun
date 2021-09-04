@@ -100,8 +100,8 @@ namespace Digi.PaintGun.Features.Palette
                     _selectedSkin = value;
                     SkinSelected?.Invoke(this, oldValue, _selectedSkin);
 
-                    SkinInfo skin = Main.Palette.GetSkinInfo(_selectedSkin);
-                    _skinAllowsColor = (skin?.Definition == null || !skin.Definition.DefaultColor.HasValue);
+                    SelectedSkinInfo = Main.Palette.GetSkinInfo(_selectedSkin);
+                    SkinAllowsColor = (SelectedSkinInfo?.Definition == null || !SelectedSkinInfo.Definition.DefaultColor.HasValue);
 
                     if(Main.IsPlayer && SteamId == MyAPIGateway.Multiplayer.MyId)
                         Main.PaletteScheduledSync.ScheduleSyncFor(skin: true);
@@ -109,11 +109,16 @@ namespace Digi.PaintGun.Features.Palette
             }
         }
 
-        bool _skinAllowsColor = true;
+        public SkinInfo SelectedSkinInfo { get; private set; }
+
+        public bool UseColor => _applyColor && SkinAllowsColor;
+
+        public bool SkinAllowsColor { get; private set; } = true;
+
         bool _applyColor = true;
         public bool ApplyColor
         {
-            get { return _applyColor && _skinAllowsColor; }
+            get { return _applyColor; }
             set
             {
                 if(_applyColor != value)
@@ -186,6 +191,7 @@ namespace Digi.PaintGun.Features.Palette
         public PlayerInfo(ulong steamId)
         {
             SteamId = steamId;
+            SelectedSkinInfo = Main.Palette.GetSkinInfo(_selectedSkin); // needs assigning
 
             _colorsMasks = new Vector3[Constants.COLOR_PALETTE_SIZE];
 
@@ -201,7 +207,7 @@ namespace Digi.PaintGun.Features.Palette
             Vector3? colorMask = null;
             MyStringHash? skin = null;
 
-            if(ApplyColor)
+            if(UseColor)
                 colorMask = SelectedColorMask;
 
             if(ApplySkin)

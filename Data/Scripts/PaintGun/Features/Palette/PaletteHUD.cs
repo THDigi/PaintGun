@@ -131,7 +131,9 @@ namespace Digi.PaintGun.Features.Palette
         {
             PlayerInfo localInfo = Main.Palette.LocalInfo;
             if(!localInfo.ApplyColor)
-                return;
+                return; // only hide if player hid it
+
+            bool enabled = localInfo.SkinAllowsColor;
 
             float squareWidth = 0.0014f * scaleFOV;
             float squareHeight = 0.0010f * scaleFOV;
@@ -154,10 +156,13 @@ namespace Digi.PaintGun.Features.Palette
                 Vector3 colorMask = localInfo.ColorsMasks[i];
                 Color rgb = Utils.ColorMaskToRGB(colorMask);
 
+                if(!enabled)
+                    rgb = rgb.ToGray();
+
                 if(i == MIDDLE_INDEX)
                     pos += camMatrix.Left * (spacingWidth * MIDDLE_INDEX) + camMatrix.Down * spacingHeight;
 
-                if(i == localInfo.SelectedColorSlot)
+                if(enabled && i == localInfo.SelectedColorSlot)
                     MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_COLOR, Color.White, pos, camMatrix.Left, camMatrix.Up, selectedWidth, selectedHeight, Vector2.Zero, GUI_FG_BLENDTYPE);
 
                 MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_COLOR, rgb, pos, camMatrix.Left, camMatrix.Up, squareWidth, squareHeight, Vector2.Zero, GUI_FG_BLENDTYPE);
@@ -169,8 +174,8 @@ namespace Digi.PaintGun.Features.Palette
         void DrawSkinSelector(MatrixD camMatrix, Vector3D worldPos, float scaleFOV, float bgAlpha)
         {
             PlayerInfo localInfo = Main.Palette.LocalInfo;
-            List<SkinInfo> skins = Main.Palette.SkinsForHUD;
-            if(localInfo == null || skins == null || !localInfo.ApplySkin || !Main.Palette.HasAnySkin)
+            List<SkinInfo> shownSkins = Main.Palette.SkinsForHUD;
+            if(localInfo == null || shownSkins == null || !localInfo.ApplySkin || !Main.Palette.HasAnySkin)
                 return;
 
             float iconSize = 0.0024f * scaleFOV;
@@ -188,15 +193,15 @@ namespace Digi.PaintGun.Features.Palette
             if(localInfo.ApplyColor)
                 pos += camMatrix.Up * (0.0075f * scaleFOV);
 
-            DrawSkinNameText(selectedSkinId);
+            DrawSkinNameText(localInfo.SelectedSkinInfo);
 
             const int MAX_VIEW_SKINS = 7; // must be an odd number.
             const int MAX_VIEW_SKINS_HALF = ((MAX_VIEW_SKINS - 1) / 2);
             const double MAX_VIEW_SKINS_HALF_D = (MAX_VIEW_SKINS / 2d);
             //const double MAX_VIEW_SKINS_HALF_D_BG = ((MAX_VIEW_SKINS - 4) / 2d);
 
-            int skinsCount = skins.Count;
-            if(skinsCount >= MAX_VIEW_SKINS)
+            int showSkinsCount = shownSkins.Count;
+            if(showSkinsCount >= MAX_VIEW_SKINS)
             {
                 //var bgPos = pos + camMatrix.Right * ((iconSpacingWidth * 0.5) - (iconSpacingWidth * 0.5));
                 //MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_BACKGROUND, PALETTE_COLOR_BG * bgAlpha, bgPos, camMatrix.Left, camMatrix.Up, (float)(iconSpacingWidth * MAX_VIEW_SKINS_HALF_D_BG) + iconBgSpacingAddWidth, iconSize + iconBgSpacingAddHeight, Vector2.Zero, UI_BG_BLENDTYPE);
@@ -205,9 +210,9 @@ namespace Digi.PaintGun.Features.Palette
 
                 int skinIndex = 0;
 
-                for(int i = 0; i < skinsCount; ++i)
+                for(int i = 0; i < showSkinsCount; ++i)
                 {
-                    SkinInfo skin = skins[i];
+                    SkinInfo skin = shownSkins[i];
                     if(skin.SubtypeId == selectedSkinId)
                     {
                         skinIndex = i;
@@ -223,11 +228,11 @@ namespace Digi.PaintGun.Features.Palette
                 for(int a = -MAX_VIEW_SKINS_HALF; a <= MAX_VIEW_SKINS_HALF; ++a)
                 {
                     if(index < 0)
-                        index = skinsCount + index;
-                    if(index >= skinsCount)
-                        index %= skinsCount;
+                        index = showSkinsCount + index;
+                    if(index >= showSkinsCount)
+                        index %= showSkinsCount;
 
-                    SkinInfo skin = skins[index];
+                    SkinInfo skin = shownSkins[index];
 
                     float alpha = 1f - (Math.Abs(a) * alphaSubtractStep);
 
@@ -243,13 +248,13 @@ namespace Digi.PaintGun.Features.Palette
             }
             else
             {
-                double halfOwnedSkins = skinsCount * 0.5;
+                double halfOwnedSkins = showSkinsCount * 0.5;
 
                 //MyTransparentGeometry.AddBillboardOriented(MATERIAL_PALETTE_BACKGROUND, PALETTE_COLOR_BG * bgAlpha, pos, camMatrix.Left, camMatrix.Up, (float)(iconSpacingWidth * halfOwnedSkins) + iconBgSpacingAddWidth, iconSize + iconBgSpacingAddHeight, Vector2.Zero, UI_BG_BLENDTYPE);
 
                 pos += camMatrix.Left * ((iconSpacingWidth * halfOwnedSkins) - (iconSpacingWidth * 0.5));
 
-                foreach(SkinInfo skin in skins)
+                foreach(SkinInfo skin in shownSkins)
                 {
                     if(selectedSkinId == skin.SubtypeId)
                     {
@@ -263,7 +268,7 @@ namespace Digi.PaintGun.Features.Palette
             }
         }
 
-        void DrawSkinNameText(MyStringHash selectedSkinId)
+        void DrawSkinNameText(SkinInfo selectedSkin)
         {
             if(!Main.TextAPI.IsEnabled)
                 return;
@@ -280,8 +285,7 @@ namespace Digi.PaintGun.Features.Palette
 
             if(skinLabel == null)
             {
-                string skinName = Main.Palette.Skins[selectedSkinId].Name;
-                skinLabelSB = new StringBuilder(64).Append(skinName);
+                skinLabelSB = new StringBuilder(64).Append(selectedSkin.Name);
 
                 skinLabelShadow = new HudAPIv2.HUDMessage(skinLabelSB, labelPos, Scale: TextScaleOffset, HideHud: true, Blend: BlendTypeEnum.PostPP);
                 skinLabel = new HudAPIv2.HUDMessage(skinLabelSB, labelPos, Scale: TextScaleOffset, HideHud: true, Blend: BlendTypeEnum.PostPP);
@@ -296,8 +300,7 @@ namespace Digi.PaintGun.Features.Palette
             {
                 skinLabelUpdate = false;
 
-                string skinName = Main.Palette.Skins[selectedSkinId].Name;
-                skinLabelSB.Clear().Append(skinName);
+                skinLabelSB.Clear().Append(selectedSkin.Name);
 
                 skinLabel.Origin = labelPos;
                 skinLabelShadow.Origin = labelPos;

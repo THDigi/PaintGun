@@ -480,7 +480,7 @@ namespace Digi.PaintGun.Features.Palette
             Vector3? colorMask = null;
             MyStringHash? skin = null;
 
-            if(LocalInfo.ApplyColor)
+            if(LocalInfo.UseColor)
                 colorMask = LocalInfo.SelectedColorMask;
 
             if(LocalInfo.ApplySkin)
@@ -524,8 +524,7 @@ namespace Digi.PaintGun.Features.Palette
             HasAnySkin = (SkinsForHUD.Count > 1);
 
             // change selection if it's an unselectable skin
-            SkinInfo selectedSkin = GetSkinInfo(LocalInfo.SelectedSkin);
-            if(!selectedSkin.Selectable)
+            if(!LocalInfo.SelectedSkinInfo.Selectable)
             {
                 LocalInfo.SelectedSkin = MyStringHash.NullOrEmpty;
             }
