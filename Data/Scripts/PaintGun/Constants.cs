@@ -18,7 +18,7 @@ namespace Digi.PaintGun
             ProjectilesCount = 1
         };
 
-        public const ushort NETWORK_CHANNEL = 9319; // network packet ID used for this mod; must be unique from other mods
+        public const ushort NETWORK_CHANNEL = 9320; // network packet ID used for this mod; must be unique from other mods
 
         public const int COLOR_PALETTE_SIZE = 14;
 

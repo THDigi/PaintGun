@@ -4,6 +4,8 @@ namespace Digi.PaintGun.Features.Sync
 {
     public class NetworkLibHandler : ModComponent
     {
+        public PacketPaint PacketPaint;
+        public PacketReplacePaint PacketReplacePaint;
         public PacketConsumeAmmo PacketConsumeAmmo;
 
         public PacketPaletteUpdate PacketPaletteUpdate;
@@ -22,6 +24,8 @@ namespace Digi.PaintGun.Features.Sync
             Lib = new Network(Constants.NETWORK_CHANNEL);
 
             // needed here because they call an API method on creation
+            PacketPaint = new PacketPaint();
+            PacketReplacePaint = new PacketReplacePaint();
             PacketConsumeAmmo = new PacketConsumeAmmo();
 
             PacketPaletteUpdate = new PacketPaletteUpdate();

@@ -4,7 +4,9 @@ using ProtoBuf;
 
 namespace Digi.NetworkLib
 {
-    [ProtoInclude(10, typeof(PacketConsumeAmmo))]
+    [ProtoInclude(10, typeof(PacketPaint))]
+    [ProtoInclude(11, typeof(PacketReplacePaint))]
+    [ProtoInclude(12, typeof(PacketConsumeAmmo))]
 
     [ProtoInclude(20, typeof(PacketPaletteUpdate))]
     [ProtoInclude(21, typeof(PacketPaletteSetColor))]

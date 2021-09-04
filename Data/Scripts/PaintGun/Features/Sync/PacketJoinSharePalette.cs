@@ -36,11 +36,14 @@ namespace Digi.PaintGun.Features.Sync
         [DefaultValue(true)]
         bool Reply = true;
 
+        [ProtoMember(20)]
+        ulong PaletteOwnerSteamId;
+
         public PacketJoinSharePalette() { } // Empty constructor required for deserialization
 
-        public void Send(PlayerInfo pi, ulong overrideSteamId, ulong sendTo = 0)
+        public void Send(PlayerInfo pi, ulong? sendTo = null)
         {
-            SteamId = overrideSteamId;
+            PaletteOwnerSteamId = pi.SteamId;
             SelectedColorIndex = pi.SelectedColorIndex;
             SelectedSkinIndex = pi.SelectedSkinIndex;
             ApplyColor = pi.ApplyColor;
@@ -54,7 +57,7 @@ namespace Digi.PaintGun.Features.Sync
 
             if(colors.Count != PackedColorMasks.Length)
             {
-                Log.Error($"PacketJoinSharePalette.Send(), player {Utils.PrintPlayerName(pi.SteamId)} has unexpected palette size={colors.Count.ToString()}");
+                Log.Error($"PacketJoinSharePalette.Send(), player {Utils.PrintPlayerName(PaletteOwnerSteamId)} has unexpected palette size={colors.Count.ToString()}");
                 // continue execution
             }
 
@@ -63,18 +66,18 @@ namespace Digi.PaintGun.Features.Sync
                 PackedColorMasks[i] = colors[i].PackHSVToUint();
             }
 
-            if(sendTo != 0)
+            if(sendTo.HasValue)
             {
                 if(Constants.NETWORK_ACTION_LOGGING)
-                    Log.Info($"{GetType().Name} :: sending {Utils.PrintPlayerName(SteamId)}'s palette to={sendTo.ToString()}.");
+                    Log.Info($"{GetType().Name} :: sending {Utils.PrintPlayerName(PaletteOwnerSteamId)}'s palette to={sendTo.ToString()}.");
 
                 Reply = false;
-                Network.SendToPlayer(this, sendTo);
+                Network.SendToPlayer(this, sendTo.Value);
             }
             else
             {
                 if(Constants.NETWORK_ACTION_LOGGING)
-                    Log.Info($"{GetType().Name} :: broadcasting {Utils.PrintPlayerName(SteamId)}'s palette.");
+                    Log.Info($"{GetType().Name} :: broadcasting {Utils.PrintPlayerName(PaletteOwnerSteamId)}'s palette.");
 
                 Reply = true;
                 Network.SendToServer(this);
@@ -85,17 +88,17 @@ namespace Digi.PaintGun.Features.Sync
         {
             relay = Reply;
 
-            if(SteamId != MyAPIGateway.Multiplayer.MyId)
+            if(PaletteOwnerSteamId != MyAPIGateway.Multiplayer.MyId)
             {
                 if(Constants.NETWORK_ACTION_LOGGING)
-                    Log.Info($"{GetType().Name} :: received {Utils.PrintPlayerName(SteamId)}'s palette; Reply={Reply.ToString()}");
+                    Log.Info($"{GetType().Name} :: received {Utils.PrintPlayerName(PaletteOwnerSteamId)}'s palette; Reply={Reply.ToString()}");
 
-                IMyPlayer player = Utils.GetPlayerBySteamId(SteamId);
+                IMyPlayer player = Utils.GetPlayerBySteamId(PaletteOwnerSteamId);
                 if(player == null)
                     return;
 
                 // apply palette info
-                PlayerInfo pi = Main.Palette.GetOrAddPlayerInfo(SteamId);
+                PlayerInfo pi = Main.Palette.GetOrAddPlayerInfo(PaletteOwnerSteamId);
                 pi.SelectedColorIndex = SelectedColorIndex;
                 pi.SelectedSkinIndex = SelectedSkinIndex;
                 pi.ApplyColor = ApplyColor;
@@ -109,12 +112,12 @@ namespace Digi.PaintGun.Features.Sync
                 if(Constants.NETWORK_ACTION_LOGGING)
                     Log.Info($"+ sending all players' palettes back to original sender.");
 
-                foreach(KeyValuePair<ulong, PlayerInfo> kv in Main.Palette.PlayerInfo)
+                foreach(PlayerInfo pi in Main.Palette.PlayerInfo.Values)
                 {
-                    if(kv.Key == SteamId)
+                    if(pi.SteamId == OriginalSenderSteamId)
                         continue; // don't send their own palette back to them
 
-                    Main.NetworkLibHandler.PacketJoinSharePalette.Send(kv.Value, kv.Key, SteamId);
+                    Main.NetworkLibHandler.PacketJoinSharePalette.Send(pi, OriginalSenderSteamId);
                 }
             }
         }

@@ -7,15 +7,14 @@ namespace Digi.NetworkLib
     public abstract partial class PacketBase
     {
         /// <summary>
-        /// Sender's SteamId.
-        /// NOTE: Can be set to change its context!
+        /// Do not edit, automatically assigned to original sender's SteamId, validated when it reaches server.
         /// </summary>
         [ProtoMember(1)]
-        public ulong SteamId;
+        public ulong OriginalSenderSteamId;
 
         public PacketBase()
         {
-            SteamId = MyAPIGateway.Multiplayer.MyId;
+            OriginalSenderSteamId = MyAPIGateway.Multiplayer.MyId;
         }
 
         /// <summary>

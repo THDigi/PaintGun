@@ -67,7 +67,7 @@ namespace Digi.PaintGun.Features.Sync
 
             relay = true;
 
-            PlayerInfo pi = Main.Palette.GetOrAddPlayerInfo(SteamId);
+            PlayerInfo pi = Main.Palette.GetOrAddPlayerInfo(OriginalSenderSteamId);
 
             if(SelectedColorIndex.HasValue)
                 pi.SelectedColorIndex = SelectedColorIndex.Value;

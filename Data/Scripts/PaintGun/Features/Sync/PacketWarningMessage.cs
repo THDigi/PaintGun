@@ -26,7 +26,7 @@ namespace Digi.PaintGun.Features.Sync
         public override void Received(ref bool relay)
         {
             if(Main.IsServer)
-                MyLog.Default.WriteLineAndConsole($"{PaintGunMod.MOD_NAME} :: warning message from {Utils.PrintPlayerName(SteamId)} saying: {Message}");
+                MyLog.Default.WriteLineAndConsole($"{PaintGunMod.MOD_NAME} :: warning message from {Utils.PrintPlayerName(OriginalSenderSteamId)} saying: {Message}");
 
             Log.Info(Message, Log.PRINT_MESSAGE, 5000);
         }

@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using Digi.ComponentLib;
 using Digi.PaintGun.Utilities;
+using ProtoBuf;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using VRage.Game;
@@ -49,7 +51,7 @@ namespace Digi.PaintGun.Features.Palette
                 LocalInfo = GetOrAddPlayerInfo(MyAPIGateway.Multiplayer.MyId);
                 Main.CheckPlayerField.PlayerReady += PlayerReady;
                 Main.PlayerHandler.PlayerDisconnected += PlayerDisconnected;
-                Main.Settings.SettingsChanged += ComputeShownSkins;
+                Main.Settings.SettingsChanged += SettingsChanged;
             }
         }
 
@@ -62,7 +64,7 @@ namespace Digi.PaintGun.Features.Palette
             {
                 Main.CheckPlayerField.PlayerReady -= PlayerReady;
                 Main.PlayerHandler.PlayerDisconnected -= PlayerDisconnected;
-                Main.Settings.SettingsChanged -= ComputeShownSkins;
+                Main.Settings.SettingsChanged -= SettingsChanged;
             }
         }
 
@@ -78,7 +80,7 @@ namespace Digi.PaintGun.Features.Palette
             UpdatePalette();
 
             // broadcast local player's palette to everyone and server sends everyone's palettes back.
-            Main.NetworkLibHandler.PacketJoinSharePalette.Send(LocalInfo, MyAPIGateway.Multiplayer.MyId);
+            Main.NetworkLibHandler.PacketJoinSharePalette.Send(LocalInfo);
         }
 
         const string ARMOR_SUFFIX = "_Armor";
@@ -114,6 +116,9 @@ namespace Digi.PaintGun.Features.Palette
             {
                 if(IsSkinAsset(assetDef))
                 {
+                    bool isCustomSkin = (!assetDef.Context.IsBaseGame && (assetDef.DLCs == null || assetDef.DLCs.Length == 0));
+
+                    #region Generate user friendly name
                     string name = assetDef.Id.SubtypeName;
                     sb.Clear();
                     sb.Append(name);
@@ -137,20 +142,27 @@ namespace Digi.PaintGun.Features.Palette
                     }
 
                     name = sb.ToString();
+                    #endregion
+
                     string icon = SKIN_ICON_PREFIX + nameId;
 
                     if(!definedIcons.Contains(icon))
                     {
-                        if(Utils.IsLocalMod())
-                            Log.Error($"{icon} not found in transparent materials definitions.", Log.PRINT_MESSAGE);
+                        if(isCustomSkin || Utils.IsLocalMod())
+                            Log.Error($"'{icon}' not found in transparent materials definitions.", Log.PRINT_MESSAGE);
 
                         icon = SKIN_ICON_UNKNOWN;
                     }
+
+                    if(isCustomSkin)
+                        FixModTexturePaths(assetDef);
 
                     SkinInfo skinInfo = new SkinInfo(assetDef, name, icon);
                     BlockSkins.Add(skinInfo);
                 }
             }
+
+            CleanUpFixMods();
 
             // consistent order for network sync, also matches with what the game UI sorts them by
             BlockSkins.Sort((a, b) => a.SubtypeId.String.CompareTo(b.SubtypeId.String));
@@ -171,7 +183,7 @@ namespace Digi.PaintGun.Features.Palette
 
                 if(Constants.SKIN_INIT_LOGGING)
                 {
-                    Log.Info($"Defined skin #{i.ToString()} - {skin.Name} ({skin.SubtypeId.String}){(skin.Icon.String == SKIN_ICON_UNKNOWN ? "; No Icon!" : "")}{(skin.Definition?.Context != null ? $"; Mod={skin.Definition.Context.ModName}" : "")}");
+                    Log.Info($"Defined skin #{i.ToString()} - {skin.Name} ({skin.SubtypeId.String}){(skin.Icon.String == SKIN_ICON_UNKNOWN ? "; No Icon!" : "")}{(skin.Definition?.Context?.IsBaseGame ?? true ? "" : $"; Mod={skin.Definition.Context.ModName}")}");
                 }
             }
 
@@ -455,7 +467,7 @@ namespace Digi.PaintGun.Features.Palette
             return pi;
         }
 
-        void ComputeShownSkins()
+        void SettingsChanged()
         {
             if(SkinsForHUD == null)
                 return;
@@ -476,5 +488,108 @@ namespace Digi.PaintGun.Features.Palette
                 LocalInfo.SelectedSkinIndex = 0;
             }
         }
+
+        #region Fix mod texture paths
+        Dictionary<string, DoTextureChange> TextureChanges = null;
+
+        void CleanUpFixMods() // gets called after all asset modifier definitions have been iterated.
+        {
+            TextureChanges = null;
+        }
+
+        void FixModTexturePaths(MyAssetModifierDefinition assetDef)
+        {
+            // TODO: fix paths for asset modifier definitions - need to know if the file exists in mod directory
+#if false
+            try
+            {
+                if(assetDef.Textures == null || assetDef.Textures.Count <= 0)
+                {
+                    Log.Error($"Skin '{assetDef.Id.SubtypeName}' has no textures!");
+                    return;
+                }
+
+                if(TextureChanges == null)
+                    TextureChanges = new Dictionary<string, DoTextureChange>();
+                else
+                    TextureChanges.Clear();
+
+                for(int i = 0; i < assetDef.Textures.Count; i++)
+                {
+                    MyObjectBuilder_AssetModifierDefinition.MyAssetTexture texture = assetDef.Textures[i];
+
+                    if(string.IsNullOrEmpty(texture.Filepath))
+                        continue;
+
+                    //if(texture.Filepath.StartsWith(@"..\"))
+                    //    continue; // modder used hax path, leave it be
+
+                    // DEBUG ... keep feature?
+                    //if(texture.Filepath.IndexOf("modtextures", StringComparison.OrdinalIgnoreCase) == -1)
+                    //    continue; // modder didn't specify they want this path fixed
+
+                    string fixedPath = Path.Combine(assetDef.Context.ModPath, texture.Filepath);
+                    //fixedPath = Path.GetFullPath(fixedPath);
+
+                    // has no direct effect on the skin, the render thing after does, but this is for consistency
+                    texture.Filepath = fixedPath;
+                    assetDef.Textures[i] = texture;
+
+                    //Log.Info($"Fixed paths for mod '{assetDef.Context.ModName}' --- {texture.Location}: '{texture.Filepath}' to '{fixedPath}'");
+
+                    DoTextureChange texChange = TextureChanges.GetValueOrDefault(texture.Location);
+                    switch((TextureType)texture.Type)
+                    {
+                        case TextureType.ColorMetal: texChange.ColorMetalFileName = fixedPath; break;
+                        case TextureType.NormalGloss: texChange.NormalGlossFileName = fixedPath; break;
+                        case TextureType.Extensions: texChange.ExtensionsFileName = fixedPath; break;
+                        case TextureType.Alphamask: texChange.AlphamaskFileName = fixedPath; break;
+                    }
+                    TextureChanges[texture.Location] = texChange;
+                }
+
+                if(TextureChanges.Count == 0)
+                    return;
+
+                MyDefinitionManager.MyAssetModifiers assetModifierForRender = MyDefinitionManager.Static.GetAssetModifierDefinitionForRender(assetDef.Id.SubtypeId);
+
+                foreach(var kv in TextureChanges)
+                {
+                    // HACK: generating the prohibited MyTextureChange object from XML with similar data
+                    string xml = MyAPIGateway.Utilities.SerializeToXML(kv.Value);
+                    xml = xml.Replace(nameof(DoTextureChange), "MyTextureChange");
+                    assetModifierForRender.SkinTextureChanges[kv.Key] = DeserializeAs(xml, assetModifierForRender.SkinTextureChanges);
+                }
+
+                Log.Info($"Fixed paths for skin '{assetDef.Id.SubtypeName}' from mod '{assetDef.Context.ModName}'");
+            }
+            catch(Exception e)
+            {
+                Log.Error($"Error in IsSkinAsset() for asset={assetDef.Id.ToString()}\n{e}");
+            }
+#endif
+        }
+
+        static T DeserializeAs<T>(string xml, Dictionary<string, T> objForType) => MyAPIGateway.Utilities.SerializeFromXML<T>(xml);
+
+        [Flags]
+        enum TextureType
+        {
+            Unspecified = 0x0,
+            ColorMetal = 0x1,
+            NormalGloss = 0x2,
+            Extensions = 0x4,
+            Alphamask = 0x8
+        }
+
+        [ProtoContract]
+        public struct DoTextureChange // must be public for serializer; named this way to replace faster with same amount of characters
+        {
+            [ProtoMember(1)] public string ColorMetalFileName;
+            [ProtoMember(2)] public string NormalGlossFileName;
+            [ProtoMember(3)] public string ExtensionsFileName;
+            [ProtoMember(4)] public string AlphamaskFileName;
+        }
+        #endregion
     }
 }

@@ -27,7 +27,7 @@ namespace Digi.PaintGun.Features.Sync
 
             if(Main.IsPlayer)
             {
-                IMyPlayer player = Utils.GetPlayerBySteamId(SteamId);
+                IMyPlayer player = Utils.GetPlayerBySteamId(OriginalSenderSteamId);
                 if(player == null)
                     return;
 
@@ -35,7 +35,7 @@ namespace Digi.PaintGun.Features.Sync
 
                 foreach(PaintGunItem tool in tools)
                 {
-                    if(tool.OwnerSteamId == SteamId)
+                    if(tool.OwnerSteamId == OriginalSenderSteamId)
                     {
                         tool.Spraying = Spraying;
                         break;

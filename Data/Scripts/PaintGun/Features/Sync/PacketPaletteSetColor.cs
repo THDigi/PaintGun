@@ -10,7 +10,7 @@ namespace Digi.PaintGun.Features.Sync
     public class PacketPaletteSetColor : PacketBase
     {
         [ProtoMember(1)]
-        int ColorIndex;
+        byte ColorIndex;
 
         [ProtoMember(2)]
         uint ColorMaskPacked;
@@ -19,7 +19,7 @@ namespace Digi.PaintGun.Features.Sync
 
         public void Send(int index, Vector3 colorMask)
         {
-            ColorIndex = index;
+            ColorIndex = (byte)index;
             ColorMaskPacked = ColorExtensions.PackHSVToUint(colorMask);
 
             if(Constants.NETWORK_ACTION_LOGGING)
@@ -33,9 +33,9 @@ namespace Digi.PaintGun.Features.Sync
             relay = true;
 
             if(Constants.NETWORK_ACTION_LOGGING)
-                Log.Info($"{GetType().Name} :: Received palette slot update; player={Utils.PrintPlayerName(SteamId)}, slot={ColorIndex.ToString()}; color={ColorExtensions.UnpackHSVFromUint(ColorMaskPacked).ToString()}");
+                Log.Info($"{GetType().Name} :: Received palette slot update; player={Utils.PrintPlayerName(OriginalSenderSteamId)}, slot={ColorIndex.ToString()}; color={ColorExtensions.UnpackHSVFromUint(ColorMaskPacked).ToString()}");
 
-            PlayerInfo pi = Main.Palette.GetOrAddPlayerInfo(SteamId);
+            PlayerInfo pi = Main.Palette.GetOrAddPlayerInfo(OriginalSenderSteamId);
             pi.SetColorAt(ColorIndex, ColorExtensions.UnpackHSVFromUint(ColorMaskPacked));
         }
     }

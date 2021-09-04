@@ -19,7 +19,7 @@ namespace Digi.PaintGun.Features.Sync
         {
             if(Main.IsServer && !Main.IgnoreAmmoConsumption) // ammo consumption, only needed server side
             {
-                IMyInventory inv = Utils.GetCharacterInventoryOrError(this, Utils.GetCharacterOrError(this, Utils.GetPlayerOrError(this, SteamId)));
+                IMyInventory inv = Utils.GetCharacterInventoryOrError(this, Utils.GetCharacterOrError(this, Utils.GetPlayerOrError(this, OriginalSenderSteamId)));
                 if(inv != null)
                     inv.RemoveItemsOfType(1, Main.Constants.PAINT_MAG_ITEM, false);
             }

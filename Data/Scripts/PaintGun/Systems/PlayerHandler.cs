@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Digi.ComponentLib;
 using Digi.PaintGun.Utilities;
 using Sandbox.Game;
 using Sandbox.ModAPI;
@@ -12,24 +13,19 @@ namespace Digi.PaintGun.Systems
     /// </summary>
     public class PlayerHandler : ModComponent
     {
+        const bool DebugLog = false;
+
         public event PlayerEventDel PlayerConnected;
         public event PlayerEventDel PlayerDisconnected;
         public delegate void PlayerEventDel(IMyPlayer player);
 
-        private readonly Dictionary<ulong, IMyPlayer> ConnectedPlayers;
-        private readonly List<ulong> RemoveConnected;
-        private readonly List<IMyPlayer> Players;
-
-        private const int SKIP_TICKS = Constants.TICKS_PER_SECOND * 1;
+        readonly List<long> JoinedIdentities = new List<long>(2);
+        readonly List<IMyPlayer> OnlinePlayers;
 
         public PlayerHandler(PaintGunMod main) : base(main)
         {
             int maxPlayers = MyAPIGateway.Session.SessionSettings.MaxPlayers;
-            ConnectedPlayers = new Dictionary<ulong, IMyPlayer>(maxPlayers);
-            RemoveConnected = new List<ulong>(maxPlayers);
-            Players = new List<IMyPlayer>(maxPlayers);
-
-            UpdateMethods = ComponentLib.UpdateFlags.UPDATE_AFTER_SIM;
+            OnlinePlayers = new List<IMyPlayer>(maxPlayers);
 
             MyVisualScriptLogicProvider.PlayerConnected += ViScPlayerConnected;
             MyVisualScriptLogicProvider.PlayerDisconnected += ViScPlayerDisconnected;
@@ -47,75 +43,98 @@ namespace Digi.PaintGun.Systems
 
         void ViScPlayerConnected(long identityId)
         {
-            ulong steamId = MyAPIGateway.Players.TryGetSteamId(identityId);
-            Log.Info($"DEBUG: PlayerHandler :: ViSc triggered join: '{Utils.PrintPlayerName(Utils.GetPlayerByIdentityId(identityId))}' (steamId={steamId.ToString()})");
-        }
-
-        void ViScPlayerDisconnected(long identityId)
-        {
-            ulong steamId = MyAPIGateway.Players.TryGetSteamId(identityId);
-            Log.Info($"DEBUG: PlayerHandler :: ViSc triggered disconnect: '{Utils.PrintPlayerName(Utils.GetPlayerByIdentityId(identityId))}' (steamId={steamId.ToString()})");
+            try
+            {
+                // offload to next tick to be able to get IMyPlayer instance
+                JoinedIdentities.Add(identityId);
+                SetUpdateMethods(UpdateFlags.UPDATE_AFTER_SIM, true);
+            }
+            catch(Exception e)
+            {
+                Log.Error(e);
+            }
         }
 
         protected override void UpdateAfterSim(int tick)
         {
-            if(tick % SKIP_TICKS != 0)
-                return;
-
-            Players.Clear();
-            MyAPIGateway.Players.GetPlayers(Players);
-
-            // DEBUG player handler
-
-            foreach(IMyPlayer player in ConnectedPlayers.Values)
+            for(int i = (JoinedIdentities.Count - 1); i >= 0; i--)
             {
-                if(!Players.Contains(player))
+                long identityId = JoinedIdentities[i];
+
+                IMyPlayer player = Utils.GetPlayerByIdentityId(identityId);
+                if(player == null)
                 {
-                    RemoveConnected.Add(player.SteamUserId);
+                    ulong steamId = MyAPIGateway.Players.TryGetSteamId(identityId);
+                    Log.Info($"Unknown player connected, identityId={identityId.ToString()}; alternate identifier: '{Utils.PrintPlayerName(Utils.GetPlayerByIdentityId(identityId))}' (steamId={steamId.ToString()}); trying again next tick...");
+                    continue;
+                }
 
-                    Log.Info($"DEBUG: PlayerHandler :: {Utils.PrintPlayerName(player)} disconnected");
+                JoinedIdentities.RemoveAtFast(i);
+                OnlinePlayers.Add(player);
 
-                    try
-                    {
-                        PlayerDisconnected?.Invoke(player);
-                    }
-                    catch(Exception e)
-                    {
-                        Log.Error(e);
-                    }
+                if(DebugLog)
+                    Log.Info($"DEBUG: PlayerHandler :: {Utils.PrintPlayerName(player)} joined.");
+
+                try
+                {
+                    PlayerConnected?.Invoke(player);
+                }
+                catch(Exception e)
+                {
+                    Log.Error(e);
                 }
             }
 
-            if(RemoveConnected.Count != 0)
+            if(JoinedIdentities.Count <= 0)
             {
-                foreach(ulong key in RemoveConnected)
-                {
-                    ConnectedPlayers.Remove(key);
-                }
-
-                RemoveConnected.Clear();
+                SetUpdateMethods(UpdateFlags.UPDATE_AFTER_SIM, false);
             }
+        }
 
-            foreach(IMyPlayer player in Players)
+        void ViScPlayerDisconnected(long identityId)
+        {
+            try
             {
-                if(!ConnectedPlayers.ContainsKey(player.SteamUserId))
+                IMyPlayer player = null;
+                int playerIdx = -1;
+
+                // don't use Utils.GetPlayerByIdentityId() because we need the safety of the local OnlinePlayers cache list.
+                for(int i = 0; i < OnlinePlayers.Count; i++)
                 {
-                    ConnectedPlayers.Add(player.SteamUserId, player);
-
-                    Log.Info($"DEBUG: PlayerHandler :: {Utils.PrintPlayerName(player)} joined");
-
-                    try
+                    IMyPlayer p = OnlinePlayers[i];
+                    if(p.IdentityId == identityId)
                     {
-                        PlayerConnected?.Invoke(player);
-                    }
-                    catch(Exception e)
-                    {
-                        Log.Error(e);
+                        player = p;
+                        playerIdx = i;
+                        break;
                     }
                 }
-            }
 
-            Players.Clear();
+                if(player == null)
+                {
+                    ulong steamId = MyAPIGateway.Players.TryGetSteamId(identityId);
+                    Log.Info($"Unknown player disconnected, identityId={identityId.ToString()}; alternate identifier: '{Utils.PrintPlayerName(Utils.GetPlayerByIdentityId(identityId))}' (steamId={steamId.ToString()})");
+                    return;
+                }
+
+                OnlinePlayers.RemoveAt(playerIdx);
+
+                if(DebugLog)
+                    Log.Info($"DEBUG: PlayerHandler :: {Utils.PrintPlayerName(player)} disconnected.");
+
+                try
+                {
+                    PlayerDisconnected?.Invoke(player);
+                }
+                catch(Exception e)
+                {
+                    Log.Error(e);
+                }
+            }
+            catch(Exception e)
+            {
+                Log.Error(e);
+            }
         }
     }
 }

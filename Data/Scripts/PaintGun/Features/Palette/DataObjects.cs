@@ -7,18 +7,18 @@ using VRageMath;
 
 namespace Digi.PaintGun.Features.Palette
 {
-    [Flags]
-    public enum OddAxis
-    {
-        NONE = 0,
-        X = 1,
-        Y = 2,
-        Z = 4
-    }
-
     [ProtoContract(UseProtoMembersOnly = true)]
-    public struct MirrorPlanes
+    public struct MirrorData
     {
+        [Flags]
+        public enum Axis
+        {
+            NONE = 0,
+            X = 1,
+            Y = 2,
+            Z = 4
+        }
+
         [ProtoMember(1)]
         public readonly int? X;
 
@@ -28,9 +28,15 @@ namespace Digi.PaintGun.Features.Palette
         [ProtoMember(3)]
         public readonly int? Z;
 
-        public readonly bool HasMirroring;
+        [ProtoMember(4)]
+        public readonly Axis OddAxis;
 
-        public MirrorPlanes(IMyCubeGrid grid)
+        public readonly bool HasMirroring;
+        public readonly bool OddX;
+        public readonly bool OddY;
+        public readonly bool OddZ;
+
+        public MirrorData(IMyCubeGrid grid)
         {
             if(grid.XSymmetryPlane.HasValue)
                 X = grid.XSymmetryPlane.Value.X;
@@ -47,7 +53,25 @@ namespace Digi.PaintGun.Features.Palette
             else
                 Z = null;
 
+            OddAxis = Axis.NONE;
+
             HasMirroring = X.HasValue || Y.HasValue || Z.HasValue;
+
+            if(HasMirroring)
+            {
+                if(grid.XSymmetryOdd)
+                    OddAxis |= Axis.X;
+
+                if(grid.YSymmetryOdd)
+                    OddAxis |= Axis.Y;
+
+                if(grid.ZSymmetryOdd)
+                    OddAxis |= Axis.Z;
+            }
+
+            OddX = (OddAxis & Axis.X) != 0;
+            OddY = (OddAxis & Axis.Y) != 0;
+            OddZ = (OddAxis & Axis.Z) != 0;
         }
     }
 
