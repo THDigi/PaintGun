@@ -48,12 +48,11 @@ namespace Digi.PaintGun.Features.Palette
 
             foreach(KeyValuePair<IMySlimBlock, CheckData> kv in CheckSkinned)
             {
-                IMySlimBlock slim = kv.Key;
                 CheckData data = kv.Value;
-
                 if(data.ReadAtTick > tick)
                     continue;
 
+                IMySlimBlock slim = kv.Key;
                 if(slim.SkinSubtypeId != data.SkinId)
                 {
                     SkinInfo skinInfo = Main.Palette.GetSkinInfo(data.SkinId);
@@ -79,16 +78,18 @@ namespace Digi.PaintGun.Features.Palette
 
         public void PaintBlockClient(IMyCubeGrid grid, Vector3I gridPosition, PaintMaterial paint)
         {
-            grid.SkinBlocks(gridPosition, gridPosition, paint.ColorMask, paint.Skin?.String ?? null);
+            grid.SkinBlocks(gridPosition, gridPosition, paint.ColorMask, paint.Skin?.String);
 
+            // queue a check if skin was applied to alert player
+            IMySlimBlock block = grid.GetCubeBlock(gridPosition);
             if(paint.Skin.HasValue)
             {
-                IMySlimBlock slim = grid.GetCubeBlock(gridPosition);
-                if(!CheckSkinned.ContainsKey(slim))
-                {
-                    CheckSkinned[slim] = new CheckData(paint.Skin.Value);
-                    SetUpdateMethods(UpdateFlags.UPDATE_AFTER_SIM, true);
-                }
+                CheckSkinned[block] = new CheckData(paint.Skin.Value);
+                SetUpdateMethods(UpdateFlags.UPDATE_AFTER_SIM, true);
+            }
+            else
+            {
+                CheckSkinned.Remove(block);
             }
         }
 
@@ -102,6 +103,8 @@ namespace Digi.PaintGun.Features.Palette
                 MyAPIGateway.GridGroups.GetGroup(selectedGrid, GridLinkTypeEnum.Mechanical, ConnectedGrids);
             else
                 ConnectedGrids.Add(selectedGrid);
+
+            bool queueCheckSkin = true;
 
             //int total = 0;
             int affected = 0;
@@ -119,12 +122,26 @@ namespace Digi.PaintGun.Features.Palette
                     if(paint.Skin.HasValue && blockMaterial.Skin != oldPaint.Skin)
                         continue;
 
-                    grid.SkinBlocks(block.Position, block.Position, paint.ColorMask, paint.Skin?.String ?? null);
+                    grid.SkinBlocks(block.Position, block.Position, paint.ColorMask, paint.Skin?.String);
+
+                    if(queueCheckSkin)
+                    {
+                        queueCheckSkin = false;
+
+                        if(paint.Skin.HasValue)
+                            CheckSkinned[block] = new CheckData(paint.Skin.Value);
+                        else
+                            CheckSkinned.Remove(block);
+                    }
+
                     affected++;
                 }
 
                 //total += grid.CubeBlocks.Count;
             }
+
+            if(CheckSkinned.Count > 0)
+                SetUpdateMethods(UpdateFlags.UPDATE_AFTER_SIM, true);
 
             //long timeEnd = Stopwatch.GetTimestamp();
 
