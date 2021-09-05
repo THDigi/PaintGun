@@ -621,8 +621,15 @@ namespace Digi.PaintGun.Features.Tool
 
                 if(paint.ColorMask.HasValue)
                     progress = Utils.ColorScalar(targetMaterial.ColorMask.Value, paint.ColorMask.Value);
-                else if(paint.Skin.HasValue)
-                    progress = (targetMaterial.Skin == paint.Skin.Value ? 1f : 0.25f);
+                else
+                    progress = 1f;
+
+                progress *= 0.75f;
+
+                if(paint.Skin.HasValue && targetMaterial.Skin == paint.Skin.Value)
+                    progress += 0.25f;
+
+                progress = MathHelper.Clamp(progress, 0, 1f);
 
                 MyCubeBlockDefinition selectedDef = (MyCubeBlockDefinition)block.BlockDefinition;
 

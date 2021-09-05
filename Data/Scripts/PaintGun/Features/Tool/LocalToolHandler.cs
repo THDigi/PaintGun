@@ -671,9 +671,9 @@ namespace Digi.PaintGun.Features.Tool
                     AimedState = SelectionState.Invalid;
 
                     if(symmetry)
-                        Main.SelectionGUI.SetGUIStatus(0, "Block(s) color match.", "lime");
+                        Main.SelectionGUI.SetGUIStatus(0, "All materials match.", "lime");
                     else
-                        Main.SelectionGUI.SetGUIStatus(0, "Colors match.", "lime");
+                        Main.SelectionGUI.SetGUIStatus(0, "Materials match.", "lime");
 
                     Main.SelectionGUI.SetGUIStatus(1, Main.SelectionGUI.SymmetryStatusText);
                     return false;

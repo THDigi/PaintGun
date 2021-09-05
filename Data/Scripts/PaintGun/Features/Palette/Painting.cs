@@ -132,7 +132,7 @@ namespace Digi.PaintGun.Features.Palette
 
             if(sync)
             {
-                grid.SkinBlocks(gridPosition, gridPosition, paint.ColorMask, paint.Skin?.String ?? null);
+                grid.SkinBlocks(gridPosition, gridPosition, paint.ColorMask, paint.Skin?.String);
 
                 if(paint.Skin.HasValue)
                 {
@@ -253,7 +253,7 @@ namespace Digi.PaintGun.Features.Palette
 
                         if(sync)
                         {
-                            grid.SkinBlocks(block.Position, block.Position, paint.ColorMask, paint.Skin?.String ?? null);
+                            grid.SkinBlocks(block.Position, block.Position, paint.ColorMask, paint.Skin?.String);
 
                             if(queueCheck)
                             {
