@@ -232,7 +232,10 @@ namespace Digi.PaintGun.Features.ConfigMenu
 
                 // necessary to avoid wrong thing being captured
                 SkinInfo captureSkin = skinInfo;
-                ItemToggle item = new ItemToggle(Category_HideSkins, captureSkin.Name,
+
+                string dlc = (captureSkin.Definition?.DLCs != null && captureSkin.Definition.DLCs.Length > 0 ? $" (<color=skyblue>{string.Join(",", captureSkin.Definition?.DLCs)}<reset>)" : "");
+
+                ItemToggle item = new ItemToggle(Category_HideSkins, $"{captureSkin.Name}{dlc}",
                     getter: () => !Main.Settings.hideSkinsFromPalette.Contains(captureSkin.SubtypeId.String),
                     setter: (v) =>
                     {

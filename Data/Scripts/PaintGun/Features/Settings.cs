@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Digi.PaintGun.Features.Palette;
+using Sandbox.Game;
 using Sandbox.ModAPI;
 using VRage.Utils;
 using VRageMath;
@@ -431,24 +432,54 @@ namespace Digi.PaintGun.Features
             {
                 sb.AppendLine();
                 sb.AppendLine("// This allows you to hide certain skin IDs from the HUD palette, separated by comma and case-sensitive!");
-                sb.Append("// All detected skins: ");
+                sb.Append("// All detected skins, sorted by DLC: ");
 
-                int num = 99999; // start with a newline
+                int widestName = 0;
+
+                // using dlcId so they get sorted by order DLCs were introduced
+                SortedDictionary<uint, List<SkinInfo>> skinsByDLC = new SortedDictionary<uint, List<SkinInfo>>();
+
                 foreach(SkinInfo skin in Main.Palette.Skins.Values)
                 {
                     if(skin.SubtypeId == MyStringHash.NullOrEmpty)
                         continue;
 
-                    if(++num > 7)
+                    uint dlcId = 0;
+                    MyDLCs.MyDLC dlc;
+                    if(skin.Definition?.DLCs != null && skin.Definition.DLCs.Length > 0 && MyDLCs.TryGetDLC(skin.Definition.DLCs[0], out dlc))
                     {
-                        num = 0;
-                        sb.AppendLine().Append("//     ");
+                        dlcId = dlc.AppId;
+                        widestName = Math.Max(widestName, dlc.Name.Length);
                     }
 
-                    sb.Append(skin.SubtypeId.String).Append(", ");
+                    // get or add list
+                    List<SkinInfo> skins;
+                    if(!skinsByDLC.TryGetValue(dlcId, out skins))
+                        skinsByDLC[dlcId] = skins = new List<SkinInfo>();
+
+                    skins.Add(skin);
                 }
 
-                sb.Length -= 2; // remove last comma
+                foreach(KeyValuePair<uint, List<SkinInfo>> kv in skinsByDLC)
+                {
+                    uint dlcId = kv.Key;
+                    string dlcName = "(No DLC)";
+                    MyDLCs.MyDLC dlc;
+                    if(dlcId > 0 && MyDLCs.TryGetDLC(dlcId, out dlc))
+                    {
+                        dlcName = dlc.Name;
+                    }
+
+                    sb.AppendLine().Append("//  ").Append(' ', widestName - dlcName.Length).Append(dlcName).Append(":  ");
+
+                    foreach(SkinInfo skin in kv.Value)
+                    {
+                        sb.Append(skin.SubtypeId.String).Append(", ");
+                    }
+
+                    sb.Length -= 2; // remove last comma
+                }
+
                 sb.AppendLine();
             }
 
