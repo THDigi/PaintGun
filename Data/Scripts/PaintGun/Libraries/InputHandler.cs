@@ -592,18 +592,38 @@ namespace Digi
         {
             IMyControl control = MyAPIGateway.Input.GetGameControl(controlId);
 
+            // WARNING: IsKeyPress(MyKeys.None) returns true for some people!
+
             if(newPress)
             {
-                return MyAPIGateway.Input.IsNewMousePressed(control.GetMouseControl())
-                    || MyAPIGateway.Input.IsNewKeyPressed(control.GetKeyboardControl())
-                    || MyAPIGateway.Input.IsNewKeyPressed(control.GetSecondKeyboardControl());
+                MyMouseButtonsEnum button = control.GetMouseControl();
+                if(button != MyMouseButtonsEnum.None && MyAPIGateway.Input.IsNewMousePressed(button))
+                    return true;
+
+                MyKeys kb1 = control.GetKeyboardControl();
+                if(kb1 != MyKeys.None && MyAPIGateway.Input.IsNewKeyPressed(kb1))
+                    return true;
+
+                MyKeys kb2 = control.GetSecondKeyboardControl();
+                if(kb2 != MyKeys.None && MyAPIGateway.Input.IsNewKeyPressed(kb2))
+                    return true;
             }
             else
             {
-                return MyAPIGateway.Input.IsMousePressed(control.GetMouseControl())
-                    || MyAPIGateway.Input.IsKeyPress(control.GetKeyboardControl())
-                    || MyAPIGateway.Input.IsKeyPress(control.GetSecondKeyboardControl());
+                MyMouseButtonsEnum button = control.GetMouseControl();
+                if(button != MyMouseButtonsEnum.None && MyAPIGateway.Input.IsMousePressed(button))
+                    return true;
+
+                MyKeys kb1 = control.GetKeyboardControl();
+                if(kb1 != MyKeys.None && MyAPIGateway.Input.IsKeyPress(kb1))
+                    return true;
+
+                MyKeys kb2 = control.GetSecondKeyboardControl();
+                if(kb2 != MyKeys.None && MyAPIGateway.Input.IsKeyPress(kb2))
+                    return true;
             }
+
+            return false;
         }
 
         public static void AppendNiceNamePrefix(string key, object obj, StringBuilder str)
