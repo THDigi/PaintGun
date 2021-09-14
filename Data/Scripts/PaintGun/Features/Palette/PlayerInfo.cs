@@ -101,7 +101,7 @@ namespace Digi.PaintGun.Features.Palette
                     SkinSelected?.Invoke(this, oldValue, _selectedSkin);
 
                     SelectedSkinInfo = Main.Palette.GetSkinInfo(_selectedSkin);
-                    SkinAllowsColor = (SelectedSkinInfo?.Definition == null || !SelectedSkinInfo.Definition.DefaultColor.HasValue);
+                    SkinAllowsColor = !_applySkin || (SelectedSkinInfo?.Definition == null || !SelectedSkinInfo.Definition.DefaultColor.HasValue);
 
                     if(Main.IsPlayer && SteamId == MyAPIGateway.Multiplayer.MyId)
                         Main.PaletteScheduledSync.ScheduleSyncFor(skin: true);
@@ -111,8 +111,14 @@ namespace Digi.PaintGun.Features.Palette
 
         public SkinInfo SelectedSkinInfo { get; private set; }
 
+        /// <summary>
+        /// If <see cref="ApplyColor"/> and <see cref="SkinAllowsColor"/> are true.
+        /// </summary>
         public bool UseColor => _applyColor && SkinAllowsColor;
 
+        /// <summary>
+        /// True if selected skin can be recolored OR <see cref="ApplySkin"/> is false.
+        /// </summary>
         public bool SkinAllowsColor { get; private set; } = true;
 
         bool _applyColor = true;
@@ -142,6 +148,8 @@ namespace Digi.PaintGun.Features.Palette
                 {
                     _applySkin = value;
                     ApplySkinChanged?.Invoke(this);
+
+                    SkinAllowsColor = !_applySkin || (SelectedSkinInfo?.Definition == null || !SelectedSkinInfo.Definition.DefaultColor.HasValue);
 
                     if(Main.IsPlayer && SteamId == MyAPIGateway.Multiplayer.MyId)
                         Main.PaletteScheduledSync.ScheduleSyncFor(applySkin: true);
