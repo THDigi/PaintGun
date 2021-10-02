@@ -34,8 +34,7 @@ namespace Digi.PaintGun.Features.Sync
         uint[] PackedColorMasks;
 
         [ProtoMember(7)]
-        [DefaultValue(true)]
-        bool Reply = true;
+        bool Reply;
 
         [ProtoMember(20)]
         ulong PaletteOwnerSteamId;
