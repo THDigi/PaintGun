@@ -148,7 +148,7 @@ namespace Digi.PaintGun.Features.Tool
                 }
                 else
                 {
-                    SymmetryStatusText = (Main.TextAPI.IsEnabled ? "<color=gray>Symetry: not set-up\nUse block placer to do so." : "Symetry: not set-up, use block placer to do so.");
+                    SymmetryStatusText = (Main.TextAPI.IsEnabled ? "<color=gray>Symmetry: not set-up\nUse block placer to do so." : "Symmetry: not set-up, use block placer to do so.");
                 }
             }
         }
