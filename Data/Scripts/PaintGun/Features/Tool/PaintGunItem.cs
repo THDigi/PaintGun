@@ -6,6 +6,7 @@ using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Weapons;
 using VRage;
+using VRage.Collections;
 using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
@@ -58,8 +59,6 @@ namespace Digi.PaintGun.Features.Tool
 
         public const int SprayCooldownColorpicker = Constants.TICKS_PER_SECOND * 1;
         const int SprayMaxViewDistSq = 100 * 100;
-        const double NozzlePosX = 0.06525;
-        const double NozzlePosZ = 0.16;
 
         public PaintGunItem()
         {
@@ -68,8 +67,43 @@ namespace Digi.PaintGun.Features.Tool
             if(Main.IsDedicatedServer)
                 throw new ArgumentException($"{GetType().Name} got created on DS side, not designed for that.");
 
-            SoundEmitter.CustomMaxDistance = 30f;
             Main.Settings.SettingsLoaded += UpdateSprayVolume;
+
+            //SoundEmitter.CustomMaxDistance = 30f;
+
+            // remove all 2D forcing conditions
+            SoundEmitter.EmitterMethods[(int)MyEntity3DSoundEmitter.MethodsEnum.ShouldPlay2D].ClearImmediate();
+
+            if(MyAPIGateway.Session.SessionSettings.RealisticSound)
+            {
+                // remove some unnecessary conditions
+                foreach(ConcurrentCachingList<Delegate> funcList in SoundEmitter.EmitterMethods.Values)
+                {
+                    foreach(Delegate func in funcList)
+                    {
+                        switch(func.Method.Name)
+                        {
+                            case "IsCurrentWeapon":
+                            case "IsControlledEntity":
+                            case "IsOnSameGrid":
+                                funcList.Remove(func);
+                                break;
+                        }
+                    }
+                }
+
+                // custom IsCurrentWeapon because Entity is not set for this emitter to detect on its own
+                SoundEmitter.EmitterMethods[(int)MyEntity3DSoundEmitter.MethodsEnum.CanHear].Add(new Func<bool>(EmitterCanHear));
+
+                //foreach(KeyValuePair<int, ConcurrentCachingList<Delegate>> kv in SoundEmitter.EmitterMethods)
+                //{
+                //    kv.Value.ApplyChanges();
+                //    foreach(Delegate func in kv.Value)
+                //    {
+                //        Log.Info($"{((MyEntity3DSoundEmitter.MethodsEnum)kv.Key)} {func.Method.Name}");
+                //    }
+                //}
+            }
         }
 
         public void Unload()
@@ -94,7 +128,7 @@ namespace Digi.PaintGun.Features.Tool
                 throw new NullReferenceException($"{GetType().Name} :: soundEmitter is null");
 
             Rifle = entity;
-            SoundEmitter.Entity = (MyEntity)Rifle;
+            //SoundEmitter.Entity = (MyEntity)Rifle;
             UpdateSprayVolume();
 
             if(Rifle.GunBase == null)
@@ -200,6 +234,15 @@ namespace Digi.PaintGun.Features.Tool
             ClearParticles();
         }
 
+        bool EmitterCanHear()
+        {
+            if(!OwnerIsLocalPlayer)
+                return false;
+
+            IMyCharacter chr = MyAPIGateway.Session.ControlledObject as IMyCharacter;
+            return (chr != null && chr.EquippedTool == Rifle);
+        }
+
         void UpdateSprayVolume()
         {
             SoundEmitter.CustomVolume = Main.Settings.spraySoundVolume;
@@ -225,18 +268,43 @@ namespace Digi.PaintGun.Features.Tool
 
             if(SprayCooldown == 0)
             {
-                bool force2D = (OwnerIsLocalPlayer && MyAPIGateway.Session.Player.Character.IsInFirstPersonView);
-
-                if(OwnerIsLocalPlayer && SoundEmitter.IsPlaying && SoundEmitter.Force2D != force2D)
+                if(Main.Tick % 10 == 0)
                 {
-                    SoundEmitter.StopSound(false);
+                    SoundEmitter.Update();
                 }
 
-                if(Spraying && !OwnerInfo.ColorPickMode && !SoundEmitter.IsPlaying)
+                if(Spraying && !OwnerInfo.ColorPickMode)
                 {
-                    SoundEmitter.CustomVolume = (force2D ? Main.Settings.spraySoundVolume * 0.5f : Main.Settings.spraySoundVolume);
-                    SoundEmitter.Force2D = force2D;
-                    SoundEmitter.PlaySound(SpraySound, force2D: force2D);
+                    Vector3D soundPos;
+
+                    IMyCharacter owner = Rifle.Owner as IMyCharacter;
+                    if(owner != null)
+                    {
+                        MatrixD headMatrix = owner.GetHeadMatrix(true, true);
+                        soundPos = headMatrix.Translation + headMatrix.Down * 0.1 + headMatrix.Forward * 0.6;
+
+                        // HACK: sound somehow plays ahead of position, adjusted by trial and error
+                        if(owner.Physics != null)
+                            soundPos -= owner.Physics.LinearVelocity / Constants.TICKS_PER_SECOND; // remove 1 tick worth of velocity
+                    }
+                    else
+                    {
+                        MatrixD muzzleMatrix = Rifle.GunBase.GetMuzzleWorldMatrix();
+                        soundPos = muzzleMatrix.Translation + muzzleMatrix.Forward * 0.2;
+                    }
+
+                    //MyTransparentGeometry.AddPointBillboard(MyStringId.GetOrCompute("WhiteDot"), Color.Red, soundPos, 0.01f, 0, blendType: BlendTypeEnum.AdditiveTop);
+                    SoundEmitter.SetPosition(soundPos);
+
+                    if(SoundEmitter.CustomVolume != Main.Settings.spraySoundVolume)
+                    {
+                        SoundEmitter.CustomVolume = Main.Settings.spraySoundVolume;
+                    }
+
+                    if(!SoundEmitter.IsPlaying)
+                    {
+                        SoundEmitter.PlaySound(SpraySound, stopPrevious: true, skipIntro: true, force2D: false);
+                    }
                 }
 
                 if((!Spraying || OwnerInfo.ColorPickMode) && SoundEmitter.IsPlaying)
@@ -291,7 +359,10 @@ namespace Digi.PaintGun.Features.Tool
 
             if(Particles.Count > 0)
             {
-                Vector3D muzzleWorldPos = matrix.Translation + matrix.Up * NozzlePosX + matrix.Forward * NozzlePosZ;
+                //const double NozzlePosX = 0.06525;
+                //const double NozzlePosZ = 0.16;
+                //Vector3D muzzleWorldPos = matrix.Translation + matrix.Up * NozzlePosX + matrix.Forward * NozzlePosZ;
+                Vector3D muzzleWorldPos = Rifle.GetMuzzlePosition();
 
                 for(int i = Particles.Count - 1; i >= 0; i--)
                 {
