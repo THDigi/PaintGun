@@ -1,10 +1,10 @@
 ﻿using Digi.ComponentLib;
 using Digi.PaintGun.Features;
 using Digi.PaintGun.Features.ChatCommands;
-using Digi.PaintGun.Features.Debug;
+using Digi.PaintGun.Features.ConfigMenu;
 using Digi.PaintGun.Features.Palette;
 using Digi.PaintGun.Features.Sync;
-using Digi.PaintGun.Features.ConfigMenu;
+using Digi.PaintGun.Features.Testing;
 using Digi.PaintGun.Features.Tool;
 using Digi.PaintGun.Systems;
 using Digi.PaintGun.Utilities;
@@ -45,7 +45,7 @@ namespace Digi.PaintGun
         public Notifications Notifications;
         public ColorPickerGUIWarning ColorPickerGUIWarning;
         public ConfigMenuHandler ConfigMenuHandler;
-        public DebugComp Debug;
+        public TestComp TestComp;
 
         // Rights
         public bool IgnoreAmmoConsumption => (MyAPIGateway.Session.CreativeMode || MyAPIGateway.Session.SessionSettings.InfiniteAmmo); // NOTE: checked both clientside (visually) and serverside (functionally)
@@ -100,8 +100,8 @@ namespace Digi.PaintGun
                 ConfigMenuHandler = new ConfigMenuHandler(this);
             }
 
-            if(Constants.DEBUG_COMPONENT)
-                Debug = new DebugComp(this);
+            if(Constants.EnableTestComponent)
+                TestComp = new TestComp(this);
         }
 
         void DisablePaintGunVanillaShoot()

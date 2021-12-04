@@ -124,7 +124,6 @@
     <Compile Include="Features\ChatCommands\SetColor.cs" />
     <Compile Include="Features\CheckPlayerField.cs" />
     <Compile Include="Features\ColorPickerGUIWarning.cs" />
-    <Compile Include="Features\Debug\DebugComp.cs" />
     <Compile Include="Features\HUDSounds.cs" />
     <Compile Include="Features\Notifications.cs" />
     <Compile Include="Features\Palette\DataObjects.cs" />
@@ -153,6 +152,7 @@
     <Compile Include="Features\ConfigMenu\ItemSubMenu.cs" />
     <Compile Include="Features\ConfigMenu\ItemToggle.cs" />
     <Compile Include="Features\ConfigMenu\ConfigMenuHandler.cs" />
+    <Compile Include="Features\Testing\TestComp.cs" />
     <Compile Include="Features\Tool\DetectionInfo.cs" />
     <Compile Include="Features\Tool\LocalToolHandler.cs" />
     <Compile Include="Features\Tool\PaintGunItem.cs" />
