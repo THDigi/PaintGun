@@ -18,18 +18,17 @@ namespace Digi.PaintGun.Features.Tool
 {
     public class PaintGunItem
     {
-        public IMyAutomaticRifleGun Rifle;
-        public bool Spraying;
-        public int SprayCooldown;
-        public int Ammo;
+        public IMyAutomaticRifleGun Rifle { get; private set; }
+        public bool Spraying { get; set; }
+        public int Ammo { get; private set; }
 
         /// <summary>
         /// Used for outside event triggering, only true for a really short time.
         /// Use <see cref="OwnerSteamId"/> == 0 as "initialized" check.
         /// </summary>
-        public bool JustInitialized;
+        public bool JustInitialized { get; private set; }
 
-        public Color PaintColorRGB;
+        public Color PaintColorRGB { get; private set; }
 
         private Color? _paintPreviewColorRGB;
         public Color? PaintPreviewColorRGB
@@ -44,33 +43,43 @@ namespace Digi.PaintGun.Features.Tool
             }
         }
 
-        public ulong OwnerSteamId;
-        public bool OwnerIsLocalPlayer = false;
-        public PlayerInfo OwnerInfo;
+        public ulong OwnerSteamId { get; private set; }
+        public bool OwnerIsLocalPlayer { get; private set; } = false;
+        public PlayerInfo OwnerInfo { get; private set; }
 
-        readonly List<Particle> particles = new List<Particle>(30);
-        readonly MyEntity3DSoundEmitter soundEmitter = new MyEntity3DSoundEmitter(null)
-        {
-            CustomMaxDistance = 30f,
-        };
+        int SprayCooldown;
+        readonly PaintGunMod Main;
+        readonly List<Particle> Particles = new List<Particle>(30);
+        readonly MyEntity3DSoundEmitter SoundEmitter = new MyEntity3DSoundEmitter(null);
 
-        PaintGunMod Main => PaintGunMod.Instance;
+        static readonly MySoundPair SpraySound = new MySoundPair("PaintGunSpray");
+        static readonly MyStringId SprayMaterial = MyStringId.GetOrCompute("PaintGun_Spray");
+        const BlendTypeEnum SprayBlendType = BlendTypeEnum.SDR;
 
-        readonly MySoundPair SPRAY_SOUND = new MySoundPair("PaintGunSpray");
-        readonly MyStringId SPRAY_MATERIAL = MyStringId.GetOrCompute("PaintGun_Spray");
-        const BlendTypeEnum SPRAY_BLEND_TYPE = BlendTypeEnum.SDR;
-
-        public const int SPRAY_COOLDOWN_COLORPICKMODE = Constants.TICKS_PER_SECOND * 1;
-        const int SPRAY_MAX_VIEW_DISTANCE_SQ = 100 * 100;
-        const double NOZZLE_POSITION_Y = 0.06525;
-        const double NOZZLE_POSITION_Z = 0.16;
+        public const int SprayCooldownColorpicker = Constants.TICKS_PER_SECOND * 1;
+        const int SprayMaxViewDistSq = 100 * 100;
+        const double NozzlePosX = 0.06525;
+        const double NozzlePosZ = 0.16;
 
         public PaintGunItem()
         {
+            Main = PaintGunMod.Instance;
+
             if(Main.IsDedicatedServer)
                 throw new ArgumentException($"{GetType().Name} got created on DS side, not designed for that.");
 
+            SoundEmitter.CustomMaxDistance = 30f;
             Main.Settings.SettingsLoaded += UpdateSprayVolume;
+        }
+
+        public void Unload()
+        {
+            SoundEmitter.Cleanup();
+            Clear(false);
+            Particles.Clear();
+
+            if(Main?.Settings != null)
+                Main.Settings.SettingsLoaded -= UpdateSprayVolume;
         }
 
         /// <summary>
@@ -81,11 +90,11 @@ namespace Digi.PaintGun.Features.Tool
             if(entity == null)
                 throw new ArgumentException($"{GetType().Name} :: got created with null entity!");
 
-            if(soundEmitter == null)
+            if(SoundEmitter == null)
                 throw new NullReferenceException($"{GetType().Name} :: soundEmitter is null");
 
             Rifle = entity;
-            soundEmitter.Entity = (MyEntity)Rifle;
+            SoundEmitter.Entity = (MyEntity)Rifle;
             UpdateSprayVolume();
 
             if(Rifle.GunBase == null)
@@ -153,16 +162,13 @@ namespace Digi.PaintGun.Features.Tool
             if(OwnerInfo == null)
                 throw new NullReferenceException($"{GetType().Name} :: OwnerInfo == null");
 
+            OwnerPaletteUpdated(OwnerInfo);
             OwnerInfo.OnColorSlotSelected += OwnerColorSlotSelected;
             OwnerInfo.OnColorListChanged += OwnerColorListChanged;
             OwnerInfo.OnApplyColorChanged += OwnerPaletteUpdated;
             OwnerInfo.OnApplySkinChanged += OwnerPaletteUpdated;
+            OwnerInfo.OnColorPickModeChanged += OwnerColorPickModeChanged;
             return true;
-        }
-
-        void UpdateSprayVolume()
-        {
-            soundEmitter.CustomVolume = Main.Settings.spraySoundVolume;
         }
 
         /// <summary>
@@ -171,11 +177,15 @@ namespace Digi.PaintGun.Features.Tool
         public void Clear(bool returnParticles = true)
         {
             Rifle = null;
+            Spraying = false;
+            SprayCooldown = 0;
+            Ammo = 0;
             JustInitialized = false;
-            soundEmitter.StopSound(false);
-            soundEmitter.Entity = null;
+            SoundEmitter.StopSound(true);
+            SoundEmitter.Entity = null;
             OwnerSteamId = 0;
             OwnerIsLocalPlayer = false;
+            PaintPreviewColorRGB = null;
 
             if(OwnerInfo != null)
             {
@@ -183,20 +193,16 @@ namespace Digi.PaintGun.Features.Tool
                 OwnerInfo.OnColorListChanged -= OwnerColorListChanged;
                 OwnerInfo.OnApplyColorChanged -= OwnerPaletteUpdated;
                 OwnerInfo.OnApplySkinChanged -= OwnerPaletteUpdated;
+                OwnerInfo.OnColorPickModeChanged -= OwnerColorPickModeChanged;
                 OwnerInfo = null;
             }
 
             ClearParticles();
         }
 
-        public void Unload()
+        void UpdateSprayVolume()
         {
-            soundEmitter.Cleanup();
-            Clear(false);
-            particles.Clear();
-
-            if(Main?.Settings != null)
-                Main.Settings.SettingsLoaded -= UpdateSprayVolume;
+            SoundEmitter.CustomVolume = Main.Settings.spraySoundVolume;
         }
 
         public bool UpdateSimulation()
@@ -211,7 +217,7 @@ namespace Digi.PaintGun.Features.Tool
                 Ammo = (amount.HasValue ? (int)amount.Value : 0);
             }
 
-            if(soundEmitter == null)
+            if(SoundEmitter == null)
             {
                 Log.Error($"{GetType().Name} :: SoundEmitter for PaintGunItem entId={Rifle.EntityId.ToString()} is null for some reason.", Log.PRINT_MESSAGE);
                 return false;
@@ -221,21 +227,21 @@ namespace Digi.PaintGun.Features.Tool
             {
                 bool force2D = (OwnerIsLocalPlayer && MyAPIGateway.Session.Player.Character.IsInFirstPersonView);
 
-                if(OwnerIsLocalPlayer && soundEmitter.IsPlaying && soundEmitter.Force2D != force2D)
+                if(OwnerIsLocalPlayer && SoundEmitter.IsPlaying && SoundEmitter.Force2D != force2D)
                 {
-                    soundEmitter.StopSound(false);
+                    SoundEmitter.StopSound(false);
                 }
 
-                if(Spraying && !OwnerInfo.ColorPickMode && !soundEmitter.IsPlaying)
+                if(Spraying && !OwnerInfo.ColorPickMode && !SoundEmitter.IsPlaying)
                 {
-                    soundEmitter.CustomVolume = (force2D ? Main.Settings.spraySoundVolume * 0.5f : Main.Settings.spraySoundVolume);
-                    soundEmitter.Force2D = force2D;
-                    soundEmitter.PlaySound(SPRAY_SOUND, force2D: force2D);
+                    SoundEmitter.CustomVolume = (force2D ? Main.Settings.spraySoundVolume * 0.5f : Main.Settings.spraySoundVolume);
+                    SoundEmitter.Force2D = force2D;
+                    SoundEmitter.PlaySound(SpraySound, force2D: force2D);
                 }
 
-                if((!Spraying || OwnerInfo.ColorPickMode) && soundEmitter.IsPlaying)
+                if((!Spraying || OwnerInfo.ColorPickMode) && SoundEmitter.IsPlaying)
                 {
-                    soundEmitter.StopSound(false);
+                    SoundEmitter.StopSound(false);
                 }
             }
             else
@@ -254,7 +260,7 @@ namespace Digi.PaintGun.Features.Tool
             bool spawn = (Spraying && SprayCooldown == 0 && !OwnerInfo.ColorPickMode && (Main.IgnoreAmmoConsumption || Ammo > 0));
             bool valid = UpdateParticles(spawn);
 
-            if(!OwnerInfo.ColorPickMode && !valid && particles.Count > 0)
+            if(!OwnerInfo.ColorPickMode && !valid && Particles.Count > 0)
             {
                 ClearParticles();
             }
@@ -271,7 +277,7 @@ namespace Digi.PaintGun.Features.Tool
 
             MatrixD matrix = Rifle.WorldMatrix;
 
-            if(Vector3D.DistanceSquared(camera.WorldMatrix.Translation, matrix.Translation) > SPRAY_MAX_VIEW_DISTANCE_SQ)
+            if(Vector3D.DistanceSquared(camera.WorldMatrix.Translation, matrix.Translation) > SprayMaxViewDistSq)
                 return false;
 
             bool paused = Main.IsPaused;
@@ -280,24 +286,24 @@ namespace Digi.PaintGun.Features.Tool
             {
                 Particle particle = Main.ToolHandler.GetPooledParticle();
                 particle.Init(matrix, PaintColorRGB);
-                particles.Add(particle);
+                Particles.Add(particle);
             }
 
-            if(particles.Count > 0)
+            if(Particles.Count > 0)
             {
-                Vector3D muzzleWorldPos = matrix.Translation + matrix.Up * NOZZLE_POSITION_Y + matrix.Forward * NOZZLE_POSITION_Z;
+                Vector3D muzzleWorldPos = matrix.Translation + matrix.Up * NozzlePosX + matrix.Forward * NozzlePosZ;
 
-                for(int i = particles.Count - 1; i >= 0; i--)
+                for(int i = Particles.Count - 1; i >= 0; i--)
                 {
-                    Particle p = particles[i];
+                    Particle p = Particles[i];
 
-                    MyTransparentGeometry.AddPointBillboard(SPRAY_MATERIAL, p.Color, muzzleWorldPos + p.RelativePosition, p.Radius, p.Angle, blendType: SPRAY_BLEND_TYPE);
+                    MyTransparentGeometry.AddPointBillboard(SprayMaterial, p.Color, muzzleWorldPos + p.RelativePosition, p.Radius, p.Angle, blendType: SprayBlendType);
 
                     if(!paused)
                     {
                         if(--p.Life <= 0 || p.Color.A <= 0)
                         {
-                            particles.RemoveAtFast(i);
+                            Particles.RemoveAtFast(i);
                             Main.ToolHandler.ReturnParticleToPool(p);
                             continue;
                         }
@@ -322,12 +328,12 @@ namespace Digi.PaintGun.Features.Tool
 
         void ClearParticles()
         {
-            foreach(Particle particle in particles)
+            foreach(Particle particle in Particles)
             {
                 Main.ToolHandler.ReturnParticleToPool(particle);
             }
 
-            particles.Clear();
+            Particles.Clear();
         }
 
         void OwnerColorListChanged(PlayerInfo pi, int? index)
@@ -349,6 +355,11 @@ namespace Digi.PaintGun.Features.Tool
                 SetPaintColorMask(pi.SelectedColorMask);
             else
                 SetPaintColorMask(Main.Palette.DefaultColorMask);
+        }
+
+        void OwnerColorPickModeChanged(PlayerInfo pi)
+        {
+            SprayCooldown = SprayCooldownColorpicker;
         }
 
         void SetPaintColorRGB(Color colorRGB)

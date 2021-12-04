@@ -165,10 +165,6 @@ namespace Digi.PaintGun.Features.Palette
                     {
                         if(SteamId == MyAPIGateway.Multiplayer.MyId)
                             Main.NetworkLibHandler.PacketPaletteUpdate.Send(colorPickMode: ColorPickMode);
-
-                        PaintGunItem tool = Main.ToolHandler.GetToolHeldBy(SteamId);
-                        if(tool != null)
-                            tool.SprayCooldown = PaintGunItem.SPRAY_COOLDOWN_COLORPICKMODE;
                     }
                 }
             }
