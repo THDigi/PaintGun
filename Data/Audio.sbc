@@ -12,7 +12,7 @@
       <Loopable>true</Loopable>
       <Waves>
         <Wave Type="D3">
-          <Loop>Audio\ArcPaintGunSpray.xwm</Loop>
+          <Loop>Audio\ArcPaintGunSpray.wav</Loop>
         </Wave>
       </Waves>
     </Sound>
@@ -27,7 +27,7 @@
       <Loopable>true</Loopable>
       <Waves>
         <Wave Type="D3">
-          <Loop>Audio\RealPaintGunSpray.xwm</Loop>
+          <Loop>Audio\RealPaintGunSpray.wav</Loop>
         </Wave>
       </Waves>
     </Sound>
