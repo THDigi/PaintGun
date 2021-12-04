@@ -409,7 +409,7 @@ namespace Digi.PaintGun.Features
                 sb.AppendLine();
             }
 
-            sb.Append("ExtraSounds=").Append(extraSounds).AppendLine(comments ? " // toggle sounds: when aiming at a different color in color pick mode, when finishing painting in survival and when cycling colors. Default: true" : "");
+            sb.Append("ExtraSounds=").Append(extraSounds).AppendLine(comments ? " // toggle all HUD-sounds for this mod's actions, like cycling colors/skins, alerts when can't do something, etc. Default: true" : "");
             sb.Append("SprayParticles=").Append(sprayParticles).AppendLine(comments ? " // toggles the spray particles. Default: true" : "");
             sb.Append("SpraySoundVolume=").Append(spraySoundVolume).AppendLine(comments ? " // paint gun spraying sound volume. Default: 0.8" : "");
             sb.Append("SelectColorZigZag=").Append(selectColorZigZag).AppendLine(comments ? " // type of scrolling through colors in the palette, false is each row at a time, true is in zig-zag. Default: false" : "");

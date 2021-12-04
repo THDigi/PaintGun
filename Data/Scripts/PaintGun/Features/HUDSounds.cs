@@ -5,8 +5,8 @@ namespace Digi.PaintGun.Features
 {
     public class HUDSounds : ModComponent
     {
-        MyEntity3DSoundEmitter soundEmitter;
-        int soundTimeout = 0;
+        MyEntity3DSoundEmitter SoundEmitter;
+        int SoundTimeout = 0;
 
         readonly MySoundPair SOUND_HUD_UNABLE = new MySoundPair("HudUnable");
         readonly MySoundPair SOUND_HUD_CLICK = new MySoundPair("HudClick");
@@ -24,51 +24,64 @@ namespace Digi.PaintGun.Features
 
         protected override void UnregisterComponent()
         {
-            soundEmitter?.Cleanup();
-            soundEmitter = null;
+            SoundEmitter?.Cleanup();
+            SoundEmitter = null;
         }
 
-        public void PlayUnable()
+        public void PlayUnable(bool ignoreSetting = false)
         {
-            PlayHudSound(SOUND_HUD_UNABLE, 0.5f, timeout: 60);
+            if(ignoreSetting || Main.Settings.extraSounds)
+                PlayHudSound(SOUND_HUD_UNABLE, 0.5f, timeout: 60);
         }
 
-        public void PlayClick()
+        public void PlayClick(bool ignoreSetting = false)
         {
-            PlayHudSound(SOUND_HUD_CLICK, 0.25f);
+            if(ignoreSetting || Main.Settings.extraSounds)
+                PlayHudSound(SOUND_HUD_CLICK, 0.25f);
         }
 
-        public void PlayMouseClick()
+        public void PlayMouseClick(bool ignoreSetting = false)
         {
-            PlayHudSound(SOUND_HUD_MOUSE_CLICK, 0.25f);
+            if(ignoreSetting || Main.Settings.extraSounds)
+                PlayHudSound(SOUND_HUD_MOUSE_CLICK, 0.25f);
         }
 
-        public void PlayColor()
+        public void PlayColor(bool ignoreSetting = false)
         {
-            PlayHudSound(SOUND_HUD_COLOR, 0.8f);
+            if(ignoreSetting || Main.Settings.extraSounds)
+                PlayHudSound(SOUND_HUD_COLOR, 0.8f);
         }
 
-        public void PlayItem()
+        public void PlayItem(bool ignoreSetting = false)
         {
-            PlayHudSound(SOUND_HUD_ITEM, 0.6f);
+            if(ignoreSetting || Main.Settings.extraSounds)
+                PlayHudSound(SOUND_HUD_ITEM, 0.6f);
         }
 
         void PlayHudSound(MySoundPair soundPair, float volume, int timeout = 0)
         {
             if(timeout > 0)
             {
-                if(soundTimeout > Main.Tick)
+                if(SoundTimeout > Main.Tick)
                     return;
 
-                soundTimeout = Main.Tick + timeout;
+                SoundTimeout = Main.Tick + timeout;
             }
 
-            if(soundEmitter == null)
-                soundEmitter = new MyEntity3DSoundEmitter(null);
+            if(SoundEmitter == null)
+            {
+                SoundEmitter = new MyEntity3DSoundEmitter(null);
 
-            soundEmitter.SetPosition(MyAPIGateway.Session.Camera.WorldMatrix.Translation);
-            soundEmitter.CustomVolume = volume;
-            soundEmitter.PlaySound(soundPair, stopPrevious: false, alwaysHearOnRealistic: true, force2D: true);
+                // remove all effects and conditions from this emitter
+                SoundEmitter.EmitterMethods[(int)MyEntity3DSoundEmitter.MethodsEnum.CanHear].ClearImmediate();
+                SoundEmitter.EmitterMethods[(int)MyEntity3DSoundEmitter.MethodsEnum.ShouldPlay2D].ClearImmediate();
+                SoundEmitter.EmitterMethods[(int)MyEntity3DSoundEmitter.MethodsEnum.CueType].ClearImmediate();
+                SoundEmitter.EmitterMethods[(int)MyEntity3DSoundEmitter.MethodsEnum.ImplicitEffect].ClearImmediate();
+            }
+
+            SoundEmitter.SetPosition(MyAPIGateway.Session.Camera.WorldMatrix.Translation);
+            SoundEmitter.CustomVolume = volume;
+            SoundEmitter.PlaySound(soundPair, stopPrevious: false, alwaysHearOnRealistic: true, force2D: true);
         }
     }
 }

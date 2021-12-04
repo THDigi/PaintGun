@@ -175,8 +175,7 @@ namespace Digi.PaintGun.Features.Palette
             // skin or color applying is off, can't cycle turned off palette
             if(cycleSkins ? !LocalInfo.ApplySkin : !LocalInfo.ApplyColor)
             {
-                if(Main.Settings.extraSounds)
-                    Main.HUDSounds.PlayUnable();
+                Main.HUDSounds.PlayUnable();
 
                 // there's no gamepad equivalent to toggle palettes so it'll just show kb/m binds for both.
                 string assigned = InputHandler.GetFriendlyStringForControl(MyAPIGateway.Input.GetGameControl(MyControlsSpace.CUBE_COLOR_CHANGE));
@@ -272,15 +271,12 @@ namespace Digi.PaintGun.Features.Palette
 
             if(cycleSkins)
             {
-                if(Main.Settings.extraSounds)
-                    Main.HUDSounds.PlayItem();
+                Main.HUDSounds.PlayItem();
             }
             else
             {
                 MyAPIGateway.Session.Player.SelectedBuildColorSlot = LocalInfo.SelectedColorIndex;
-
-                if(Main.Settings.extraSounds)
-                    Main.HUDSounds.PlayClick();
+                Main.HUDSounds.PlayClick();
             }
         }
 

@@ -221,7 +221,7 @@ namespace Digi.PaintGun.Features.Tool
                 }
                 else if(trigger)
                 {
-                    Main.HUDSounds.PlayUnable();
+                    //Main.HUDSounds.PlayUnable();
 
                     if(!Main.IgnoreAmmoConsumption && LocalTool.Ammo == 0)
                         Main.Notifications.Show(0, "No ammo and no target.", MyFontEnum.Red);
@@ -253,7 +253,7 @@ namespace Digi.PaintGun.Features.Tool
             {
                 if(trigger)
                 {
-                    Main.HUDSounds.PlayUnable();
+                    //Main.HUDSounds.PlayUnable();
                     Main.Notifications.Show(1, "No ammo.", MyFontEnum.Red);
                 }
 
@@ -327,9 +327,7 @@ namespace Digi.PaintGun.Features.Tool
             if(!ToolPreviewPaint.HasValue || !ToolPreviewPaint.Value.PaintEquals(AimedPlayersPaint))
             {
                 ToolPreviewPaint = AimedPlayersPaint;
-
-                if(Main.Settings.extraSounds)
-                    Main.HUDSounds.PlayItem();
+                Main.HUDSounds.PlayItem();
             }
 
             Main.SelectionGUI.SetGUIStatus(0, "Click to get engineer's selected color.");
@@ -777,9 +775,7 @@ namespace Digi.PaintGun.Features.Tool
             if(!ToolPreviewPaint.HasValue || !ToolPreviewPaint.Value.PaintEquals(blockMaterial))
             {
                 ToolPreviewPaint = new PaintMaterial(blockMaterial.ColorMask, blockMaterial.Skin);
-
-                if(Main.Settings.extraSounds)
-                    Main.HUDSounds.PlayItem();
+                Main.HUDSounds.PlayItem();
             }
 
             if(paintMaterial.ColorMask.HasValue && !paintMaterial.Skin.HasValue)
@@ -842,9 +838,7 @@ namespace Digi.PaintGun.Features.Tool
                     blockColorMask = paintColorMask;
 
                     Main.SelectionGUI.SetGUIStatus(0, "Painting done!", "lime");
-
-                    if(Main.Settings.extraSounds)
-                        Main.HUDSounds.PlayColor();
+                    Main.HUDSounds.PlayColor();
                 }
                 else
                 {
