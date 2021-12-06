@@ -233,6 +233,7 @@ namespace Digi.PaintGun.Features.Tool
             {
                 OwnerInfo.OnColorSlotSelected -= OwnerColorSlotSelected;
                 OwnerInfo.OnColorListChanged -= OwnerColorListChanged;
+                OwnerInfo.OnSkinIndexSelected -= OwnerSkinIndexSelected;
                 OwnerInfo.OnApplyColorChanged -= OwnerPaletteUpdate;
                 OwnerInfo.OnApplySkinChanged -= OwnerPaletteUpdate;
                 OwnerInfo.OnColorPickModeChanged -= OwnerColorPickModeChanged;
