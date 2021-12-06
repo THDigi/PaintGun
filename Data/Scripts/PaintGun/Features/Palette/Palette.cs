@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Text;
 using Digi.ComponentLib;
 using Digi.PaintGun.Utilities;
 using ProtoBuf;
 using Sandbox.Definitions;
+using Sandbox.Game;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.ModAPI;
@@ -19,8 +19,21 @@ namespace Digi.PaintGun.Features.Palette
         const int CHECK_PALETTE_PASSIVE_TICKS = Constants.TICKS_PER_SECOND * 1;
         const int PLAYER_INFO_CLEANUP_TICKS = Constants.TICKS_PER_SECOND * 60 * 5;
 
-        public List<SkinInfo> BlockSkins;
+        const string ARMOR_SUFFIX = "_Armor";
+        const string TEST_ARMOR_SUBTYPE = "TestArmor";
+
+        const string SKIN_ICON_PREFIX = "PaintGun_SkinIcon_";
+        const string SKIN_ICON_UNKNOWN = SKIN_ICON_PREFIX + "Unknown";
+
+        public SortedDictionary<MyStringHash, SkinInfo> Skins;
+
+        class SkinSorter : IComparer<MyStringHash>
+        {
+            public int Compare(MyStringHash a, MyStringHash b) => a.String.CompareTo(b.String);
+        }
+
         public List<SkinInfo> SkinsForHUD;
+        public bool HasAnySkin { get; private set; }
 
         public PlayerInfo LocalInfo;
         public bool ReplaceMode = false;
@@ -39,8 +52,6 @@ namespace Digi.PaintGun.Features.Palette
 
         public Palette(PaintGunMod main) : base(main)
         {
-            UpdateMethods = UpdateFlags.UPDATE_AFTER_SIM;
-
             InitBlockSkins();
         }
 
@@ -48,6 +59,8 @@ namespace Digi.PaintGun.Features.Palette
         {
             if(Main.IsPlayer)
             {
+                UpdateMethods = UpdateFlags.UPDATE_AFTER_SIM;
+
                 LocalInfo = GetOrAddPlayerInfo(MyAPIGateway.Multiplayer.MyId);
                 Main.CheckPlayerField.PlayerReady += PlayerReady;
                 Main.PlayerHandler.PlayerDisconnected += PlayerDisconnected;
@@ -76,18 +89,12 @@ namespace Digi.PaintGun.Features.Palette
         void PlayerReady()
         {
             DefaultColorMask = Utils.ColorMaskNormalize(MyAPIGateway.Session.Player.DefaultBuildColorSlots.ItemAt(0));
-            LocalInfo.SelectedColorIndex = MyAPIGateway.Session.Player.SelectedBuildColorSlot;
+            LocalInfo.SelectedColorSlot = MyAPIGateway.Session.Player.SelectedBuildColorSlot;
             UpdatePalette();
 
             // broadcast local player's palette to everyone and server sends everyone's palettes back.
             Main.NetworkLibHandler.PacketJoinSharePalette.Send(LocalInfo);
         }
-
-        const string ARMOR_SUFFIX = "_Armor";
-        const string TEST_ARMOR_SUBTYPE = "TestArmor";
-
-        const string SKIN_ICON_PREFIX = "PaintGun_SkinIcon_";
-        const string SKIN_ICON_UNKNOWN = SKIN_ICON_PREFIX + "Unknown";
 
         void InitBlockSkins()
         {
@@ -108,9 +115,11 @@ namespace Digi.PaintGun.Features.Palette
                     foundSkins++;
             }
 
-            BlockSkins = new List<SkinInfo>(foundSkins + 1); // include "No Skin" too.
-            SkinsForHUD = new List<SkinInfo>(BlockSkins.Capacity);
-            StringBuilder sb = new StringBuilder(128);
+            int capacity = foundSkins + 1; // include "No Skin" too.
+            Skins = new SortedDictionary<MyStringHash, SkinInfo>(new SkinSorter());
+            SkinsForHUD = new List<SkinInfo>(capacity);
+
+            StringBuilder sb = new StringBuilder(256);
 
             foreach(MyAssetModifierDefinition assetDef in MyDefinitionManager.Static.GetAssetModifierDefinitions())
             {
@@ -158,42 +167,82 @@ namespace Digi.PaintGun.Features.Palette
                         FixModTexturePaths(assetDef);
 
                     SkinInfo skinInfo = new SkinInfo(assetDef, name, icon);
-                    BlockSkins.Add(skinInfo);
+                    Skins[skinInfo.SubtypeId] = skinInfo;
                 }
             }
 
+            SkinInfo noSkin = new SkinInfo(null, "No Skin", SKIN_ICON_PREFIX + "NoSkin");
+            Skins[noSkin.SubtypeId] = noSkin;
+
             CleanUpFixMods();
-
-            // consistent order for network sync, also matches with what the game UI sorts them by
-            BlockSkins.Sort((a, b) => a.SubtypeId.String.CompareTo(b.SubtypeId.String));
-
-            // "no skin" is always first
-            BlockSkins.Insert(0, new SkinInfo(null, "No Skin", SKIN_ICON_PREFIX + "NoSkin"));
 
             bool neonSkinExists = false;
 
-            // assign final index to the value too
-            for(int i = 0; i < BlockSkins.Count; ++i)
-            {
-                SkinInfo skin = BlockSkins[i];
-                skin.Index = i;
+            const int SubtypeWidth = -26;
+            const int NameWidth = -26;
+            const int DLCsWidth = -20;
 
+            Log.Info($"{"Skin SubtypeId",SubtypeWidth} {"Name",NameWidth} {"DLCs",DLCsWidth} Mod");
+
+            foreach(SkinInfo skin in Skins.Values)
+            {
                 if(skin.SubtypeId.String == "Neon_Colorable_Surface")
                     neonSkinExists = true;
 
                 if(Constants.SKIN_INIT_LOGGING)
                 {
-                    Log.Info($"Defined skin #{i.ToString()} - {skin.Name} ({skin.SubtypeId.String}){(skin.Icon.String == SKIN_ICON_UNKNOWN ? "; No Icon!" : "")}{(skin.Definition?.Context?.IsBaseGame ?? true ? "" : $"; Mod={skin.Definition.Context.ModName}")}");
+                    string dlcList = "";
+                    if(skin.Definition?.DLCs != null && skin.Definition.DLCs.Length > 0)
+                        dlcList = String.Join(",", skin.Definition.DLCs);
+
+                    string modName = skin.Definition?.Context?.ModName ?? "";
+
+                    Log.Info($"{$"'{skin.SubtypeId.String}'",SubtypeWidth} {skin.Name,NameWidth} {dlcList,DLCsWidth} {modName}");
+
+#if false
+                    sb.Clear();
+                    sb.Append("Defined skin id='").Append(skin.SubtypeId.String).Append("'; Name='").Append(skin.Name).Append("'");
+
+                    if(skin.Icon.String == SKIN_ICON_UNKNOWN)
+                    {
+                        sb.Append("; No Icon!");
+                    }
+
+                    if(skin.Definition?.DLCs != null && skin.Definition.DLCs.Length > 0)
+                    {
+                        sb.Append("; DLC=");
+
+                        int preLen = sb.Length;
+
+                        foreach(string dlcId in skin.Definition.DLCs)
+                        {
+                            MyDLCs.MyDLC dlc;
+                            if(!MyDLCs.TryGetDLC(dlcId, out dlc))
+                            {
+                                Log.Error($"Skin '{skin.SubtypeId.String}' uses unknown DLC={dlcId}");
+                                continue;
+                            }
+
+                            sb.Append(dlc.Name).Append(", ");
+                        }
+
+                        if(sb.Length > preLen)
+                            sb.Length -= 2; // remove last comma
+                    }
+
+                    if(skin.Definition?.Context != null && !skin.Definition.Context.IsBaseGame)
+                    {
+                        sb.Append("; Mod='").Append(skin.Definition.Context.ModName).Append("'");
+                    }
+
+                    Log.Info(sb.ToString());
+#endif
                 }
             }
 
             if(!neonSkinExists)
             {
-                Log.Error("WARNING: Expected to find 'Neon_Colorable_Surface' but did not!" +
-                    "\nCheck the skins list in the mod's log to ensure all of them are there." +
-                    "\nSkin index is what gets sent by clients and if skin number mismatches it will cause issues." +
-                    "\nThis skin (and few others) do not have the '_Armor' suffix, therefore this mod looks for 'armor' in icons or 'SquarePlate' in textures, and it didn't find it by that criteria either."
-                );
+                Log.Error("WARNING: Expected to find 'Neon_Colorable_Surface' but did not!\nCheck the skins list in the mod's log to ensure all of them are there.");
             }
         }
 
@@ -231,6 +280,9 @@ namespace Digi.PaintGun.Features.Palette
 
                         if(texture.Location.Equals("SquarePlate", StringComparison.OrdinalIgnoreCase))
                             return true;
+
+                        if(texture.Location.Equals("PaintedMetal_Colorable", StringComparison.OrdinalIgnoreCase))
+                            return true;
                     }
                 }
             }
@@ -249,7 +301,7 @@ namespace Digi.PaintGun.Features.Palette
 
         protected override void UpdateAfterSim(int tick)
         {
-            if(Main.IsPlayer && tick % CHECK_PALETTE_PASSIVE_TICKS == 0)
+            if(tick % CHECK_PALETTE_PASSIVE_TICKS == 0)
             {
                 CheckLocalPaletteChanges();
             }
@@ -304,23 +356,11 @@ namespace Digi.PaintGun.Features.Palette
 
         public SkinInfo GetSkinInfo(MyStringHash skinSubtypeId)
         {
-            for(int i = 0; i < BlockSkins.Count; i++)
-            {
-                SkinInfo skin = BlockSkins[i];
-
-                if(skin.SubtypeId == skinSubtypeId)
-                    return skin;
-            }
-
-            return null;
-        }
-
-        public SkinInfo GetSkinInfo(int index)
-        {
-            if(index < 0 || index >= BlockSkins.Count)
-                throw new ArgumentException($"Given index={index.ToString()} is negative or above {(BlockSkins.Count - 1).ToString()}");
-
-            return BlockSkins[index];
+            SkinInfo skin;
+            if(Skins.TryGetValue(skinSubtypeId, out skin))
+                return skin;
+            else
+                return null;
         }
 
         /// <summary>
@@ -373,7 +413,7 @@ namespace Digi.PaintGun.Features.Palette
                         if(Utils.ColorMaskEquals(LocalInfo.ColorsMasks[i], pickedMaterial.ColorMask.Value))
                         {
                             inPalette = true;
-                            LocalInfo.SelectedColorIndex = i;
+                            LocalInfo.SelectedColorSlot = i;
                             MyAPIGateway.Session.Player.SelectedBuildColorSlot = i;
 
                             Main.Notifications.Show(0, $"Color exists in slot [{(i + 1).ToString()}], selected.", MyFontEnum.Debug, 2000);
@@ -385,9 +425,9 @@ namespace Digi.PaintGun.Features.Palette
                     {
                         MyAPIGateway.Session.Player.ChangeOrSwitchToColor(pickedMaterial.ColorMask.Value);
 
-                        Main.NetworkLibHandler.PacketPaletteSetColor.Send(LocalInfo.SelectedColorIndex, pickedMaterial.ColorMask.Value);
+                        Main.NetworkLibHandler.PacketPaletteSetColor.Send(LocalInfo.SelectedColorSlot, pickedMaterial.ColorMask.Value);
 
-                        Main.Notifications.Show(0, $"Color slot [{(LocalInfo.SelectedColorIndex + 1).ToString()}] set to [{Utils.ColorMaskToString(pickedMaterial.ColorMask.Value)}]", MyFontEnum.Debug, 2000);
+                        Main.Notifications.Show(0, $"Color slot [{(LocalInfo.SelectedColorSlot + 1).ToString()}] set to [{Utils.ColorMaskToString(pickedMaterial.ColorMask.Value)}]", MyFontEnum.Debug, 2000);
                     }
 
                     success = true;
@@ -404,10 +444,9 @@ namespace Digi.PaintGun.Features.Palette
                 if(changeApply)
                     LocalInfo.ApplySkin = true;
 
-                if(GetSkinInfo(LocalInfo.SelectedSkinIndex).SubtypeId != pickedMaterial.Skin.Value)
+                if(LocalInfo.SelectedSkin != pickedMaterial.Skin.Value)
                 {
                     SkinInfo skin = GetSkinInfo(pickedMaterial.Skin.Value);
-
                     if(skin != null)
                     {
                         if(!skin.LocallyOwned)
@@ -416,7 +455,7 @@ namespace Digi.PaintGun.Features.Palette
                         }
                         else
                         {
-                            LocalInfo.SelectedSkinIndex = skin.Index;
+                            LocalInfo.SelectedSkin = skin.SubtypeId;
                             success = true;
 
                             Main.Notifications.Show(1, $"Selected skin: [{skin.Name}]", MyFontEnum.Debug, 2000);
@@ -445,7 +484,7 @@ namespace Digi.PaintGun.Features.Palette
                 colorMask = LocalInfo.SelectedColorMask;
 
             if(LocalInfo.ApplySkin)
-                skin = GetSkinInfo(LocalInfo.SelectedSkinIndex).SubtypeId;
+                skin = LocalInfo.SelectedSkin;
 
             return new PaintMaterial(colorMask, skin);
         }
@@ -474,18 +513,21 @@ namespace Digi.PaintGun.Features.Palette
 
             SkinsForHUD.Clear();
 
-            foreach(SkinInfo skin in BlockSkins)
+            foreach(SkinInfo skin in Skins.Values)
             {
-                skin.ShowOnPalette = !Main.Settings.hideSkinsFromPalette.Contains(skin.SubtypeId.String);
+                skin.Refresh();
+
                 if(skin.Selectable)
                     SkinsForHUD.Add(skin);
             }
 
+            HasAnySkin = (SkinsForHUD.Count > 1);
+
             // change selection if it's an unselectable skin
-            SkinInfo selectedSkin = GetSkinInfo(LocalInfo.SelectedSkinIndex);
+            SkinInfo selectedSkin = GetSkinInfo(LocalInfo.SelectedSkin);
             if(!selectedSkin.Selectable)
             {
-                LocalInfo.SelectedSkinIndex = 0;
+                LocalInfo.SelectedSkin = MyStringHash.NullOrEmpty;
             }
         }
 

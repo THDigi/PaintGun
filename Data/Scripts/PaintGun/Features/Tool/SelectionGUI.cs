@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Text;
 using Digi.ComponentLib;
 using Digi.PaintGun.Features.Palette;
-using Digi.PaintGun.Systems;
 using Digi.PaintGun.Utilities;
 using Draygo.API;
 using Sandbox.Definitions;
@@ -673,7 +672,7 @@ namespace Digi.PaintGun.Features.Tool
                     {
                         if(!targetSkin.LocallyOwned)
                             text.Append("<color=red>");
-                        else if(targetSkin.Index == 0)
+                        else if(targetSkin.SubtypeId == MyStringHash.NullOrEmpty)
                             text.Append("<color=gray>");
                         text.Append(targetSkin.Name);
                     }
@@ -695,7 +694,7 @@ namespace Digi.PaintGun.Features.Tool
                 text.Append("<color=220,244,252>");
                 if(Main.Palette.ColorPickMode)
                 {
-                    text.Append("Replace slot: ").Append(Main.Palette.LocalInfo.SelectedColorIndex + 1);
+                    text.Append("Replace slot: ").Append(Main.Palette.LocalInfo.SelectedColorSlot + 1);
                 }
                 else
                 {
@@ -725,7 +724,7 @@ namespace Digi.PaintGun.Features.Tool
                     SkinInfo skin = Main.Palette.GetSkinInfo(paint.Skin.Value);
                     if(skin != null)
                     {
-                        if(skin.Index == 0)
+                        if(skin.SubtypeId == MyStringHash.NullOrEmpty)
                             text.Append("<color=gray>");
                         text.Append(skin.Name);
                     }

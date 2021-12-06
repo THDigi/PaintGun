@@ -157,12 +157,12 @@ namespace Digi.PaintGun.Features.Tool
             if(OwnerInfo == null)
                 throw new NullReferenceException($"{GetType().Name} :: OwnerInfo == null");
 
-            OwnerInfo.OnColorSlotSelected += OwnerColorSlotSelected;
-            OwnerInfo.OnColorListChanged += OwnerColorListChanged;
-            OwnerInfo.OnSkinIndexSelected += OwnerSkinIndexSelected;
-            OwnerInfo.OnApplyColorChanged += OwnerPaletteUpdate;
-            OwnerInfo.OnApplySkinChanged += OwnerPaletteUpdate;
-            OwnerInfo.OnColorPickModeChanged += OwnerColorPickModeChanged;
+            OwnerInfo.ColorSlotSelected += OwnerColorSlotSelected;
+            OwnerInfo.ColorListChanged += OwnerColorListChanged;
+            OwnerInfo.SkinSelected += OwnerSkinSelected;
+            OwnerInfo.ApplyColorChanged += OwnerPaletteUpdate;
+            OwnerInfo.ApplySkinChanged += OwnerPaletteUpdate;
+            OwnerInfo.ColorPickModeChanged += OwnerColorPickModeChanged;
 
             UpdatePaintCanMaterial();
             return true;
@@ -186,12 +186,12 @@ namespace Digi.PaintGun.Features.Tool
 
             if(OwnerInfo != null)
             {
-                OwnerInfo.OnColorSlotSelected -= OwnerColorSlotSelected;
-                OwnerInfo.OnColorListChanged -= OwnerColorListChanged;
-                OwnerInfo.OnSkinIndexSelected -= OwnerSkinIndexSelected;
-                OwnerInfo.OnApplyColorChanged -= OwnerPaletteUpdate;
-                OwnerInfo.OnApplySkinChanged -= OwnerPaletteUpdate;
-                OwnerInfo.OnColorPickModeChanged -= OwnerColorPickModeChanged;
+                OwnerInfo.ColorSlotSelected -= OwnerColorSlotSelected;
+                OwnerInfo.ColorListChanged -= OwnerColorListChanged;
+                OwnerInfo.SkinSelected -= OwnerSkinSelected;
+                OwnerInfo.ApplyColorChanged -= OwnerPaletteUpdate;
+                OwnerInfo.ApplySkinChanged -= OwnerPaletteUpdate;
+                OwnerInfo.ColorPickModeChanged -= OwnerColorPickModeChanged;
                 OwnerInfo = null;
             }
 
@@ -360,7 +360,7 @@ namespace Digi.PaintGun.Features.Tool
             UpdatePaintCanMaterial();
         }
 
-        void OwnerSkinIndexSelected(PlayerInfo pi, int prevIndex, int newIndex)
+        void OwnerSkinSelected(PlayerInfo pi, MyStringHash prevSkin, MyStringHash newSkin)
         {
             UpdatePaintCanMaterial();
         }

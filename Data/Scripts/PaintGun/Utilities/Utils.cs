@@ -10,6 +10,7 @@ using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
+using VRage.Utils;
 using VRageMath;
 
 namespace Digi.PaintGun.Utilities
@@ -383,16 +384,19 @@ namespace Digi.PaintGun.Utilities
                 return $"{player.DisplayName} ({player.SteamUserId.ToString()})";
         }
 
-        public static string PrintSkinName(int? id)
+        public static string PrintSkinName(MyStringHash? id)
         {
             if(!id.HasValue)
-                return $"(NoSkinId)";
+                return "[N/A]";
+
+            if(id.Value == MyStringHash.NullOrEmpty)
+                return "NoSkin";
 
             SkinInfo skin = Main.Palette.GetSkinInfo(id.Value);
             if(skin != null)
-                return $"{skin.SubtypeId.ToString()} (idx={id.Value.ToString()})";
+                return skin.Name;
 
-            return $"(UnknownId#{id.Value.ToString()})";
+            return $"(Unknown:{id.Value.String})";
         }
 
         public static string PrintNullable<T>(Nullable<T> nullable) where T : struct

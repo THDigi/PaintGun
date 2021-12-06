@@ -4,6 +4,7 @@ using System.IO;
 using System.Text;
 using Digi.PaintGun.Features.Palette;
 using Sandbox.ModAPI;
+using VRage.Utils;
 using VRageMath;
 
 namespace Digi.PaintGun.Features
@@ -433,16 +434,17 @@ namespace Digi.PaintGun.Features
                 sb.Append("// All detected skins: ");
 
                 int num = 99999; // start with a newline
-                List<SkinInfo> skins = Main.Palette.BlockSkins;
-                for(int i = 1; i < skins.Count; ++i) // skipping index 0 intentionally
+                foreach(SkinInfo skin in Main.Palette.Skins.Values)
                 {
+                    if(skin.SubtypeId == MyStringHash.NullOrEmpty)
+                        continue;
+
                     if(++num > 7)
                     {
                         num = 0;
                         sb.AppendLine().Append("//     ");
                     }
 
-                    SkinInfo skin = skins[i];
                     sb.Append(skin.SubtypeId.String).Append(", ");
                 }
 

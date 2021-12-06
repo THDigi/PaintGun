@@ -5,7 +5,6 @@ namespace Digi.PaintGun.Features.Palette
 {
     public class SkinInfo
     {
-        public int Index;
         public readonly MyAssetModifierDefinition Definition;
         public readonly MyStringHash SubtypeId;
         public readonly string Name;
@@ -16,12 +15,12 @@ namespace Digi.PaintGun.Features.Palette
         /// <summary>
         /// Configurable for local machine.
         /// </summary>
-        public bool ShowOnPalette;
+        public bool ShowOnPalette { get; private set; }
 
         /// <summary>
         /// Owned and not turned off in config.
         /// </summary>
-        public bool Selectable => LocallyOwned && ShowOnPalette;
+        public bool Selectable { get; private set; }
 
         public SkinInfo(MyAssetModifierDefinition definition, string name, string icon)
         {
@@ -38,6 +37,15 @@ namespace Digi.PaintGun.Features.Palette
 
             // HACK: just using sync'd paint API to let it decide on its own
             LocallyOwned = true;
+        }
+
+        /// <summary>
+        /// Re-computes <see cref="ShowOnPalette"/> and <see cref="Selectable"/>
+        /// </summary>
+        public void Refresh()
+        {
+            ShowOnPalette = !PaintGunMod.Instance.Settings.hideSkinsFromPalette.Contains(SubtypeId.String);
+            Selectable = ShowOnPalette && LocallyOwned;
         }
     }
 }

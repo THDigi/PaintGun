@@ -1,6 +1,7 @@
 ﻿using Digi.NetworkLib;
 using Digi.PaintGun.Features.Palette;
 using ProtoBuf;
+using VRage.Utils;
 
 namespace Digi.PaintGun.Features.Sync
 {
@@ -8,10 +9,10 @@ namespace Digi.PaintGun.Features.Sync
     public class PacketPaletteUpdate : PacketBase
     {
         [ProtoMember(1)]
-        int? SelectedColorIndex;
+        int? SelectedColorSlot;
 
         [ProtoMember(2)]
-        int? SelectedSkinIndex;
+        MyStringHash? SelectedSkin;
 
         [ProtoMember(3)]
         bool? ApplyColor;
@@ -27,10 +28,10 @@ namespace Digi.PaintGun.Features.Sync
 
         public PacketPaletteUpdate() { } // Empty constructor required for deserialization
 
-        public void Send(int? selectedColorIndex = null, int? selectedSkinIndex = null, bool? applyColor = null, bool? applySkin = null, bool? colorPickMode = null) //, List<Vector3> colorMasks = null)
+        public void Send(int? selectedColorSlot = null, MyStringHash? selectedSkin = null, bool? applyColor = null, bool? applySkin = null, bool? colorPickMode = null) //, List<Vector3> colorMasks = null)
         {
-            SelectedColorIndex = selectedColorIndex;
-            SelectedSkinIndex = selectedSkinIndex;
+            SelectedColorSlot = selectedColorSlot;
+            SelectedSkin = selectedSkin;
             ApplyColor = applyColor;
             ApplySkin = applySkin;
             ColorPickMode = colorPickMode;
@@ -69,11 +70,11 @@ namespace Digi.PaintGun.Features.Sync
 
             PlayerInfo pi = Main.Palette.GetOrAddPlayerInfo(OriginalSenderSteamId);
 
-            if(SelectedColorIndex.HasValue)
-                pi.SelectedColorIndex = SelectedColorIndex.Value;
+            if(SelectedColorSlot.HasValue)
+                pi.SelectedColorSlot = SelectedColorSlot.Value;
 
-            if(SelectedSkinIndex.HasValue)
-                pi.SelectedSkinIndex = SelectedSkinIndex.Value;
+            if(SelectedSkin.HasValue)
+                pi.SelectedSkin = SelectedSkin.Value;
 
             if(ApplyColor.HasValue)
                 pi.ApplyColor = ApplyColor.Value;

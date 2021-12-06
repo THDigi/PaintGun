@@ -1,5 +1,6 @@
 ﻿using System;
 using Digi.ComponentLib;
+using VRage.Utils;
 
 namespace Digi.PaintGun.Features.Palette
 {
@@ -8,8 +9,8 @@ namespace Digi.PaintGun.Features.Palette
         int syncDelayTicks;
         int syncCooldownTicks;
 
-        bool syncColorIndex;
-        bool syncSkinIndex;
+        bool syncColor;
+        bool syncSkin;
         bool syncApplyColor;
         bool syncApplySkin;
 
@@ -39,15 +40,15 @@ namespace Digi.PaintGun.Features.Palette
             {
                 syncCooldownTicks = COOLDOWN_UNTIL_RESYNC;
 
-                int? colorIndex = (syncColorIndex ? (int?)LocalInfo.SelectedColorIndex : null);
-                int? skinIndex = (syncSkinIndex ? (int?)LocalInfo.SelectedSkinIndex : null);
+                int? colorSlot = (syncColor ? (int?)LocalInfo.SelectedColorSlot : null);
+                MyStringHash? skin = (syncSkin ? (MyStringHash?)LocalInfo.SelectedSkin : null);
                 bool? applyColor = (syncApplyColor ? (bool?)LocalInfo.ApplyColor : null);
                 bool? applySkin = (syncApplySkin ? (bool?)LocalInfo.ApplySkin : null);
 
-                Main.NetworkLibHandler.PacketPaletteUpdate.Send(colorIndex, skinIndex, applyColor, applySkin);
+                Main.NetworkLibHandler.PacketPaletteUpdate.Send(colorSlot, skin, applyColor, applySkin);
 
-                syncColorIndex = false;
-                syncSkinIndex = false;
+                syncColor = false;
+                syncSkin = false;
                 syncApplyColor = false;
                 syncApplySkin = false;
             }
@@ -61,16 +62,16 @@ namespace Digi.PaintGun.Features.Palette
         /// <summary>
         /// NOTE: Parameters are additive until sync, leaving as false does not disable anything.
         /// </summary>
-        public void ScheduleSyncFor(bool colorIndex = false, bool skinIndex = false, bool applyColor = false, bool applySkin = false)
+        public void ScheduleSyncFor(bool color = false, bool skin = false, bool applyColor = false, bool applySkin = false)
         {
-            if(!colorIndex && !skinIndex && !applyColor && !applySkin)
+            if(!color && !skin && !applyColor && !applySkin)
                 throw new ArgumentException("At least one parameter needs to be true!");
 
-            if(colorIndex)
-                syncColorIndex = true;
+            if(color)
+                syncColor = true;
 
-            if(skinIndex)
-                syncSkinIndex = true;
+            if(skin)
+                syncSkin = true;
 
             if(applyColor)
                 syncApplyColor = true;

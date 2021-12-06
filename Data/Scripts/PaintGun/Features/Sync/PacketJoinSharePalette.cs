@@ -7,6 +7,7 @@ using Digi.PaintGun.Utilities;
 using ProtoBuf;
 using Sandbox.ModAPI;
 using VRage.Game.ModAPI;
+using VRage.Utils;
 using VRageMath;
 
 namespace Digi.PaintGun.Features.Sync
@@ -15,10 +16,10 @@ namespace Digi.PaintGun.Features.Sync
     public class PacketJoinSharePalette : PacketBase
     {
         [ProtoMember(1)]
-        int SelectedColorIndex;
+        int SelectedColorSlot;
 
         [ProtoMember(2)]
-        int SelectedSkinIndex;
+        MyStringHash SelectedSkin;
 
         [ProtoMember(3)]
         bool ApplyColor;
@@ -44,8 +45,8 @@ namespace Digi.PaintGun.Features.Sync
         public void Send(PlayerInfo pi, ulong? sendTo = null)
         {
             PaletteOwnerSteamId = pi.SteamId;
-            SelectedColorIndex = pi.SelectedColorIndex;
-            SelectedSkinIndex = pi.SelectedSkinIndex;
+            SelectedColorSlot = pi.SelectedColorSlot;
+            SelectedSkin = pi.SelectedSkin;
             ApplyColor = pi.ApplyColor;
             ApplySkin = pi.ApplySkin;
             ColorPickMode = pi.ColorPickMode;
@@ -99,8 +100,8 @@ namespace Digi.PaintGun.Features.Sync
 
                 // apply palette info
                 PlayerInfo pi = Main.Palette.GetOrAddPlayerInfo(PaletteOwnerSteamId);
-                pi.SelectedColorIndex = SelectedColorIndex;
-                pi.SelectedSkinIndex = SelectedSkinIndex;
+                pi.SelectedColorSlot = SelectedColorSlot;
+                pi.SelectedSkin = SelectedSkin;
                 pi.ApplyColor = ApplyColor;
                 pi.ApplySkin = ApplySkin;
                 pi.ColorPickMode = ColorPickMode;

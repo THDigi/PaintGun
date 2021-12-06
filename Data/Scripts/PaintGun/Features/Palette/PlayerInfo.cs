@@ -39,7 +39,7 @@ namespace Digi.PaintGun.Features.Palette
                 _colorsMasks[i] = Utils.ColorMaskNormalize(copyFrom[i]);
             }
 
-            OnColorListChanged?.Invoke(this, null);
+            ColorListChanged?.Invoke(this, null);
         }
 
         public void SetColors(uint[] copyFrom)
@@ -55,7 +55,7 @@ namespace Digi.PaintGun.Features.Palette
                 _colorsMasks[i] = ColorExtensions.UnpackHSVFromUint(copyFrom[i]);
             }
 
-            OnColorListChanged?.Invoke(this, null);
+            ColorListChanged?.Invoke(this, null);
         }
 
         public void SetColorAt(int index, Vector3 colorMask)
@@ -64,14 +64,14 @@ namespace Digi.PaintGun.Features.Palette
             if(colorMask != _colorsMasks[index])
             {
                 _colorsMasks[index] = colorMask;
-                OnColorListChanged?.Invoke(this, index);
+                ColorListChanged?.Invoke(this, index);
             }
         }
 
         public Vector3 SelectedColorMask => ColorsMasks[_selectedColorSlot];
 
         int _selectedColorSlot;
-        public int SelectedColorIndex
+        public int SelectedColorSlot
         {
             get { return _selectedColorSlot; }
             set
@@ -80,52 +80,46 @@ namespace Digi.PaintGun.Features.Palette
                 {
                     int oldValue = _selectedColorSlot;
                     _selectedColorSlot = value;
-                    OnColorSlotSelected?.Invoke(this, oldValue, _selectedColorSlot);
+                    ColorSlotSelected?.Invoke(this, oldValue, _selectedColorSlot);
 
                     if(Main.IsPlayer && SteamId == MyAPIGateway.Multiplayer.MyId)
-                        Main.PaletteScheduledSync.ScheduleSyncFor(colorIndex: true);
+                        Main.PaletteScheduledSync.ScheduleSyncFor(color: true);
                 }
             }
         }
 
-        int _selectedSkinIndex;
-        public int SelectedSkinIndex
+        MyStringHash _selectedSkin;
+        public MyStringHash SelectedSkin
         {
-            get { return _selectedSkinIndex; }
+            get { return _selectedSkin; }
             set
             {
-                if(_selectedSkinIndex != value)
+                if(_selectedSkin != value)
                 {
-                    int oldValue = _selectedSkinIndex;
-                    _selectedSkinIndex = value;
-                    OnSkinIndexSelected?.Invoke(this, oldValue, _selectedSkinIndex);
+                    MyStringHash oldValue = _selectedSkin;
+                    _selectedSkin = value;
+                    SkinSelected?.Invoke(this, oldValue, _selectedSkin);
+
+                    SkinInfo skin = Main.Palette.GetSkinInfo(_selectedSkin);
+                    _skinAllowsColor = (skin?.Definition == null || !skin.Definition.DefaultColor.HasValue);
 
                     if(Main.IsPlayer && SteamId == MyAPIGateway.Multiplayer.MyId)
-                        Main.PaletteScheduledSync.ScheduleSyncFor(skinIndex: true);
+                        Main.PaletteScheduledSync.ScheduleSyncFor(skin: true);
                 }
             }
         }
 
+        bool _skinAllowsColor = true;
         bool _applyColor = true;
         public bool ApplyColor
         {
-            get
-            {
-                if(!_applyColor)
-                    return false;
-
-                SkinInfo skin = Main.Palette.GetSkinInfo(_selectedSkinIndex);
-                if(skin?.Definition != null && skin.Definition.DefaultColor.HasValue)
-                    return false;
-
-                return true;
-            }
+            get { return _applyColor && _skinAllowsColor; }
             set
             {
                 if(_applyColor != value)
                 {
                     _applyColor = value;
-                    OnApplyColorChanged?.Invoke(this);
+                    ApplyColorChanged?.Invoke(this);
 
                     if(Main.IsPlayer && SteamId == MyAPIGateway.Multiplayer.MyId)
                         Main.PaletteScheduledSync.ScheduleSyncFor(applyColor: true);
@@ -142,7 +136,7 @@ namespace Digi.PaintGun.Features.Palette
                 if(_applySkin != value)
                 {
                     _applySkin = value;
-                    OnApplySkinChanged?.Invoke(this);
+                    ApplySkinChanged?.Invoke(this);
 
                     if(Main.IsPlayer && SteamId == MyAPIGateway.Multiplayer.MyId)
                         Main.PaletteScheduledSync.ScheduleSyncFor(applySkin: true);
@@ -159,7 +153,7 @@ namespace Digi.PaintGun.Features.Palette
                 if(_colorPickMode != value)
                 {
                     _colorPickMode = value;
-                    OnColorPickModeChanged?.Invoke(this);
+                    ColorPickModeChanged?.Invoke(this);
 
                     if(Main.IsPlayer)
                     {
@@ -170,19 +164,21 @@ namespace Digi.PaintGun.Features.Palette
             }
         }
 
-        public event IndexSelectedDelegate OnColorSlotSelected;
-        public event IndexSelectedDelegate OnSkinIndexSelected;
-        public delegate void IndexSelectedDelegate(PlayerInfo pi, int prevIndex, int newIndex);
+        public event ColorSelectedDelegate ColorSlotSelected;
+        public delegate void ColorSelectedDelegate(PlayerInfo pi, int prevIndex, int newIndex);
 
-        public event PlayerInfoDelegate OnApplyColorChanged;
-        public event PlayerInfoDelegate OnApplySkinChanged;
-        public event PlayerInfoDelegate OnColorPickModeChanged;
+        public event SkinSelectedDelegate SkinSelected;
+        public delegate void SkinSelectedDelegate(PlayerInfo pi, MyStringHash prevSkin, MyStringHash newSkin);
+
+        public event PlayerInfoDelegate ApplyColorChanged;
+        public event PlayerInfoDelegate ApplySkinChanged;
+        public event PlayerInfoDelegate ColorPickModeChanged;
         public delegate void PlayerInfoDelegate(PlayerInfo pi);
 
         /// <summary>
         /// When color list gets updated. If index has no value then the entire list was refreshed.
         /// </summary>
-        public event ColorListChangedDelegate OnColorListChanged;
+        public event ColorListChangedDelegate ColorListChanged;
         public delegate void ColorListChangedDelegate(PlayerInfo pcd, int? index);
 
         PaintGunMod Main => PaintGunMod.Instance;
@@ -209,7 +205,7 @@ namespace Digi.PaintGun.Features.Palette
                 colorMask = SelectedColorMask;
 
             if(ApplySkin)
-                skin = PaintGunMod.Instance.Palette.GetSkinInfo(SelectedSkinIndex).SubtypeId;
+                skin = SelectedSkin;
 
             return new PaintMaterial(colorMask, skin);
         }

@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
-using Digi.ComponentLib;
+﻿using Digi.ComponentLib;
 using Digi.PaintGun.Features.Palette;
 using Sandbox.ModAPI;
+using VRage.Utils;
 using VRageMath;
 using static Draygo.API.HudAPIv2;
 using static Draygo.API.HudAPIv2.MenuRootCategory;
@@ -209,9 +209,11 @@ namespace Digi.PaintGun.Features.ConfigMenu
 
                     if(!v)
                     {
-                        for(int i = 1; i < Main.Palette.BlockSkins.Count; i++) // intentionally skipping 0
+                        foreach(SkinInfo skin in Main.Palette.Skins.Values)
                         {
-                            SkinInfo skin = Main.Palette.BlockSkins[i];
+                            if(skin.SubtypeId == MyStringHash.NullOrEmpty)
+                                continue;
+
                             Main.Settings.hideSkinsFromPalette.Add(skin.SubtypeId.String);
                         }
                     }
@@ -221,18 +223,23 @@ namespace Digi.PaintGun.Features.ConfigMenu
                 },
                 defaultValue: true));
 
-            List<SkinInfo> skins = Main.Palette.BlockSkins;
-            for(int i = 1; i < skins.Count; i++) // intentionally skipping 0
+
+
+            foreach(SkinInfo skinInfo in Main.Palette.Skins.Values)
             {
-                SkinInfo skin = skins[i];
-                ItemToggle item = new ItemToggle(Category_HideSkins, skin.Name,
-                    getter: () => !Main.Settings.hideSkinsFromPalette.Contains(skin.SubtypeId.String),
+                if(skinInfo.SubtypeId == MyStringHash.NullOrEmpty)
+                    continue;
+
+                // necessary to avoid wrong thing being captured
+                SkinInfo captureSkin = skinInfo;
+                ItemToggle item = new ItemToggle(Category_HideSkins, captureSkin.Name,
+                    getter: () => !Main.Settings.hideSkinsFromPalette.Contains(captureSkin.SubtypeId.String),
                     setter: (v) =>
                     {
                         if(!v)
-                            Main.Settings.hideSkinsFromPalette.Add(skin.SubtypeId.String);
+                            Main.Settings.hideSkinsFromPalette.Add(captureSkin.SubtypeId.String);
                         else
-                            Main.Settings.hideSkinsFromPalette.Remove(skin.SubtypeId.String);
+                            Main.Settings.hideSkinsFromPalette.Remove(captureSkin.SubtypeId.String);
                         Main.Settings.ChangedByModConfig();
                     },
                     defaultValue: true);
@@ -240,6 +247,27 @@ namespace Digi.PaintGun.Features.ConfigMenu
                 groupAll.Add(item);
                 groupSkins.Add(item);
             }
+
+
+            //List<SkinInfo> skins = Main.Palette.BlockSkins;
+            //for(int i = 1; i < skins.Count; i++) // intentionally skipping 0
+            //{
+            //    SkinInfo skin = skins[i];
+            //    ItemToggle item = new ItemToggle(Category_HideSkins, skin.Name,
+            //        getter: () => !Main.Settings.hideSkinsFromPalette.Contains(skin.SubtypeId.String),
+            //        setter: (v) =>
+            //        {
+            //            if(!v)
+            //                Main.Settings.hideSkinsFromPalette.Add(skin.SubtypeId.String);
+            //            else
+            //                Main.Settings.hideSkinsFromPalette.Remove(skin.SubtypeId.String);
+            //            Main.Settings.ChangedByModConfig();
+            //        },
+            //        defaultValue: true);
+
+            //    groupAll.Add(item);
+            //    groupSkins.Add(item);
+            //}
             #endregion Palette >>> SkinsShown
 
             #region AimInfo

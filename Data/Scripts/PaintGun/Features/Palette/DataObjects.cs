@@ -94,8 +94,8 @@ namespace Digi.PaintGun.Features.Palette
                 ColorMask = ColorExtensions.UnpackHSVFromUint(material.ColorMaskPacked.Value);
 
             Skin = null;
-            if(material.SkinIndex.HasValue)
-                Skin = PaintGunMod.Instance.Palette.GetSkinInfo(material.SkinIndex.Value).SubtypeId;
+            if(material.Skin.HasValue)
+                Skin = PaintGunMod.Instance.Palette.GetSkinInfo(material.Skin.Value).SubtypeId;
         }
 
         public bool PaintEquals(BlockMaterial blockMaterial)
@@ -142,9 +142,9 @@ namespace Digi.PaintGun.Features.Palette
         {
             ColorMask = ColorExtensions.UnpackHSVFromUint(material.ColorMaskPacked);
 
-            SkinInfo skin = PaintGunMod.Instance.Palette.GetSkinInfo(material.SkinIndex);
+            SkinInfo skin = PaintGunMod.Instance.Palette.GetSkinInfo(material.Skin);
             if(skin == null)
-                throw new ArgumentException($"BlockMaterial :: Unknown skin index={material.SkinIndex}");
+                throw new ArgumentException($"BlockMaterial :: Unknown skin index={material.Skin}");
 
             Skin = skin.SubtypeId;
         }
@@ -167,12 +167,12 @@ namespace Digi.PaintGun.Features.Palette
         public readonly uint? ColorMaskPacked;
 
         [ProtoMember(2)]
-        public readonly int? SkinIndex;
+        public readonly MyStringHash? Skin;
 
-        public SerializedPaintMaterial(uint? colorMaskPacked, int? skinIndex)
+        public SerializedPaintMaterial(uint? colorMaskPacked, MyStringHash? skin)
         {
             ColorMaskPacked = colorMaskPacked;
-            SkinIndex = skinIndex;
+            Skin = skin;
         }
 
         public SerializedPaintMaterial(PaintMaterial material)
@@ -181,21 +181,12 @@ namespace Digi.PaintGun.Features.Palette
             if(material.ColorMask.HasValue)
                 ColorMaskPacked = material.ColorMask.Value.PackHSVToUint();
 
-            SkinIndex = null;
-            if(material.Skin.HasValue)
-            {
-                SkinInfo skin = PaintGunMod.Instance.Palette.GetSkinInfo(material.Skin.Value);
-
-                if(skin == null)
-                    throw new ArgumentException($"Skin {material.Skin.ToString()} does not exist!");
-
-                SkinIndex = skin.Index;
-            }
+            Skin = material.Skin;
         }
 
         public override string ToString()
         {
-            return $"{(ColorMaskPacked.HasValue ? Utils.ColorMaskToHSVText(ColorExtensions.UnpackHSVFromUint(ColorMaskPacked.Value)) : "(NoColor)")}/{(SkinIndex.HasValue ? SkinIndex.Value.ToString() : "(NoSkinIndex)")}";
+            return $"{(ColorMaskPacked.HasValue ? Utils.ColorMaskToHSVText(ColorExtensions.UnpackHSVFromUint(ColorMaskPacked.Value)) : "(NoColor)")}/{(Skin.HasValue ? Skin.Value.ToString() : "(NoSkinIndex)")}";
         }
     }
 
@@ -206,29 +197,23 @@ namespace Digi.PaintGun.Features.Palette
         public readonly uint ColorMaskPacked;
 
         [ProtoMember(2)]
-        public readonly int SkinIndex;
+        public readonly MyStringHash Skin;
 
-        public SerializedBlockMaterial(uint colorMaskPacked, int skinIndex)
+        public SerializedBlockMaterial(uint colorMaskPacked, MyStringHash skin)
         {
             ColorMaskPacked = colorMaskPacked;
-            SkinIndex = skinIndex;
+            Skin = skin;
         }
 
         public SerializedBlockMaterial(BlockMaterial material)
         {
             ColorMaskPacked = material.ColorMask.PackHSVToUint();
-
-            SkinInfo skin = PaintGunMod.Instance.Palette.GetSkinInfo(material.Skin);
-
-            if(skin == null)
-                throw new ArgumentException($"Skin {material.Skin.ToString()} does not exist!");
-
-            SkinIndex = skin.Index;
+            Skin = material.Skin;
         }
 
         public override string ToString()
         {
-            return $"{Utils.ColorMaskToHSVText(ColorExtensions.UnpackHSVFromUint(ColorMaskPacked))}/{SkinIndex.ToString()}";
+            return $"{Utils.ColorMaskToHSVText(ColorExtensions.UnpackHSVFromUint(ColorMaskPacked))}/{Skin.ToString()}";
         }
     }
 }

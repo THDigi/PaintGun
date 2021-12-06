@@ -7,6 +7,7 @@ using Sandbox.ModAPI.Weapons;
 using VRage.Game;
 using VRage.Game.Entity.UseObject;
 using VRage.Game.ModAPI;
+using VRage.Utils;
 using VRageMath;
 
 namespace Digi.PaintGun.Features.Palette
@@ -55,8 +56,8 @@ namespace Digi.PaintGun.Features.Palette
                 }
 #endif
 
-                LocalInfo.SelectedColorIndex = player.SelectedBuildColorSlot;
-                LocalInfo.SetColorAt(LocalInfo.SelectedColorIndex, player.BuildColorSlots[LocalInfo.SelectedColorIndex]);
+                LocalInfo.SelectedColorSlot = player.SelectedBuildColorSlot;
+                LocalInfo.SetColorAt(LocalInfo.SelectedColorSlot, player.BuildColorSlots[LocalInfo.SelectedColorSlot]);
                 return;
             }
 
@@ -90,7 +91,7 @@ namespace Digi.PaintGun.Features.Palette
             {
                 if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.SWITCH_LEFT) || MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.SWITCH_RIGHT))
                 {
-                    LocalInfo.SelectedColorIndex = MyAPIGateway.Session.Player.SelectedBuildColorSlot;
+                    LocalInfo.SelectedColorSlot = MyAPIGateway.Session.Player.SelectedBuildColorSlot;
                 }
             }
         }
@@ -169,7 +170,7 @@ namespace Digi.PaintGun.Features.Palette
             if(cycleDir == 0)
                 return;
 
-            if(cycleSkins && Main.Palette.SkinsForHUD.Count <= 0)
+            if(cycleSkins && !Main.Palette.HasAnySkin)
                 return;
 
             // skin or color applying is off, can't cycle turned off palette
@@ -185,7 +186,7 @@ namespace Digi.PaintGun.Features.Palette
 
                 if(!cycleSkins)
                 {
-                    SkinInfo skin = Main.Palette.GetSkinInfo(LocalInfo.SelectedSkinIndex);
+                    SkinInfo skin = Main.Palette.GetSkinInfo(LocalInfo.SelectedSkin);
                     if(skin?.Definition != null && skin.Definition.DefaultColor.HasValue)
                     {
                         message = $"[{skin.Name}] skin cannot be recolored.";
@@ -204,68 +205,76 @@ namespace Digi.PaintGun.Features.Palette
             {
                 if(cycleSkins)
                 {
-                    int index = LocalInfo.SelectedSkinIndex;
-                    do
+                    for(int i = 0; i < Main.Palette.SkinsForHUD.Count; i++)
                     {
-                        if(++index >= Main.Palette.BlockSkins.Count)
-                            index = 0;
+                        SkinInfo skin = Main.Palette.SkinsForHUD[i];
+                        if(skin.SubtypeId == LocalInfo.SelectedSkin)
+                        {
+                            i++;
+                            if(i < Main.Palette.SkinsForHUD.Count)
+                                LocalInfo.SelectedSkin = Main.Palette.SkinsForHUD[i].SubtypeId;
+                            else
+                                LocalInfo.SelectedSkin = MyStringHash.NullOrEmpty;
+                            break;
+                        }
                     }
-                    while(!Main.Palette.GetSkinInfo(index).Selectable);
-
-                    LocalInfo.SelectedSkinIndex = index;
                 }
                 else
                 {
-                    int index = LocalInfo.SelectedColorIndex;
+                    int slot = LocalInfo.SelectedColorSlot;
                     if(Main.Settings.selectColorZigZag)
                     {
-                        if(index >= 13)
-                            index = 0;
-                        else if(index >= 7)
-                            index -= 6;
+                        if(slot >= 13)
+                            slot = 0;
+                        else if(slot >= 7)
+                            slot -= 6;
                         else
-                            index += 7;
+                            slot += 7;
                     }
                     else
                     {
-                        if(++index >= LocalInfo.ColorsMasks.Count)
-                            index = 0;
+                        if(++slot >= LocalInfo.ColorsMasks.Count)
+                            slot = 0;
                     }
 
-                    LocalInfo.SelectedColorIndex = index;
+                    LocalInfo.SelectedColorSlot = slot;
                 }
             }
             else
             {
                 if(cycleSkins)
                 {
-                    int index = LocalInfo.SelectedSkinIndex;
-                    do
+                    for(int i = (Main.Palette.SkinsForHUD.Count - 1); i >= 0; i--)
                     {
-                        if(--index < 0)
-                            index = (Main.Palette.BlockSkins.Count - 1);
+                        SkinInfo skin = Main.Palette.SkinsForHUD[i];
+                        if(skin.SubtypeId == LocalInfo.SelectedSkin)
+                        {
+                            i--;
+                            if(i >= 0)
+                                LocalInfo.SelectedSkin = Main.Palette.SkinsForHUD[i].SubtypeId;
+                            else
+                                LocalInfo.SelectedSkin = Main.Palette.SkinsForHUD[Main.Palette.SkinsForHUD.Count - 1].SubtypeId;
+                            break;
+                        }
                     }
-                    while(!Main.Palette.GetSkinInfo(index).Selectable);
-
-                    LocalInfo.SelectedSkinIndex = index;
                 }
                 else
                 {
-                    int index = LocalInfo.SelectedColorIndex;
+                    int slot = LocalInfo.SelectedColorSlot;
                     if(Main.Settings.selectColorZigZag)
                     {
-                        if(index >= 7)
-                            index -= 7;
+                        if(slot >= 7)
+                            slot -= 7;
                         else
-                            index += 6;
+                            slot += 6;
                     }
                     else
                     {
-                        if(--index < 0)
-                            index = (LocalInfo.ColorsMasks.Count - 1);
+                        if(--slot < 0)
+                            slot = (LocalInfo.ColorsMasks.Count - 1);
                     }
 
-                    LocalInfo.SelectedColorIndex = index;
+                    LocalInfo.SelectedColorSlot = slot;
                 }
             }
 
@@ -275,7 +284,7 @@ namespace Digi.PaintGun.Features.Palette
             }
             else
             {
-                MyAPIGateway.Session.Player.SelectedBuildColorSlot = LocalInfo.SelectedColorIndex;
+                MyAPIGateway.Session.Player.SelectedBuildColorSlot = LocalInfo.SelectedColorSlot;
                 Main.HUDSounds.PlayClick();
             }
         }
