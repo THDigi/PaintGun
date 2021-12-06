@@ -30,18 +30,7 @@ namespace Digi.PaintGun.Features.Tool
             set
             {
                 _toolPreviewPaint = value;
-
-                if(_toolPreviewPaint.HasValue)
-                {
-                    if(_toolPreviewPaint.Value.ColorMask.HasValue)
-                        LocalTool.PaintPreviewColorRGB = Utils.ColorMaskToRGB(_toolPreviewPaint.Value.ColorMask.Value);
-                    else
-                        LocalTool.PaintPreviewColorRGB = Utils.ColorMaskToRGB(Main.Palette.DefaultColorMask);
-                }
-                else
-                {
-                    LocalTool.PaintPreviewColorRGB = null;
-                }
+                LocalTool.PaintPreviewMaterial = value;
             }
         }
 

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Digi.PaintGun.Features.Palette;
 using Digi.PaintGun.Utilities;
+using Sandbox.Definitions;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Weapons;
@@ -29,18 +30,16 @@ namespace Digi.PaintGun.Features.Tool
         /// </summary>
         public bool JustInitialized { get; private set; }
 
-        public Color PaintColorRGB { get; private set; }
-
-        private Color? _paintPreviewColorRGB;
-        public Color? PaintPreviewColorRGB
+        private PaintMaterial? _paintPreviewMaterial;
+        public PaintMaterial? PaintPreviewMaterial
         {
-            get { return _paintPreviewColorRGB; }
+            get { return _paintPreviewMaterial; }
             set
             {
-                _paintPreviewColorRGB = value;
+                _paintPreviewMaterial = value;
 
-                if(_paintPreviewColorRGB.HasValue)
-                    SetPaintColorRGB(_paintPreviewColorRGB.Value);
+                if(_paintPreviewMaterial.HasValue)
+                    OwnerPaletteUpdate(OwnerInfo);
             }
         }
 
@@ -49,6 +48,9 @@ namespace Digi.PaintGun.Features.Tool
         public PlayerInfo OwnerInfo { get; private set; }
 
         int SprayCooldown;
+        Color ParticleColor;
+        MyEntitySubpart MagazineSubpart;
+
         readonly PaintGunMod Main;
         readonly List<Particle> Particles = new List<Particle>(30);
         readonly MyEntity3DSoundEmitter SoundEmitter = new MyEntity3DSoundEmitter(null);
@@ -131,6 +133,9 @@ namespace Digi.PaintGun.Features.Tool
             //SoundEmitter.Entity = (MyEntity)Rifle;
             UpdateSprayVolume();
 
+            if(!Rifle.TryGetSubpart("magazine", out MagazineSubpart))
+                throw new Exception($"PaintGun model doesn't have the expected magazine subpart, restarting game or re-subscribing to mod could fix.");
+
             if(Rifle.GunBase == null)
                 throw new NullReferenceException($"{GetType().Name} :: Rifle.GunBase == null; ent={Rifle}; owner={Rifle.Owner}/{Rifle.OwnerIdentityId.ToString()}");
 
@@ -196,12 +201,14 @@ namespace Digi.PaintGun.Features.Tool
             if(OwnerInfo == null)
                 throw new NullReferenceException($"{GetType().Name} :: OwnerInfo == null");
 
-            OwnerPaletteUpdated(OwnerInfo);
             OwnerInfo.OnColorSlotSelected += OwnerColorSlotSelected;
             OwnerInfo.OnColorListChanged += OwnerColorListChanged;
-            OwnerInfo.OnApplyColorChanged += OwnerPaletteUpdated;
-            OwnerInfo.OnApplySkinChanged += OwnerPaletteUpdated;
+            OwnerInfo.OnSkinIndexSelected += OwnerSkinIndexSelected;
+            OwnerInfo.OnApplyColorChanged += OwnerPaletteUpdate;
+            OwnerInfo.OnApplySkinChanged += OwnerPaletteUpdate;
             OwnerInfo.OnColorPickModeChanged += OwnerColorPickModeChanged;
+
+            UpdatePaintCanMaterial();
             return true;
         }
 
@@ -211,6 +218,7 @@ namespace Digi.PaintGun.Features.Tool
         public void Clear(bool returnParticles = true)
         {
             Rifle = null;
+            MagazineSubpart = null;
             Spraying = false;
             SprayCooldown = 0;
             Ammo = 0;
@@ -219,14 +227,14 @@ namespace Digi.PaintGun.Features.Tool
             SoundEmitter.Entity = null;
             OwnerSteamId = 0;
             OwnerIsLocalPlayer = false;
-            PaintPreviewColorRGB = null;
+            PaintPreviewMaterial = null;
 
             if(OwnerInfo != null)
             {
                 OwnerInfo.OnColorSlotSelected -= OwnerColorSlotSelected;
                 OwnerInfo.OnColorListChanged -= OwnerColorListChanged;
-                OwnerInfo.OnApplyColorChanged -= OwnerPaletteUpdated;
-                OwnerInfo.OnApplySkinChanged -= OwnerPaletteUpdated;
+                OwnerInfo.OnApplyColorChanged -= OwnerPaletteUpdate;
+                OwnerInfo.OnApplySkinChanged -= OwnerPaletteUpdate;
                 OwnerInfo.OnColorPickModeChanged -= OwnerColorPickModeChanged;
                 OwnerInfo = null;
             }
@@ -258,6 +266,15 @@ namespace Digi.PaintGun.Features.Tool
             {
                 MyFixedPoint? amount = Rifle?.Owner?.GetInventory()?.GetItemAmount(Main.Constants.PAINT_MAG_ID);
                 Ammo = (amount.HasValue ? (int)amount.Value : 0);
+            }
+
+            if(MagazineSubpart != null)
+            {
+                bool VisibleMag = (Ammo > 0);
+                if(MagazineSubpart.Render.Visible != VisibleMag)
+                {
+                    MagazineSubpart.Render.Visible = VisibleMag;
+                }
             }
 
             if(SoundEmitter == null)
@@ -353,7 +370,7 @@ namespace Digi.PaintGun.Features.Tool
             if(!paused && spawn)
             {
                 Particle particle = Main.ToolHandler.GetPooledParticle();
-                particle.Init(matrix, PaintColorRGB);
+                particle.Init(matrix, ParticleColor);
                 Particles.Add(particle);
             }
 
@@ -407,42 +424,66 @@ namespace Digi.PaintGun.Features.Tool
             Particles.Clear();
         }
 
-        void OwnerColorListChanged(PlayerInfo pi, int? index)
-        {
-            OwnerPaletteUpdated(pi);
-        }
-
-        void OwnerColorSlotSelected(PlayerInfo pi, int prevIndex, int newIndex)
-        {
-            OwnerPaletteUpdated(pi);
-        }
-
-        void OwnerPaletteUpdated(PlayerInfo pi)
-        {
-            if(PaintPreviewColorRGB.HasValue)
-                return;
-
-            if(pi.ApplyColor)
-                SetPaintColorMask(pi.SelectedColorMask);
-            else
-                SetPaintColorMask(Main.Palette.DefaultColorMask);
-        }
-
         void OwnerColorPickModeChanged(PlayerInfo pi)
         {
             SprayCooldown = SprayCooldownColorpicker;
         }
 
-        void SetPaintColorRGB(Color colorRGB)
+        void OwnerColorListChanged(PlayerInfo pi, int? index)
         {
-            PaintColorRGB = colorRGB;
-            Rifle.SetEmissiveParts("ColorLabel", colorRGB, 0);
+            UpdatePaintCanMaterial();
         }
 
-        void SetPaintColorMask(Vector3 colorMask)
+        void OwnerColorSlotSelected(PlayerInfo pi, int prevIndex, int newIndex)
         {
-            PaintColorRGB = Utils.ColorMaskToRGB(colorMask);
-            Rifle.SetEmissiveParts("ColorLabel", PaintColorRGB, 0);
+            UpdatePaintCanMaterial();
+        }
+
+        void OwnerSkinIndexSelected(PlayerInfo pi, int prevIndex, int newIndex)
+        {
+            UpdatePaintCanMaterial();
+        }
+
+        void OwnerPaletteUpdate(PlayerInfo pi)
+        {
+            UpdatePaintCanMaterial();
+        }
+
+        void UpdatePaintCanMaterial()
+        {
+            PaintMaterial material = PaintPreviewMaterial ?? OwnerInfo.GetPaintMaterial();
+
+            MyDefinitionManager.MyAssetModifiers skinRender = default(MyDefinitionManager.MyAssetModifiers);
+            Vector3? skinColorOverride = null;
+
+            if(material.Skin.HasValue)
+            {
+                skinRender = MyDefinitionManager.Static.GetAssetModifierDefinitionForRender(material.Skin.Value);
+
+                MyAssetModifierDefinition skinDef = MyDefinitionManager.Static.GetAssetModifierDefinition(new MyDefinitionId(typeof(MyObjectBuilder_AssetModifierDefinition), material.Skin.Value));
+                if(skinDef != null && skinDef.DefaultColor.HasValue)
+                {
+                    skinColorOverride = skinDef.DefaultColor.Value.ColorToHSVDX11();
+                }
+            }
+
+            Vector3 colorMask = skinColorOverride ?? material.ColorMask ?? Main.Palette.DefaultColorMask;
+
+            IMyEntity paintEntity = (MagazineSubpart as IMyEntity) ?? Rifle;
+
+            paintEntity.Render.MetalnessColorable = skinRender.MetalnessColorable;
+            paintEntity.Render.TextureChanges = skinRender.SkinTextureChanges;
+
+            // required to properly update skin (like glamour not being recolorable
+            paintEntity.Render.RemoveRenderObjects();
+            paintEntity.Render.AddRenderObjects();
+
+            if(!paintEntity.Render.EnableColorMaskHsv)
+                paintEntity.Render.EnableColorMaskHsv = true;
+
+            paintEntity.Render.ColorMaskHsv = colorMask;
+
+            ParticleColor = Utils.ColorMaskToRGB(colorMask);
         }
     }
 }
