@@ -35,13 +35,8 @@ namespace Digi.PaintGun.Features.Testing
         {
         }
 
-        protected override void UpdateBeforeSim(int tick)
-        {
-        }
-
+        //SpraySoundEmitter SpraySound;
         //MyEntity Ent;
-        //MyEntity3DSoundEmitter SoundEmitter;
-        //bool Spraying = true;
 
         //void SpawnSpraySound()
         //{
@@ -51,49 +46,32 @@ namespace Digi.PaintGun.Features.Testing
         //    MyEntities.Add(Ent);
         //    Ent.PositionComp.SetPosition(MyAPIGateway.Session.Camera.WorldMatrix.Translation);
 
-        //    SoundEmitter = new MyEntity3DSoundEmitter(Ent);
+        //    SpraySound = new SpraySoundEmitter(() => Ent.WorldMatrix.Translation, () => false);
 
         //    MyVisualScriptLogicProvider.AddGPS("spray", "", Ent.WorldMatrix.Translation, new Color(255, 0, 255));
         //}
 
-        protected override void UpdateAfterSim(int tick)
-        {
-            //if(Ent == null)
-            //{
-            //    if(MyAPIGateway.Input.IsNewKeyPressed(MyKeys.L))
-            //    {
-            //        SpawnSpraySound();
-            //    }
+        //protected override void UpdateAfterSim(int tick)
+        //{
+        //    if(Ent == null)
+        //    {
+        //        if(MyAPIGateway.Input.IsNewKeyPressed(MyKeys.L))
+        //        {
+        //            SpawnSpraySound();
+        //        }
 
-            //    return;
-            //}
+        //        return;
+        //    }
 
-            //if(MyAPIGateway.Input.IsNewKeyPressed(MyKeys.L))
-            //{
-            //    Spraying = !Spraying;
-            //    MyAPIGateway.Utilities.ShowNotification($"Spray={Spraying}");
-            //}
+        //    if(MyAPIGateway.Input.IsNewKeyPressed(MyKeys.L))
+        //    {
+        //        //SoundEmitter.CustomVolume = Main.Settings.spraySoundVolume;
+        //        SpraySound.PlaySpray = !SpraySound.PlaySpray;
+        //        MyAPIGateway.Utilities.ShowNotification($"Spray={SpraySound.PlaySpray}");
+        //    }
 
-            //bool OwnerIsLocalPlayer = MyAPIGateway.Input.IsAnyShiftKeyPressed();
-            //bool force2D = (OwnerIsLocalPlayer);
-
-            //if(OwnerIsLocalPlayer && SoundEmitter.IsPlaying && SoundEmitter.Force2D != force2D)
-            //{
-            //    SoundEmitter.StopSound(false);
-            //}
-
-            //if(Spraying && !SoundEmitter.IsPlaying)
-            //{
-            //    SoundEmitter.CustomVolume = (force2D ? Main.Settings.spraySoundVolume * 0.5f : Main.Settings.spraySoundVolume);
-            //    SoundEmitter.Force2D = force2D;
-            //    SoundEmitter.PlaySound(PaintGunItem.SpraySound, force2D: force2D);
-            //}
-
-            //if((!Spraying) && SoundEmitter.IsPlaying)
-            //{
-            //    SoundEmitter.StopSound(false);
-            //}
-        }
+        //    SpraySound.Update(Main.Settings.spraySoundVolume);
+        //}
 
         protected override void UpdateDraw()
         {

@@ -160,6 +160,7 @@
     <Compile Include="Features\Tool\SelectionGUI.cs" />
     <Compile Include="Features\Tool\SelectionState.cs" />
     <Compile Include="Features\Tool\LocalToolDescription.cs" />
+    <Compile Include="Features\Tool\SpraySoundEmitter.cs" />
     <Compile Include="Features\Tool\ToolHandler.cs" />
     <Compile Include="Features\UIEdit.cs" />
     <Compile Include="GameSession.cs" />

@@ -53,9 +53,9 @@ namespace Digi.PaintGun.Features.Tool
 
         readonly PaintGunMod Main;
         readonly List<Particle> Particles = new List<Particle>(30);
-        readonly MyEntity3DSoundEmitter SoundEmitter = new MyEntity3DSoundEmitter(null);
+        readonly SpraySoundEmitter SoundEmitter;
 
-        static readonly MySoundPair SpraySound = new MySoundPair("PaintGunSpray");
+        public static readonly MySoundPair SpraySound = new MySoundPair("PaintGunSpray");
         static readonly MyStringId SprayMaterial = MyStringId.GetOrCompute("PaintGun_Spray");
         const BlendTypeEnum SprayBlendType = BlendTypeEnum.SDR;
 
@@ -69,53 +69,14 @@ namespace Digi.PaintGun.Features.Tool
             if(Main.IsDedicatedServer)
                 throw new ArgumentException($"{GetType().Name} got created on DS side, not designed for that.");
 
-            Main.Settings.SettingsLoaded += UpdateSprayVolume;
-
-            //SoundEmitter.CustomMaxDistance = 30f;
-
-            // remove all 2D forcing conditions
-            SoundEmitter.EmitterMethods[(int)MyEntity3DSoundEmitter.MethodsEnum.ShouldPlay2D].ClearImmediate();
-
-            if(MyAPIGateway.Session.SessionSettings.RealisticSound)
-            {
-                // remove some unnecessary conditions
-                foreach(ConcurrentCachingList<Delegate> funcList in SoundEmitter.EmitterMethods.Values)
-                {
-                    foreach(Delegate func in funcList)
-                    {
-                        switch(func.Method.Name)
-                        {
-                            case "IsCurrentWeapon":
-                            case "IsControlledEntity":
-                            case "IsOnSameGrid":
-                                funcList.Remove(func);
-                                break;
-                        }
-                    }
-                }
-
-                // custom IsCurrentWeapon because Entity is not set for this emitter to detect on its own
-                SoundEmitter.EmitterMethods[(int)MyEntity3DSoundEmitter.MethodsEnum.CanHear].Add(new Func<bool>(EmitterCanHear));
-
-                //foreach(KeyValuePair<int, ConcurrentCachingList<Delegate>> kv in SoundEmitter.EmitterMethods)
-                //{
-                //    kv.Value.ApplyChanges();
-                //    foreach(Delegate func in kv.Value)
-                //    {
-                //        Log.Info($"{((MyEntity3DSoundEmitter.MethodsEnum)kv.Key)} {func.Method.Name}");
-                //    }
-                //}
-            }
+            SoundEmitter = new SpraySoundEmitter(GetSpraySoundPosition, IsHoldingPaintGun);
         }
 
         public void Unload()
         {
-            SoundEmitter.Cleanup();
+            SoundEmitter.Dispose();
             Clear(false);
             Particles.Clear();
-
-            if(Main?.Settings != null)
-                Main.Settings.SettingsLoaded -= UpdateSprayVolume;
         }
 
         /// <summary>
@@ -126,12 +87,7 @@ namespace Digi.PaintGun.Features.Tool
             if(entity == null)
                 throw new ArgumentException($"{GetType().Name} :: got created with null entity!");
 
-            if(SoundEmitter == null)
-                throw new NullReferenceException($"{GetType().Name} :: soundEmitter is null");
-
             Rifle = entity;
-            //SoundEmitter.Entity = (MyEntity)Rifle;
-            UpdateSprayVolume();
 
             if(!Rifle.TryGetSubpart("magazine", out MagazineSubpart))
                 throw new Exception($"PaintGun model doesn't have the expected magazine subpart, restarting game or re-subscribing to mod could fix.");
@@ -223,8 +179,7 @@ namespace Digi.PaintGun.Features.Tool
             SprayCooldown = 0;
             Ammo = 0;
             JustInitialized = false;
-            SoundEmitter.StopSound(true);
-            SoundEmitter.Entity = null;
+            SoundEmitter.Stop();
             OwnerSteamId = 0;
             OwnerIsLocalPlayer = false;
             PaintPreviewMaterial = null;
@@ -243,18 +198,13 @@ namespace Digi.PaintGun.Features.Tool
             ClearParticles();
         }
 
-        bool EmitterCanHear()
+        bool IsHoldingPaintGun()
         {
             if(!OwnerIsLocalPlayer)
                 return false;
 
             IMyCharacter chr = MyAPIGateway.Session.ControlledObject as IMyCharacter;
             return (chr != null && chr.EquippedTool == Rifle);
-        }
-
-        void UpdateSprayVolume()
-        {
-            SoundEmitter.CustomVolume = Main.Settings.spraySoundVolume;
         }
 
         public bool UpdateSimulation()
@@ -278,64 +228,34 @@ namespace Digi.PaintGun.Features.Tool
                 }
             }
 
-            if(SoundEmitter == null)
+            if(SprayCooldown > 0)
+                SprayCooldown--;
+
+            SoundEmitter.PlaySpray = (Spraying && SprayCooldown == 0 && !OwnerInfo.ColorPickMode);
+            SoundEmitter.Update(Main.Settings.spraySoundVolume);
+
+            return true;
+        }
+
+        Vector3D GetSpraySoundPosition()
+        {
+            IMyCharacter owner = Rifle.Owner as IMyCharacter;
+            if(owner != null)
             {
-                Log.Error($"{GetType().Name} :: SoundEmitter for PaintGunItem entId={Rifle.EntityId.ToString()} is null for some reason.", Log.PRINT_MESSAGE);
-                return false;
-            }
+                MatrixD headMatrix = owner.GetHeadMatrix(true, true);
+                Vector3D soundPos = headMatrix.Translation + headMatrix.Down * 0.1 + headMatrix.Forward * 0.6;
 
-            if(SprayCooldown == 0)
-            {
-                if(Main.Tick % 10 == 0)
-                {
-                    SoundEmitter.Update();
-                }
+                // HACK: sound somehow plays ahead of position, adjusted by trial and error
+                if(owner.Physics != null)
+                    soundPos -= owner.Physics.LinearVelocity / Constants.TICKS_PER_SECOND; // remove 1 tick worth of velocity
 
-                if(Spraying && !OwnerInfo.ColorPickMode)
-                {
-                    Vector3D soundPos;
-
-                    IMyCharacter owner = Rifle.Owner as IMyCharacter;
-                    if(owner != null)
-                    {
-                        MatrixD headMatrix = owner.GetHeadMatrix(true, true);
-                        soundPos = headMatrix.Translation + headMatrix.Down * 0.1 + headMatrix.Forward * 0.6;
-
-                        // HACK: sound somehow plays ahead of position, adjusted by trial and error
-                        if(owner.Physics != null)
-                            soundPos -= owner.Physics.LinearVelocity / Constants.TICKS_PER_SECOND; // remove 1 tick worth of velocity
-                    }
-                    else
-                    {
-                        MatrixD muzzleMatrix = Rifle.GunBase.GetMuzzleWorldMatrix();
-                        soundPos = muzzleMatrix.Translation + muzzleMatrix.Forward * 0.2;
-                    }
-
-                    //MyTransparentGeometry.AddPointBillboard(MyStringId.GetOrCompute("WhiteDot"), Color.Red, soundPos, 0.01f, 0, blendType: BlendTypeEnum.AdditiveTop);
-                    SoundEmitter.SetPosition(soundPos);
-
-                    if(SoundEmitter.CustomVolume != Main.Settings.spraySoundVolume)
-                    {
-                        SoundEmitter.CustomVolume = Main.Settings.spraySoundVolume;
-                    }
-
-                    if(!SoundEmitter.IsPlaying)
-                    {
-                        SoundEmitter.PlaySound(SpraySound, stopPrevious: true, skipIntro: true, force2D: false);
-                    }
-                }
-
-                if((!Spraying || OwnerInfo.ColorPickMode) && SoundEmitter.IsPlaying)
-                {
-                    SoundEmitter.StopSound(false);
-                }
+                return soundPos;
             }
             else
             {
-                SprayCooldown--;
+                MatrixD muzzleMatrix = Rifle.GunBase.GetMuzzleWorldMatrix();
+                return muzzleMatrix.Translation + muzzleMatrix.Forward * 0.2;
             }
-
-            return true;
         }
 
         public void UpdateDraw()
