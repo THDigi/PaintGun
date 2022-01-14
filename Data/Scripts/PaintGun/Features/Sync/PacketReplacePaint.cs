@@ -41,7 +41,7 @@ namespace Digi.PaintGun.Features.Sync
             }
         }
 
-        public override void Received(ref bool relay)
+        public override void Received(ref RelayMode relay)
         {
             // TODO: check access when creative tools is properly exposed for server side checking
 
@@ -81,7 +81,7 @@ namespace Digi.PaintGun.Features.Sync
             BlockMaterial oldPaint = new BlockMaterial(OldPaint);
 
             Main.Painting.ReplaceColorInGrid(false, grid, oldPaint, newPaint, IncludeSubgrids, OriginalSenderSteamId);
-            relay = true;
+            relay = RelayMode.RelayOriginal;
         }
     }
 }

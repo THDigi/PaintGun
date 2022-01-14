@@ -28,9 +28,9 @@ namespace Digi.PaintGun.Features.Sync
             Network.SendToServer(this);
         }
 
-        public override void Received(ref bool relay)
+        public override void Received(ref RelayMode relay)
         {
-            relay = true;
+            relay = RelayMode.RelayOriginal;
 
             if(Constants.NETWORK_ACTION_LOGGING)
                 Log.Info($"{GetType().Name} :: Received palette slot update; player={Utils.PrintPlayerName(OriginalSenderSteamId)}, slot={ColorIndex.ToString()}; color={ColorExtensions.UnpackHSVFromUint(ColorMaskPacked).ToString()}");

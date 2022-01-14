@@ -23,7 +23,7 @@ namespace Digi.PaintGun.Features.Sync
                 Network.SendToPlayer(this, sendTo);
         }
 
-        public override void Received(ref bool relay)
+        public override void Received(ref RelayMode relay)
         {
             if(Main.IsServer)
                 MyLog.Default.WriteLineAndConsole($"{PaintGunMod.MOD_NAME} :: warning message from {Utils.PrintPlayerName(OriginalSenderSteamId)} saying: {Message}");

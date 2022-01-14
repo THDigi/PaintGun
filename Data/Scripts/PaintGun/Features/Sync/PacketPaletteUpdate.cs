@@ -58,7 +58,7 @@ namespace Digi.PaintGun.Features.Sync
             //PackedColorMasks = null;
         }
 
-        public override void Received(ref bool relay)
+        public override void Received(ref RelayMode relay)
         {
             // too frequent
             //if(Constants.NETWORK_ACTION_LOGGING)
@@ -66,7 +66,7 @@ namespace Digi.PaintGun.Features.Sync
             //    Log.Info($@"{GetType().Name} :: Received pallete update for {Utils.PrintPlayerName(SteamId)}; SelectedColorIndex={Utils.PrintNullable(SelectedColorIndex)}, SelectedSkinIndex={Utils.PrintNullable(SelectedSkinIndex)}, ApplyColor={Utils.PrintNullable(ApplyColor)}, ApplySkin={Utils.PrintNullable(ApplySkin)}, ColorPickMode={Utils.PrintNullable(ColorPickMode)}");
             //}
 
-            relay = true;
+            relay = RelayMode.RelayOriginal;
 
             PlayerInfo pi = Main.Palette.GetOrAddPlayerInfo(OriginalSenderSteamId);
 

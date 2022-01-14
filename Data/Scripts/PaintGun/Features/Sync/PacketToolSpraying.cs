@@ -21,9 +21,9 @@ namespace Digi.PaintGun.Features.Sync
             Network.SendToServer(this);
         }
 
-        public override void Received(ref bool relay)
+        public override void Received(ref RelayMode relay)
         {
-            relay = true;
+            relay = RelayMode.RelayOriginal;
 
             if(Main.IsPlayer)
             {

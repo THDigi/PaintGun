@@ -42,7 +42,7 @@ namespace Digi.PaintGun.Features.Sync
             }
         }
 
-        public override void Received(ref bool relay)
+        public override void Received(ref RelayMode relay)
         {
             if(Main.IsServer && !Main.IgnoreAmmoConsumption) // ammo consumption, only needed server side
             {
@@ -95,7 +95,7 @@ namespace Digi.PaintGun.Features.Sync
             }
 
             if(DoAction(grid))
-                relay = true;
+                relay = RelayMode.RelayOriginal;
         }
 
         bool DoAction(IMyCubeGrid grid)

@@ -1,5 +1,7 @@
-﻿using ProtoBuf;
+﻿using System;
+using ProtoBuf;
 using Sandbox.ModAPI;
+using VRage.Game.ModAPI;
 
 namespace Digi.NetworkLib
 {
@@ -14,13 +16,27 @@ namespace Digi.NetworkLib
 
         public PacketBase()
         {
-            OriginalSenderSteamId = MyAPIGateway.Multiplayer.MyId;
+            if(MyAPIGateway.Multiplayer == null || MyAPIGateway.Utilities == null)
+            {
+                string name = GetType().Name;
+
+                // Throwing exceptions early causes them to kick player to menu which has bad side effects.
+                // So instead, I'm gonna delay this exception throw until game loads so that it crashes the game.
+                ((IMyUtilities)MyAPIUtilities.Static).InvokeOnGameThread(() =>
+                {
+                    throw new Exception($"Cannot instantiate packets in fields ({name}), too early! Do it in one of the methods where MyAPIGateway.Multiplayer is not null.");
+                });
+            }
+            else
+            {
+                OriginalSenderSteamId = MyAPIGateway.Multiplayer.MyId;
+            }
         }
 
         /// <summary>
         /// Called when this packet is received on this machine.
+        /// Assign <paramref name="relay"/> serverside if you want to auto-relay the received packet to other clients.
         /// </summary>
-        /// <param name="relay">Set to true if the packet should be automatically relayed to clients if the server receives it.</param>
-        public abstract void Received(ref bool relay);
+        public abstract void Received(ref RelayMode relay);
     }
 }

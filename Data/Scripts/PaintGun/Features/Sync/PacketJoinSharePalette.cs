@@ -84,9 +84,9 @@ namespace Digi.PaintGun.Features.Sync
             }
         }
 
-        public override void Received(ref bool relay)
+        public override void Received(ref RelayMode relay)
         {
-            relay = Reply;
+            relay = (Reply ? RelayMode.RelayOriginal : RelayMode.NoRelay);
 
             if(PaletteOwnerSteamId != MyAPIGateway.Multiplayer.MyId)
             {

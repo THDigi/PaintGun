@@ -15,7 +15,7 @@ namespace Digi.PaintGun.Features.Sync
             Network.SendToServer(this);
         }
 
-        public override void Received(ref bool relay)
+        public override void Received(ref RelayMode relay)
         {
             if(Main.IsServer && !Main.IgnoreAmmoConsumption) // ammo consumption, only needed server side
             {

@@ -19,9 +19,7 @@ namespace Digi.PaintGun.Features.Sync
 
         public NetworkLibHandler(PaintGunMod main) : base(main)
         {
-            // TODO: change to new network registers?
-
-            Lib = new Network(Constants.NETWORK_CHANNEL);
+            Lib = new Network(Constants.NETWORK_CHANNEL, PaintGunMod.MOD_NAME, true, (e) => Log.Error(e, Log.PRINT_MESSAGE));
 
             // needed here because they call an API method on creation
             PacketPaint = new PacketPaint();
