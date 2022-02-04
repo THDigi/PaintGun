@@ -184,6 +184,9 @@ namespace Digi.PaintGun.Features.Palette
 
             foreach(MyAssetModifierDefinition assetDef in MyDefinitionManager.Static.GetAssetModifierDefinitions())
             {
+                if(assetDef.Id.SubtypeId.String == "RustNonColorable_Armor")
+                    continue; // HACK: DLC-less skin that has no steam item, not sure what to do about this so I'm just gonna make it not exist for now
+
                 if(IsSkinAsset(assetDef))
                 {
                     bool isCustomSkin = (!assetDef.Context.IsBaseGame && (assetDef.DLCs == null || assetDef.DLCs.Length == 0));
@@ -229,6 +232,12 @@ namespace Digi.PaintGun.Features.Palette
 
                     SkinInfo skinInfo = new SkinInfo(assetDef, name, icon);
                     Skins[skinInfo.SubtypeId] = skinInfo;
+
+                    // HACK: this skin isn't colorable, so might as well make it ignore color palette like gold and silver
+                    if(assetDef.Id.SubtypeId.String == "RustNonColorable_Armor")
+                    {
+                        assetDef.DefaultColor = Color.Gray;
+                    }
                 }
             }
 
