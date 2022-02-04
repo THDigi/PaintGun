@@ -95,16 +95,16 @@ namespace Digi.PaintGun.Features.Sync
             }
 
             if(DoAction(grid))
-                relay = RelayMode.RelayOriginal;
+                relay = RelayMode.RelayWithChanges;
         }
 
         bool DoAction(IMyCubeGrid grid)
         {
-            //if(!Utils.ValidateSkinOwnership(SteamId, Paint))
-            //{
-            //    Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, $"Failed to apply skin server side, skin {Utils.PrintSkinName(Paint.SkinIndex)} not owned.");
-            //    Paint = new SerializedPaintMaterial(Paint.ColorMaskPacked, null);
-            //}
+            if(!Main.Palette.ValidateSkinOwnership(Paint.Skin, OriginalSenderSteamId))
+            {
+                //Paint = new SerializedPaintMaterial(Paint.ColorMaskPacked, null);
+                return false;
+            }
 
             PaintMaterial paint = new PaintMaterial(Paint);
 

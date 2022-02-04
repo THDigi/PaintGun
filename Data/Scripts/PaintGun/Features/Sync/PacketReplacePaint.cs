@@ -5,6 +5,7 @@ using ProtoBuf;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game.ModAPI;
+using VRage.Utils;
 
 namespace Digi.PaintGun.Features.Sync
 {
@@ -43,13 +44,20 @@ namespace Digi.PaintGun.Features.Sync
 
         public override void Received(ref RelayMode relay)
         {
-            // TODO: check access when creative tools is properly exposed for server side checking
+            // no way to check if creative tools is enabled for sender but it's enough to check their access level.
+            if(Main.IsServer && MyAPIGateway.Session.GetUserPromoteLevel(OriginalSenderSteamId) < MyPromoteLevel.SpaceMaster)
+            {
+                MyLog.Default.WriteLineAndConsole($"{PaintGunMod.MOD_NAME} Warning: Player {Utils.PrintPlayerName(OriginalSenderSteamId)} tried to use replace paint while not being at least SpaceMaster promote level.");
+                Main.NetworkLibHandler.PacketWarningMessage.Send(OriginalSenderSteamId, "Failed to replace paint server side, access denied.");
+                return;
+            }
 
-            //if(!Utils.ValidateSkinOwnership(SteamId, NewPaint))
-            //{
-            //    Main.NetworkLibHandler.PacketWarningMessage.Send(SteamId, $"Failed to replace skin server side, skin {Utils.PrintSkinName(NewPaint.SkinIndex)} not owned.");
-            //    NewPaint = new SerializedPaintMaterial(NewPaint.ColorMaskPacked, null);
-            //}
+            bool modified = false;
+            if(!Main.Palette.ValidateSkinOwnership(NewPaint.Skin, OriginalSenderSteamId))
+            {
+                NewPaint = new SerializedPaintMaterial(NewPaint.ColorMaskPacked, null);
+                modified = true;
+            }
 
             MyCubeGrid grid = Utils.GetEntityOrError<MyCubeGrid>(this, GridEntId, Constants.NETWORK_DESYNC_ERROR_LOGGING);
             if(grid == null)
@@ -81,7 +89,9 @@ namespace Digi.PaintGun.Features.Sync
             BlockMaterial oldPaint = new BlockMaterial(OldPaint);
 
             Main.Painting.ReplaceColorInGrid(false, grid, oldPaint, newPaint, IncludeSubgrids, OriginalSenderSteamId);
-            relay = RelayMode.RelayOriginal;
+
+            if(Main.IsServer)
+                relay = modified ? RelayMode.RelayWithChanges : RelayMode.RelayOriginal;
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Digi.ComponentLib;
 using Digi.PaintGun.Utilities;
@@ -51,8 +52,12 @@ namespace Digi.PaintGun.Features.Palette
 
         public Dictionary<ulong, PlayerInfo> PlayerInfo = new Dictionary<ulong, PlayerInfo>();
 
+        bool LogDLCInstalledEvent = false; // need to skip early events as it triggers for every single DLC and gets spammy
+
         public Palette(PaintGunMod main) : base(main)
         {
+            MyAPIGateway.DLC.DLCInstalled += DLCInstalled;
+
             InitBlockSkins();
         }
 
@@ -66,11 +71,18 @@ namespace Digi.PaintGun.Features.Palette
                 Main.CheckPlayerField.PlayerReady += PlayerReady;
                 Main.PlayerHandler.PlayerDisconnected += PlayerDisconnected;
                 Main.Settings.SettingsChanged += SettingsChanged;
+
+                CheckDLCs("world join");
             }
+
+            LogDLCInstalledEvent = true;
         }
 
         protected override void UnregisterComponent()
         {
+            if(MyAPIGateway.DLC != null)
+                MyAPIGateway.DLC.DLCInstalled -= DLCInstalled;
+
             if(!IsRegistered)
                 return;
 
@@ -80,6 +92,25 @@ namespace Digi.PaintGun.Features.Palette
                 Main.PlayerHandler.PlayerDisconnected -= PlayerDisconnected;
                 Main.Settings.SettingsChanged -= SettingsChanged;
             }
+        }
+
+        public bool ValidateSkinOwnership(MyStringHash? skinId, ulong steamId, bool notifySender = true)
+        {
+            if(skinId.HasValue && MyAPIGateway.Multiplayer.IsServer)
+            {
+                SkinInfo skinInfo = GetSkinInfo(skinId.Value);
+                if(skinInfo == null)
+                {
+                    Main.NetworkLibHandler.PacketWarningMessage.Send(steamId, $"Failed to apply skin server side, skin {skinId.Value.String} does not exist.");
+                    return false;
+                }
+                else if(!MyAPIGateway.DLC.HasDefinitionDLC(skinInfo.Definition, steamId))
+                {
+                    Main.NetworkLibHandler.PacketWarningMessage.Send(steamId, $"Failed to apply skin server side, skin {skinId.Value.String} not owned.");
+                    return false;
+                }
+            }
+            return true;
         }
 
         void PlayerDisconnected(IMyPlayer player)
@@ -95,6 +126,35 @@ namespace Digi.PaintGun.Features.Palette
 
             // broadcast local player's palette to everyone and server sends everyone's palettes back.
             Main.NetworkLibHandler.PacketJoinSharePalette.Send(LocalInfo);
+        }
+
+        void DLCInstalled(ulong steamId, uint dlcId)
+        {
+            try
+            {
+                if(MyAPIGateway.Multiplayer.MyId == steamId)
+                {
+                    CheckDLCs("DLCInstalled event");
+                }
+            }
+            catch(Exception e)
+            {
+                Log.Error(e);
+            }
+        }
+
+        void CheckDLCs(string reason)
+        {
+            foreach(SkinInfo skin in Skins.Values)
+            {
+                if(skin.AlwaysOwned || skin.Definition == null)
+                    continue;
+
+                skin.LocallyOwned = MyAPIGateway.DLC.HasDefinitionDLC(skin.Definition, MyAPIGateway.Multiplayer.MyId);
+            }
+
+            if(LogDLCInstalledEvent)
+                Log.Info($"Rechecking owned skins, reason: {reason}\nSkins not owned: {string.Join(",", Skins.Values.Where(s => !s.LocallyOwned).Select(s => s.Name))}");
         }
 
         void InitBlockSkins()

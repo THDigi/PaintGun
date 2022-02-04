@@ -1,4 +1,5 @@
 ﻿using Sandbox.Definitions;
+using Sandbox.ModAPI;
 using VRage.Utils;
 
 namespace Digi.PaintGun.Features.Palette
@@ -35,8 +36,8 @@ namespace Digi.PaintGun.Features.Palette
             // TODO: check if it's a vanilla definition that originally has DLC requirement and ignore those, but no way to get original vanilla definitions...
             AlwaysOwned = Definition == null || (!Definition.Context.IsBaseGame && (Definition.DLCs == null || Definition.DLCs.Length == 0));
 
-            // HACK: just using sync'd paint API to let it decide on its own
-            LocallyOwned = true;
+            // cannot check DLC ownership here, must check it a bit later
+            LocallyOwned = AlwaysOwned;
         }
 
         /// <summary>
