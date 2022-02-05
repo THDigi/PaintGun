@@ -156,7 +156,7 @@ namespace Digi.NetworkLib
             RelayMode relay = RelayMode.NoRelay;
             packet.Received(ref relay);
 
-            if(relay != RelayMode.NoRelay)
+            if(MyAPIGateway.Multiplayer.IsServer && relay != RelayMode.NoRelay)
             {
                 if(relay == RelayMode.RelayOriginal)
                     RelayToClients(packet, senderSteamId, serialized);
