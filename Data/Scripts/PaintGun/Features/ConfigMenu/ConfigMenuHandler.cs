@@ -198,8 +198,8 @@ namespace Digi.PaintGun.Features.ConfigMenu
                 }));
             #endregion Palette
 
-            #region Palette >>> SkinsShown
-            Category_HideSkins = AddCategory("Skins Shown in Palette", Category_Palette);
+            #region Toggle skins shown list
+            Category_HideSkins = AddCategory("Skins Shown in Palette", Category_Mod); // DEBUG keep in main mod page?
 
             groupAll.Add(new ItemToggle(Category_HideSkins, "Toggle ALL",
                 getter: () => Main.Settings.hideSkinsFromPalette.Count == 0,
@@ -212,7 +212,7 @@ namespace Digi.PaintGun.Features.ConfigMenu
                         foreach(SkinInfo skin in Main.Palette.Skins.Values)
                         {
                             if(skin.SubtypeId == MyStringHash.NullOrEmpty)
-                                continue;
+                                continue; // ignore "no skin"
 
                             Main.Settings.hideSkinsFromPalette.Add(skin.SubtypeId.String);
                         }
