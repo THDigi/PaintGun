@@ -1,5 +1,6 @@
 ﻿using Sandbox.Definitions;
 using Sandbox.ModAPI;
+using VRage;
 using VRage.Utils;
 
 namespace Digi.PaintGun.Features.Palette
@@ -48,5 +49,31 @@ namespace Digi.PaintGun.Features.Palette
             ShowOnPalette = !PaintGunMod.Instance.Settings.hideSkinsFromPalette.Contains(SubtypeId.String);
             Selectable = ShowOnPalette && LocallyOwned;
         }
+
+        public string Mod => (Definition?.Context == null || Definition.Context.IsBaseGame ? null : Definition?.Context?.ModName);
+        public string DLC => (Definition?.DLCs != null && Definition.DLCs.Length > 0) ? MyTexts.GetString(MyAPIGateway.DLC.GetDLC(Definition.DLCs[0]).DisplayName) : null;
+
+        public uint DLCSort => (Definition?.DLCs != null && Definition.DLCs.Length > 0) ? MyAPIGateway.DLC.GetDLC(Definition.DLCs[0]).AppId : 0;
+
+        public SkinGroup MenuGroup
+        {
+            get
+            {
+                bool isMod = Mod != null;
+                bool isDLC = DLC != null;
+
+                if(!isDLC)
+                {
+                    if(isMod)
+                        return SkinGroup.ModAdded;
+                    else
+                        return SkinGroup.Free;
+                }
+                else
+                    return SkinGroup.DLC;
+            }
+        }
     }
+
+    public enum SkinGroup { Free, ModAdded, DLC }
 }

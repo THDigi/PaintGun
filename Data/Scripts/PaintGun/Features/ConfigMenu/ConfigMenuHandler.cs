@@ -1,6 +1,11 @@
-﻿using Digi.ComponentLib;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using Digi.ComponentLib;
 using Digi.PaintGun.Features.Palette;
 using Sandbox.ModAPI;
+using VRage;
+using VRage.Game.ModAPI;
 using VRage.Utils;
 using VRageMath;
 using static Draygo.API.HudAPIv2;
@@ -223,54 +228,63 @@ namespace Digi.PaintGun.Features.ConfigMenu
                 },
                 defaultValue: true));
 
+            StringBuilder label = new StringBuilder();
 
-
-            foreach(SkinInfo skinInfo in Main.Palette.Skins.Values)
+            foreach(IGrouping<SkinGroup, SkinInfo> group in Main.Palette.Skins.Values.GroupBy(s => s.MenuGroup).OrderBy(g => g.Key))
             {
-                if(skinInfo.SubtypeId == MyStringHash.NullOrEmpty)
-                    continue;
+                IEnumerable<SkinInfo> skins;
+                switch(group.Key)
+                {
+                    default: skins = group.OrderBy(s => s.SubtypeId.String); break;
+                    case SkinGroup.ModAdded: skins = group.OrderBy(s => s.Mod); break;
+                    case SkinGroup.DLC: skins = group.OrderBy(s => s.DLCSort); break;
+                }
 
-                // necessary to avoid wrong thing being captured
-                SkinInfo captureSkin = skinInfo;
+                foreach(SkinInfo skin in skins)
+                {
+                    if(skin.SubtypeId == MyStringHash.NullOrEmpty)
+                        continue; // ignore "no skin"
 
-                string dlc = (captureSkin.Definition?.DLCs != null && captureSkin.Definition.DLCs.Length > 0 ? $" (<color=skyblue>{string.Join(",", captureSkin.Definition?.DLCs)}<reset>)" : "");
+                    label.Clear().Append(skin.Name);
 
-                ItemToggle item = new ItemToggle(Category_HideSkins, $"{captureSkin.Name}{dlc}",
-                    getter: () => !Main.Settings.hideSkinsFromPalette.Contains(captureSkin.SubtypeId.String),
-                    setter: (v) =>
+                    if(skin.DLC != null)
                     {
-                        if(!v)
-                            Main.Settings.hideSkinsFromPalette.Add(captureSkin.SubtypeId.String);
-                        else
-                            Main.Settings.hideSkinsFromPalette.Remove(captureSkin.SubtypeId.String);
-                        Main.Settings.ChangedByModConfig();
-                    },
-                    defaultValue: true);
+                        bool owned = MyAPIGateway.DLC.HasDefinitionDLC(skin.Definition, MyAPIGateway.Multiplayer.MyId);
 
-                groupAll.Add(item);
-                groupSkins.Add(item);
+                        label.Append(" (").Append(owned ? "<color=skyblue>" : "<color=255,25,0>");
+                        foreach(string dlc in skin.Definition.DLCs)
+                        {
+                            IMyDLC dlcInfo = MyAPIGateway.DLC.GetDLC(dlc);
+                            label.Append(MyTexts.GetString(dlcInfo.DisplayName)).Append(", ");
+                        }
+
+                        label.Length -= 2; // remove last comma
+                        label.Append("<reset>)");
+                    }
+                    else if(skin.Mod != null)
+                    {
+                        label.Append(" (<color=200,120,25>").Append(skin.Mod).Append("<reset>)");
+                    }
+
+                    // necessary in loops to avoid wrong thing being captured
+                    MyStringHash skinId = skin.SubtypeId;
+
+                    ItemToggle item = new ItemToggle(Category_HideSkins, label.ToString(),
+                        getter: () => !Main.Settings.hideSkinsFromPalette.Contains(skinId.String),
+                        setter: (v) =>
+                        {
+                            if(!v)
+                                Main.Settings.hideSkinsFromPalette.Add(skinId.String);
+                            else
+                                Main.Settings.hideSkinsFromPalette.Remove(skinId.String);
+                            Main.Settings.ChangedByModConfig();
+                        },
+                        defaultValue: true);
+
+                    groupAll.Add(item);
+                    groupSkins.Add(item);
+                }
             }
-
-
-            //List<SkinInfo> skins = Main.Palette.BlockSkins;
-            //for(int i = 1; i < skins.Count; i++) // intentionally skipping 0
-            //{
-            //    SkinInfo skin = skins[i];
-            //    ItemToggle item = new ItemToggle(Category_HideSkins, skin.Name,
-            //        getter: () => !Main.Settings.hideSkinsFromPalette.Contains(skin.SubtypeId.String),
-            //        setter: (v) =>
-            //        {
-            //            if(!v)
-            //                Main.Settings.hideSkinsFromPalette.Add(skin.SubtypeId.String);
-            //            else
-            //                Main.Settings.hideSkinsFromPalette.Remove(skin.SubtypeId.String);
-            //            Main.Settings.ChangedByModConfig();
-            //        },
-            //        defaultValue: true);
-
-            //    groupAll.Add(item);
-            //    groupSkins.Add(item);
-            //}
             #endregion Palette >>> SkinsShown
 
             #region AimInfo
