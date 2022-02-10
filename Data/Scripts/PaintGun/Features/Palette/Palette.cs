@@ -636,19 +636,8 @@ namespace Digi.PaintGun.Features.Palette
                     string fixedPath = Path.Combine(assetDef.Context.ModPath, texture.Filepath);
                     //fixedPath = Path.GetFullPath(fixedPath);
 
-                    try
-                    {
-                        MyImageHeaderUtils.DDS_HEADER header;
-                        if(!MyImageHeaderUtils.Read_DDS_HeaderData(fixedPath, out header))
-                            continue; // file not found in mod path... or first bytes as uint32 are not 542327876 /shrug
-                    }
-                    catch(Exception e)
-                    {
-                        if(e.GetType().Name != "EndOfStreamException")
-                            continue;
-
-                        // it exists so that's all I care about
-                    }
+                    if(!MyAPIGateway.Utilities.FileExistsInModLocation(fixedPath, assetDef.Context.ModItem))
+                        continue;
 
                     //Log.Info($"Fixed paths for mod '{assetDef.Context.ModName}' --- {texture.Location}: '{texture.Filepath}' to '{fixedPath}'");
 
