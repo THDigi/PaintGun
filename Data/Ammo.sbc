@@ -30,7 +30,8 @@
         <DesiredSpeed>0</DesiredSpeed>
         <SpeedVariance>0</SpeedVariance>
         <MaxTrajectory>0</MaxTrajectory>
-        <BackkickForce>0</BackkickForce>
+        <BackkickForce>0.0</BackkickForce>
+        <ExplosiveDamageMultiplier>0</ExplosiveDamageMultiplier>
       </BasicProperties>
       <ProjectileProperties>
         <ProjectileType>Bullet</ProjectileType>
