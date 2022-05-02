@@ -167,20 +167,21 @@ namespace Digi.PaintGun.Utilities
         /// <summary>
         /// Chat message with the sender name being colored.
         /// NOTE: this is synchronized to all players but only the intended player(s) will see it.
-        /// <paramref name="identityId"/> set to 0 will show to all players, default (-1) will show to local player.
         /// </summary>
-        public static void ShowColoredChatMessage(string from, string message, MyFontEnum font, long identityId = -1)
+        public static void ShowColoredChatMessage(string from, string message, MyFontEnum font)
         {
-            if(identityId == -1)
-            {
-                if(MyAPIGateway.Session?.Player == null)
-                    return;
+            // HACK: SendChatMessage[Colored]() no longer works when sent by MP client (even to themselves)
+            MyAPIGateway.Utilities.ShowMessage(from, message);
 
-                identityId = MyAPIGateway.Session.Player.IdentityId;
-            }
+            /*
+            if(MyAPIGateway.Session?.Player == null)
+                return;
+
+            long identityId = MyAPIGateway.Session.Player.IdentityId;
 
             // NOTE: this is sent to all players and only shown if their identityId matches the one sent.
             MyVisualScriptLogicProvider.SendChatMessage(message, from, identityId, font);
+            */
         }
 
         public static IMyPlayer GetPlayerBySteamId(ulong steamId)
