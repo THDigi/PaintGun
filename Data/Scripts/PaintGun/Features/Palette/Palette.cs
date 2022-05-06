@@ -10,7 +10,6 @@ using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.ModAPI;
-using VRage.Library.Utils;
 using VRage.Utils;
 using VRageMath;
 

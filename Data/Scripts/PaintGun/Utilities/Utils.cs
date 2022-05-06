@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Text;
 using Digi.PaintGun.Features.Palette;
-using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character.Components;
 using Sandbox.ModAPI;

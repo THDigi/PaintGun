@@ -204,7 +204,7 @@ namespace Digi.PaintGun.Features.ConfigMenu
             #endregion Palette
 
             #region Toggle skins shown list
-            Category_HideSkins = AddCategory("Skins Shown in Palette", Category_Mod); // DEBUG keep in main mod page?
+            Category_HideSkins = AddCategory("Skins Shown in Palette", Category_Mod);
 
             groupAll.Add(new ItemToggle(Category_HideSkins, "Toggle ALL",
                 getter: () => Main.Settings.hideSkinsFromPalette.Count == 0,

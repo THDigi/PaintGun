@@ -1,14 +1,4 @@
-﻿using System.Text;
-using Digi.ComponentLib;
-using Digi.PaintGun.Features.Tool;
-using Sandbox.Game;
-using Sandbox.Game.Entities;
-using Sandbox.ModAPI;
-using VRage.Game.Entity;
-using VRage.Input;
-using VRageMath;
-
-namespace Digi.PaintGun.Features.Testing
+﻿namespace Digi.PaintGun.Features.Testing
 {
     public class TestComp : ModComponent
     {

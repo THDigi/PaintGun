@@ -7,7 +7,6 @@ using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Weapons;
 using VRage;
-using VRage.Collections;
 using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;

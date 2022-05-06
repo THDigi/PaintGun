@@ -1,6 +1,5 @@
 ﻿using Digi.ComponentLib;
 using Sandbox.Game;
-using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character.Components;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Weapons;

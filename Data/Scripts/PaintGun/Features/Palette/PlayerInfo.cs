@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using Digi.PaintGun.Features.Tool;
 using Digi.PaintGun.Utilities;
 using Sandbox.ModAPI;
 using VRage.Utils;

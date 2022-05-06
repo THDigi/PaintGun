@@ -1,6 +1,4 @@
-﻿using System;
-using Sandbox.Game;
-using Sandbox.Game.Entities;
+﻿using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 
 namespace Digi.PaintGun.Features

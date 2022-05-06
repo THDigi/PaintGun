@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using Digi.NetworkLib;
 using Digi.PaintGun.Features.Palette;
 using Digi.PaintGun.Utilities;
