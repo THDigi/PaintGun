@@ -144,7 +144,7 @@ namespace Digi.PaintGun.Features.Palette
 
             SkinInfo skin = PaintGunMod.Instance.Palette.GetSkinInfo(material.Skin);
             if(skin == null)
-                throw new ArgumentException($"BlockMaterial :: Unknown skin index={material.Skin}");
+                throw new ArgumentException($"BlockMaterial :: Unknown skin={material.Skin}");
 
             Skin = skin.SubtypeId;
         }

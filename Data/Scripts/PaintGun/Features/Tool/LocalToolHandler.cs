@@ -337,6 +337,7 @@ namespace Digi.PaintGun.Features.Tool
             }
 
             // HACK copied and converted from MyDrillSensorRayCast.ReadEntitiesInRange() + MyCasterComponent.OnWorldPosChanged()
+            // last cloned in SE v201
             #region Welder-like block selection
             hits.Clear();
             detections.Clear();
@@ -346,29 +347,23 @@ namespace Digi.PaintGun.Features.Tool
 
             foreach(IHitInfo hit in hits)
             {
-                if(hit.HitEntity == null)
+                IMyEntity parent = hit.HitEntity?.GetTopMostParent();
+                if(parent == null || parent.Physics == null || !parent.Physics.Enabled)
                     continue;
 
                 Vector3D hitPos = hit.Position;
-                IMyEntity parent = hit.HitEntity.GetTopMostParent();
-
                 IMyCubeGrid grid = parent as IMyCubeGrid;
                 if(grid != null)
                 {
                     // just how it's set in game code /shrug
-                    if(grid.GridSizeEnum == MyCubeSize.Large)
-                        hitPos += hit.Normal * -0.08f;
-                    else
-                        hitPos += hit.Normal * -0.02f;
+                    hitPos += hit.Normal * -0.005f;
                 }
 
                 DetectionInfo detected;
-
                 if(detections.TryGetValue(parent.EntityId, out detected))
                 {
-                    float dist1 = Vector3.DistanceSquared(rayFrom, detected.DetectionPoint);
-                    float dist2 = Vector3.DistanceSquared(rayFrom, hitPos);
-
+                    double dist1 = Vector3D.DistanceSquared(rayFrom, detected.DetectionPoint);
+                    double dist2 = Vector3D.DistanceSquared(rayFrom, hitPos);
                     if(dist1 > dist2)
                         detections[parent.EntityId] = new DetectionInfo(parent, hitPos);
                 }
@@ -394,36 +389,32 @@ namespace Digi.PaintGun.Features.Tool
 
                 MyCubeBlockDefinition def = (MyCubeBlockDefinition)block.SlimBlock.BlockDefinition;
                 if(def.HasPhysics)
-                    continue;
+                    continue; // this section is only for things that are not caught by the raycast
 
                 MyEntity parent = result.Element.GetTopMostParent();
-
-                MatrixD blockInvMatrix = block.PositionComp.WorldMatrixNormalizedInv;
-                Vector3D localRayFrom = Vector3D.Transform(rayFrom, ref blockInvMatrix);
-                Vector3D localRayTo = Vector3D.Transform(rayTo, ref blockInvMatrix);
-                Line localLine = new Line(localRayFrom, localRayTo);
-
-                //float? dist = new Ray(localRayFrom, Vector3.Normalize(localRayTo - localRayFrom)).Intersects(block.PositionComp.LocalAABB) + 0.01f;
-
-                float dist;
-
-                if(!block.PositionComp.LocalAABB.Intersects(localLine, out dist))
+                if(parent.Physics == null || !parent.Physics.Enabled)
                     continue;
 
-                Vector3D hitPos = rayFrom + rayDir * dist;
-                DetectionInfo detected;
+                MatrixD invMatrix = block.PositionComp.WorldMatrixNormalizedInv;
+                Vector3 localFrom = Vector3D.Transform(rayFrom, ref invMatrix);
+                Vector3 localTo = Vector3D.Transform(rayTo, ref invMatrix);
 
-                if(detections.TryGetValue(parent.EntityId, out detected))
+                float? intersectDistance = new Ray(localFrom, Vector3.Normalize(localTo - localFrom)).Intersects(block.PositionComp.LocalAABB) + 0.01f;
+                if(intersectDistance.HasValue && intersectDistance <= PAINT_DISTANCE)
                 {
-                    float dist1 = Vector3.DistanceSquared(detected.DetectionPoint, rayFrom);
-                    float dist2 = Vector3.DistanceSquared(hitPos, rayFrom);
-
-                    if(dist1 > dist2)
+                    Vector3D hitPos = rayFrom + rayDir * intersectDistance.Value;
+                    DetectionInfo detected;
+                    if(detections.TryGetValue(parent.EntityId, out detected))
+                    {
+                        double dist1 = Vector3D.DistanceSquared(rayFrom, detected.DetectionPoint);
+                        double dist2 = Vector3D.DistanceSquared(rayFrom, hitPos);
+                        if(dist1 > dist2)
+                            detections[parent.EntityId] = new DetectionInfo(parent, hitPos);
+                    }
+                    else
+                    {
                         detections[parent.EntityId] = new DetectionInfo(parent, hitPos);
-                }
-                else
-                {
-                    detections[parent.EntityId] = new DetectionInfo(parent, hitPos);
+                    }
                 }
             }
 
@@ -432,36 +423,30 @@ namespace Digi.PaintGun.Features.Tool
             if(detections.Count == 0)
                 return;
 
-            float num = float.MaxValue;
-            DetectionInfo closest = new DetectionInfo(null, Vector3D.Zero);
+            double closetDist = double.MaxValue;
+            DetectionInfo closestObj = new DetectionInfo(null, Vector3D.Zero);
 
             foreach(DetectionInfo detected in detections.Values)
             {
-                IMyEntity ent = detected.Entity;
-                if(ent.Physics == null || !ent.Physics.Enabled)
-                    continue;
-
-                float dist = (float)Vector3D.DistanceSquared(detected.DetectionPoint, rayFrom);
-
-                if(dist < num)
+                double dist = Vector3D.DistanceSquared(detected.DetectionPoint, rayFrom);
+                if(dist < closetDist)
                 {
-                    closest = detected;
-                    num = dist;
+                    closestObj = detected;
+                    closetDist = dist;
                 }
             }
 
             detections.Clear();
-            #endregion Welder-like block selection
 
-            targetGrid = closest.Entity as IMyCubeGrid;
+            targetGrid = closestObj.Entity as IMyCubeGrid;
             if(targetGrid == null)
                 return;
 
-            Vector3D offset = rayDir * (targetGrid.GridSizeEnum == MyCubeSize.Large ? 0.05f : -0.007f); // just how it's set in game code /shrug
-            Vector3D localPos = Vector3D.Transform(closest.DetectionPoint - offset, targetGrid.WorldMatrixNormalizedInv);
+            Vector3D localPos = Vector3D.Transform(closestObj.DetectionPoint, targetGrid.WorldMatrixNormalizedInv);
             Vector3I cube;
             targetGrid.FixTargetCube(out cube, localPos / targetGrid.GridSize);
             targetBlock = targetGrid.GetCubeBlock(cube);
+            #endregion Welder-like block selection
         }
 
         bool GetTargetCharacter(Vector3D rayFrom, Vector3D rayDir, double rayLength, IMyCharacter character, ref IMyPlayer targetPlayer)
@@ -474,17 +459,14 @@ namespace Digi.PaintGun.Features.Tool
             foreach(IMyPlayer p in players)
             {
                 IMyCharacter c = p.Character;
-
                 if(c == null || c == character)
                     continue;
 
                 BoundingSphereD sphere = Utils.GetCharacterSelectionSphere(c);
-
                 if(Vector3D.DistanceSquared(rayFrom, sphere.Center) > (rayLength * rayLength))
                     continue;
 
                 double? dist = sphere.Intersects(ray);
-
                 if(!dist.HasValue || dist.Value > rayLength)
                     continue;
 
