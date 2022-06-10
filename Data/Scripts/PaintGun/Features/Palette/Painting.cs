@@ -253,7 +253,7 @@ namespace Digi.PaintGun.Features.Palette
 
                         if(sync)
                         {
-                            grid.SkinBlocks(block.Position, block.Position, paint.ColorMask, paint.Skin?.String);
+                            grid.SkinBlocks(block.Min, block.Min, paint.ColorMask, paint.Skin?.String);
 
                             if(queueCheck)
                             {

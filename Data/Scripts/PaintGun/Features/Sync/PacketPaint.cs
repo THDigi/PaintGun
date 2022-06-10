@@ -57,16 +57,16 @@ namespace Digi.PaintGun.Features.Sync
 
             if(Main.IsServer)
             {
-                // ensure server side if safezone permissions are respected
-                if(!Utils.SafeZoneCanPaint(grid.GetCubeBlock(BlockPosition), OriginalSenderSteamId))
+                IMySlimBlock block = (IMySlimBlock)grid.GetCubeBlock(BlockPosition);
+
+                if(block == null)
                 {
                     if(Constants.NETWORK_DESYNC_ERROR_LOGGING)
                     {
-                        IMySlimBlock block = (IMySlimBlock)grid.GetCubeBlock(BlockPosition);
-                        Log.Error($"{GetType().Name} :: Can't paint inside no-build safe zone! Sender={OriginalSenderSteamId.ToString()}; Grid={grid} ({grid.EntityId.ToString()}); block={block.BlockDefinition.Id.ToString()} ({block.Position.ToString()})", Log.PRINT_MESSAGE);
+                        Log.Error($"{GetType().Name} :: Can't paint inexistent blocks! Sender={OriginalSenderSteamId.ToString()}; Grid={grid} ({grid.EntityId.ToString()}) at GridPosition={BlockPosition.ToString()}", Log.PRINT_MESSAGE);
                     }
 
-                    Main.NetworkLibHandler.PacketWarningMessage.Send(OriginalSenderSteamId, "Failed to paint server side, denied by safe zone.");
+                    Main.NetworkLibHandler.PacketWarningMessage.Send(OriginalSenderSteamId, "Failed to paint server side, block no longer exists.");
                     return;
                 }
 
@@ -82,14 +82,15 @@ namespace Digi.PaintGun.Features.Sync
                     return;
                 }
 
-                if(!grid.CubeExists(BlockPosition))
+                // ensure server side if safezone permissions are respected
+                if(!Utils.SafeZoneCanPaint(block, OriginalSenderSteamId))
                 {
                     if(Constants.NETWORK_DESYNC_ERROR_LOGGING)
                     {
-                        Log.Error($"{GetType().Name} :: Can't paint inexistent blocks! Sender={OriginalSenderSteamId.ToString()}; Grid={grid} ({grid.EntityId.ToString()}) at GridPosition={BlockPosition.ToString()}", Log.PRINT_MESSAGE);
+                        Log.Error($"{GetType().Name} :: Can't paint inside no-build safe zone! Sender={OriginalSenderSteamId.ToString()}; Grid={grid} ({grid.EntityId.ToString()}); block={block.BlockDefinition.Id.ToString()} ({block.Min.ToString()})", Log.PRINT_MESSAGE);
                     }
 
-                    Main.NetworkLibHandler.PacketWarningMessage.Send(OriginalSenderSteamId, "Failed to paint server side, block no longer exists.");
+                    Main.NetworkLibHandler.PacketWarningMessage.Send(OriginalSenderSteamId, "Failed to paint server side, denied by safe zone.");
                     return;
                 }
             }

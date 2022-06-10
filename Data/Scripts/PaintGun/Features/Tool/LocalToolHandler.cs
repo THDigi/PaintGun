@@ -264,7 +264,7 @@ namespace Digi.PaintGun.Features.Tool
                 else
                 {
                     bool useMirroring = (Main.SymmetryAccess && MyAPIGateway.CubeBuilder.UseSymmetry);
-                    Main.Painting.ToolPaintBlock(targetGrid, targetBlock.Position, finalMaterial, useMirroring);
+                    Main.Painting.ToolPaintBlock(targetGrid, targetBlock.Min, finalMaterial, useMirroring);
                 }
             }
         }
