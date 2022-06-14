@@ -220,7 +220,7 @@ namespace Digi.PaintGun.Features.Tool
 
             if(MagazineSubpart != null)
             {
-                bool VisibleMag = (Ammo > 0);
+                bool VisibleMag = (Ammo > 0 || Main.IgnoreAmmoConsumption);
                 if(MagazineSubpart.Render.Visible != VisibleMag)
                 {
                     MagazineSubpart.Render.Visible = VisibleMag;
