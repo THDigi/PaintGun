@@ -351,5 +351,33 @@
       <UseAtlas>false</UseAtlas>
       <Reflectivity>0</Reflectivity>
     </TransparentMaterial>
+    <TransparentMaterial>
+      <Id>
+        <TypeId>TransparentMaterialDefinition</TypeId>
+        <SubtypeId>PaintGun_SkinIcon_Weldless</SubtypeId>
+      </Id>
+      <AlphaMistingEnable>false</AlphaMistingEnable>
+      <AlphaSaturation>1</AlphaSaturation>
+      <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
+      <IgnoreDepth>true</IgnoreDepth>
+      <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
+      <Texture>Textures\GUI\Icons\Skins\Armor\Weldless.dds</Texture>
+      <UseAtlas>false</UseAtlas>
+      <Reflectivity>0</Reflectivity>
+    </TransparentMaterial>
+    <TransparentMaterial>
+      <Id>
+        <TypeId>TransparentMaterialDefinition</TypeId>
+        <SubtypeId>PaintGun_SkinIcon_Corrugated</SubtypeId>
+      </Id>
+      <AlphaMistingEnable>false</AlphaMistingEnable>
+      <AlphaSaturation>1</AlphaSaturation>
+      <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
+      <IgnoreDepth>true</IgnoreDepth>
+      <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
+      <Texture>Textures\GUI\Icons\Skins\Armor\Corrugate.dds</Texture>
+      <UseAtlas>false</UseAtlas>
+      <Reflectivity>0</Reflectivity>
+    </TransparentMaterial>
   </TransparentMaterials>
 </Definitions>
