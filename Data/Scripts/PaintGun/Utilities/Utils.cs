@@ -366,6 +366,9 @@ namespace Digi.PaintGun.Utilities
             return false;
         }
 
+        /// <summary>
+        /// Print player's name or "[NotFound!]" along with steamId in paranthesis.
+        /// </summary>
         public static string PrintPlayerName(ulong steamId)
         {
             IMyPlayer player = GetPlayerBySteamId(steamId);
@@ -376,6 +379,9 @@ namespace Digi.PaintGun.Utilities
                 return $"{player.DisplayName} ({steamId.ToString()})";
         }
 
+        /// <summary>
+        /// Print player's name or "[NullIMyPlayer!]" along with steamId in paranthesis.
+        /// </summary>
         public static string PrintPlayerName(IMyPlayer player)
         {
             if(player == null)

@@ -24,6 +24,11 @@ namespace Digi.NetworkLib
         /// </summary>
         public Action<Exception> ExceptionHandler;
 
+        /// <summary>
+        /// Additional callback when exceptions occurs on <see cref="ReceivedPacket(ushort, byte[], ulong, bool)"/>.
+        /// </summary>
+        public Action<ulong, byte[]> ReceiveExceptionHandler;
+
         private readonly string ModName;
         private List<IMyPlayer> TempPlayers = null;
 
@@ -135,6 +140,11 @@ namespace Digi.NetworkLib
                     ExceptionHandler.Invoke(e);
                 else
                     DefaultExceptionHandler(e);
+
+                if(ReceiveExceptionHandler != null)
+                    ReceiveExceptionHandler.Invoke(senderSteamId, serialized);
+                else
+                    MyLog.Default.WriteLineAndConsole($"^-- Additional info: sender={senderSteamId}; bytes={string.Join(",", serialized)}");
             }
         }
 
