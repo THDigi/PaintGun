@@ -85,7 +85,13 @@ namespace Digi.PaintGun.Features.Tool
             SB.Append("\n[Shift+").AppendInputBind(MyControlsSpace.CUBE_COLOR_CHANGE).Append("] toggle apply skin");
             SB.Append("\n[Shift+").AppendInputBind(MyControlsSpace.SECONDARY_TOOL_ACTION).Append("] grab color+skin from aimed block/player");
             SB.Append("\n[Shift+").AppendInputBind(MyControlsSpace.LANDING_GEAR).Append("] color+skin picking mode");
-            SB.Append("\n[Shift+").AppendInputBind(MyControlsSpace.CUBE_BUILDER_CUBESIZE_MODE).Append("] replace mode (creative/SM)");
+            SB.Append("\n[Shift+").AppendInputBind(MyControlsSpace.CUBE_BUILDER_CUBESIZE_MODE).Append("] replace mode");
+
+            if(Main.ServerSettings.ReplacePaintSurvival)
+                SB.Append(" (for everyone)");
+            else
+                SB.Append(" (creative/SM)");
+
             SB.Append("\n[").Append(ChatCommands.ChatCommands.MAIN_COMMAND).Append("] in chat for more info");
 
             itemDef.DescriptionString = SB.ToString();

@@ -69,7 +69,13 @@ namespace Digi.PaintGun.Features.ChatCommands
             sb.Append("  Toggle color picker mode.").Append('\n');
             sb.Append('\n');
             sb.Append("Shift+").Append(assignedCubeSize).Append('\n');
-            sb.Append("  (Creative or SM) Toggle replace color mode.").Append('\n');
+            sb.Append("  Toggle replace color mode");
+            if(Main.ServerSettings.ReplacePaintSurvival)
+                sb.Append(" (this server allows it in survival)");
+            else
+                sb.Append(" (creative/SM only)");
+            sb.Append('\n');
+
             sb.Append('\n');
 
             MyAPIGateway.Utilities.ShowMissionScreen(PaintGunMod.MOD_NAME + " help", null, null, sb.ToString(), null, "Close");
