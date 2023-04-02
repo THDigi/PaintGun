@@ -124,6 +124,7 @@
     <Compile Include="Features\ChatCommands\SetColor.cs" />
     <Compile Include="Features\CheckPlayerField.cs" />
     <Compile Include="Features\ColorPickerGUIWarning.cs" />
+    <Compile Include="Features\ServerSettings.cs" />
     <Compile Include="Features\HUDSounds.cs" />
     <Compile Include="Features\Notifications.cs" />
     <Compile Include="Features\Palette\DataObjects.cs" />

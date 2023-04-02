@@ -33,6 +33,7 @@ namespace Digi.PaintGun
         public Painting Painting;
         public CheckPlayerField CheckPlayerField;
         public Settings Settings;
+        public ServerSettings ServerSettings;
         public HUDSounds HUDSounds;
         public PaletteInputHandler PaletteInputHandler;
         public PaletteScheduledSync PaletteScheduledSync;
@@ -48,9 +49,9 @@ namespace Digi.PaintGun
         public TestComp TestComp;
 
         // Rights
-        public bool IgnoreAmmoConsumption => (MyAPIGateway.Session.CreativeMode || MyAPIGateway.Session.SessionSettings.InfiniteAmmo); // NOTE: checked both clientside (visually) and serverside (functionally)
-        public bool InstantPaintAccess => (MyAPIGateway.Session.CreativeMode || Utils.CreativeToolsEnabled);
-        public bool ReplaceColorAccess => (MyAPIGateway.Session.CreativeMode || Utils.CreativeToolsEnabled);
+        public bool IgnoreAmmoConsumption => (!ServerSettings.RequireAmmo || MyAPIGateway.Session.CreativeMode || MyAPIGateway.Session.SessionSettings.InfiniteAmmo); // NOTE: checked both clientside (visually) and serverside (functionally)
+        public bool InstantPaintAccess => (ServerSettings.PaintSpeedMultiplier == 0 || MyAPIGateway.Session.CreativeMode || Utils.CreativeToolsEnabled);
+        public bool ReplaceColorAccess => (ServerSettings.ReplacePaintSurvival || MyAPIGateway.Session.CreativeMode || Utils.CreativeToolsEnabled);
         public bool SymmetryAccess => (MyAPIGateway.Session.CreativeMode || Utils.CreativeToolsEnabled);
 
         public string ReplaceColorAccessInfo => "Replace color mode is only available in creative game mode or with SM creative tools on.";
@@ -79,6 +80,7 @@ namespace Digi.PaintGun
             }
 
             // Features
+            ServerSettings = new ServerSettings(this);
             Palette = new Palette(this);
             Painting = new Painting(this);
 

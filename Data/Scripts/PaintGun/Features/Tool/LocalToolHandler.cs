@@ -771,6 +771,7 @@ namespace Digi.PaintGun.Features.Tool
             {
                 paintSpeed *= PAINT_SPEED * PAINT_UPDATE_TICKS;
                 paintSpeed *= MyAPIGateway.Session.WelderSpeedMultiplier;
+                paintSpeed *= Main.ServerSettings.PaintSpeedMultiplier;
 
                 for(int i = 0; i < 3; i++)
                 {
@@ -800,6 +801,7 @@ namespace Digi.PaintGun.Features.Tool
 
                 paintSpeed *= DEPAINT_SPEED * PAINT_UPDATE_TICKS;
                 paintSpeed *= MyAPIGateway.Session.GrinderSpeedMultiplier;
+                paintSpeed *= Main.ServerSettings.PaintSpeedMultiplier;
 
                 blockColorMask.Y = Math.Max(blockColorMask.Y - paintSpeed, defaultColorMask.Y);
                 blockColorMask.Z = (blockColorMask.Z > 0 ? Math.Max(blockColorMask.Z - paintSpeed, defaultColorMask.Z) : Math.Min(blockColorMask.Z + paintSpeed, defaultColorMask.Z));
