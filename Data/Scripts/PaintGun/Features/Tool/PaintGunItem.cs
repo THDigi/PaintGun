@@ -50,6 +50,9 @@ namespace Digi.PaintGun.Features.Tool
         Color ParticleColor;
         MyEntitySubpart MagazineSubpart;
 
+        int UpdatePaintCanAtTick;
+        const int PaintCanUpdateWaitTicks = 6;
+
         readonly PaintGunMod Main;
         readonly List<Particle> Particles = new List<Particle>(30);
         readonly SpraySoundEmitter SoundEmitter;
@@ -233,6 +236,12 @@ namespace Digi.PaintGun.Features.Tool
             SoundEmitter.PlaySpray = (Spraying && SprayCooldown == 0 && !OwnerInfo.ColorPickMode);
             SoundEmitter.Update(Main.Settings.spraySoundVolume);
 
+            if(UpdatePaintCanAtTick == Main.Tick)
+            {
+                UpdatePaintCanAtTick = 0;
+                UpdatePaintCanMaterial();
+            }
+
             return true;
         }
 
@@ -351,22 +360,27 @@ namespace Digi.PaintGun.Features.Tool
 
         void OwnerColorListChanged(PlayerInfo pi, int? index)
         {
-            UpdatePaintCanMaterial();
+            ScheduleCanMaterialUpdate();
         }
 
         void OwnerColorSlotSelected(PlayerInfo pi, int prevIndex, int newIndex)
         {
-            UpdatePaintCanMaterial();
+            ScheduleCanMaterialUpdate();
         }
 
         void OwnerSkinSelected(PlayerInfo pi, MyStringHash prevSkin, MyStringHash newSkin)
         {
-            UpdatePaintCanMaterial();
+            ScheduleCanMaterialUpdate();
         }
 
         void OwnerPaletteUpdate(PlayerInfo pi)
         {
-            UpdatePaintCanMaterial();
+            ScheduleCanMaterialUpdate();
+        }
+
+        void ScheduleCanMaterialUpdate()
+        {
+            UpdatePaintCanAtTick = Main.Tick + PaintCanUpdateWaitTicks;
         }
 
         void UpdatePaintCanMaterial()
