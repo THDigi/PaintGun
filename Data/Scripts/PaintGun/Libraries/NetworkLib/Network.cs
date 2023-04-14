@@ -20,9 +20,9 @@ namespace Digi.NetworkLib
         /// <summary>
         /// Callback for errors in the receive packet event.
         /// Default/null will log to SE log, DS console and client HUD.
-        /// NOTE: Another mod using the same channelId will cause exceptions that are not either of your faults, not recommended to crash nor to ignore the error, just let players find collissions and work it out with the other author(s).
+        /// NOTE: Another mod using the same channelId will cause exceptions that are not either of your faults, not recommended to crash nor to ignore the error, just let players find collisions and work it out with the other author(s).
         /// </summary>
-        public Action<Exception> ExceptionHandler;
+        public Action<Exception> CustomExceptionHandler;
 
         /// <summary>
         /// Additional callback when exceptions occurs on <see cref="ReceivedPacket(ushort, byte[], ulong, bool)"/>.
@@ -43,6 +43,7 @@ namespace Digi.NetworkLib
         {
             ChannelId = channelId;
             ModName = modName;
+            CustomExceptionHandler = customExceptionHandler;
 
             if(registerListener)
                 MyAPIGateway.Multiplayer.RegisterSecureMessageHandler(ChannelId, ReceivedPacket);
@@ -136,8 +137,8 @@ namespace Digi.NetworkLib
             }
             catch(Exception e)
             {
-                if(ExceptionHandler != null)
-                    ExceptionHandler.Invoke(e);
+                if(CustomExceptionHandler != null)
+                    CustomExceptionHandler.Invoke(e);
                 else
                     DefaultExceptionHandler(e);
 
@@ -155,7 +156,9 @@ namespace Digi.NetworkLib
             {
                 if(senderSteamId != packet.OriginalSenderSteamId)
                 {
-                    MyLog.Default.WriteLineAndConsole($"{ModName} WARNING: packet {packet.GetType().Name} from {senderSteamId.ToString()} has altered OriginalSenderSteamId to {packet.OriginalSenderSteamId.ToString()}. Replaced it with proper id, but if this triggers for everyone then it's a bug somewhere.");
+                    string text = $"WARNING: packet {packet.GetType().Name} from {senderSteamId.ToString()} has altered OriginalSenderSteamId to {packet.OriginalSenderSteamId.ToString()}. Replaced it with proper id, but if this triggers for everyone then it's a bug somewhere.";
+                    MyLog.Default.WriteLineAndConsole($"{ModName} {text}");
+                    Log.Error(text);
 
                     packet.OriginalSenderSteamId = senderSteamId;
                     serialized = null; // force reserialize

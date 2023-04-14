@@ -20,8 +20,8 @@ namespace Digi.PaintGun.Features.Sync
 
         public NetworkLibHandler(PaintGunMod main) : base(main)
         {
-            Lib = new Network(Constants.NETWORK_CHANNEL, PaintGunMod.MOD_NAME, true, (e) => Log.Error(e, Log.PRINT_MESSAGE));
-            Lib.ExceptionHandler = (e) => Log.Error(e);
+            Lib = new Network(Constants.NETWORK_CHANNEL, PaintGunMod.MOD_NAME, true);
+            Lib.CustomExceptionHandler = (e) => Log.Error(e, Log.PRINT_MESSAGE);
             Lib.ReceiveExceptionHandler = (sender, bytes) => Log.Error($"Additional info: sender={Utils.PrintPlayerName(sender)}; bytes={string.Join(",", bytes)}");
 
             // needed here because they call an API method on creation

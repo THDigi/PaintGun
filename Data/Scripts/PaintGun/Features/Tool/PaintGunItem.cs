@@ -147,7 +147,7 @@ namespace Digi.PaintGun.Features.Tool
 
             if(OwnerSteamId == 0)
             {
-                Log.Error($"Can't find holder of a PaintGun entity! entId={Rifle.EntityId.ToString()}", Log.PRINT_MESSAGE);
+                Log.Error($"Can't find steamId for holder of PaintGun entity! OwnerIdentityId={Rifle.OwnerIdentityId.ToString()} entId={Rifle.EntityId.ToString()}", Log.PRINT_MESSAGE);
                 return false;
             }
 

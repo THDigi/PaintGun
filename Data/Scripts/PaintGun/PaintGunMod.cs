@@ -13,6 +13,12 @@ using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Components;
 
+// TODO: material painting mode (skin+color in one slot)
+// TODO: mode for slight randomization of final color
+// TODO: design for more modes in the future?
+// TODO: replace color on other blocks with same type+subtype... or some other categorization
+// TODO: opt-in to prevent blocks placed pre-colored? or maybe an option for "disable vanilla paint" mod...
+
 namespace Digi.PaintGun
 {
     public class PaintGunMod : ModBase<PaintGunMod>
