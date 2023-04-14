@@ -337,7 +337,7 @@ namespace Digi.PaintGun.Features.Palette
 
                     PreventIronSight();
 
-                    if(Main.LocalToolHandler.AimedBlock != null || Main.LocalToolHandler.AimedBlock != null)
+                    if(Main.LocalToolHandler.AimedBlock != null || Main.LocalToolHandler.AimedPlayer != null)
                     {
                         if(LocalInfo.ColorPickMode)
                             Main.Palette.ColorPickMode = false;
