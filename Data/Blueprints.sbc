@@ -37,10 +37,10 @@
 
     <!-- basic assembler -->
     <Entry Class="Tools" BlueprintSubtypeId="Blueprint_PaintGun" />
-    <Entry Class="Consumables" BlueprintSubtypeId="Blueprint_PaintGunMag" />
+    <Entry Class="Tools" BlueprintSubtypeId="Blueprint_PaintGunMag" />
 
     <!-- assembler (2x1x1) -->
     <Entry Class="EliteTools" BlueprintSubtypeId="Blueprint_PaintGun" />
-    <Entry Class="EliteConsumables" BlueprintSubtypeId="Blueprint_PaintGunMag" />
+    <Entry Class="EliteTools" BlueprintSubtypeId="Blueprint_PaintGunMag" />
   </BlueprintClassEntries>
 </Definitions>
