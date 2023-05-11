@@ -12,6 +12,7 @@ using VRage.Game;
 using VRage.Game.ModAPI;
 using VRage.Utils;
 using VRageMath;
+using VRageRender.Messages;
 
 namespace Digi.PaintGun.Features.Palette
 {
@@ -600,7 +601,7 @@ namespace Digi.PaintGun.Features.Palette
         }
 
         #region Fix mod texture paths
-        Dictionary<string, DoTextureChange> TextureChanges = null;
+        Dictionary<string, MyTextureChange> TextureChanges = null;
 
         void CleanUpFixMods() // gets called after all asset modifier definitions have been iterated.
         {
@@ -618,7 +619,7 @@ namespace Digi.PaintGun.Features.Palette
                 }
 
                 if(TextureChanges == null)
-                    TextureChanges = new Dictionary<string, DoTextureChange>();
+                    TextureChanges = new Dictionary<string, MyTextureChange>();
                 else
                     TextureChanges.Clear();
 
@@ -644,7 +645,7 @@ namespace Digi.PaintGun.Features.Palette
                     texture.Filepath = fixedPath;
                     assetDef.Textures[i] = texture;
 
-                    DoTextureChange texChange = TextureChanges.GetValueOrDefault(texture.Location);
+                    MyTextureChange texChange = TextureChanges.GetValueOrDefault(texture.Location);
                     switch((TextureType)texture.Type)
                     {
                         case TextureType.ColorMetal: texChange.ColorMetalFileName = fixedPath; break;
@@ -662,10 +663,7 @@ namespace Digi.PaintGun.Features.Palette
 
                 foreach(var kv in TextureChanges)
                 {
-                    // HACK: generating the prohibited MyTextureChange object from XML with similar data
-                    string xml = MyAPIGateway.Utilities.SerializeToXML(kv.Value);
-                    xml = xml.Replace(nameof(DoTextureChange), "MyTextureChange");
-                    assetModifierForRender.SkinTextureChanges[kv.Key] = DeserializeAs(xml, assetModifierForRender.SkinTextureChanges);
+                    assetModifierForRender.SkinTextureChanges[MyStringId.GetOrCompute(kv.Key)] = kv.Value;
                 }
 
                 Log.Info($"Fixed mod-relative paths for skin '{assetDef.Id.SubtypeName}' from mod '{assetDef.Context.ModName}'");
@@ -676,8 +674,6 @@ namespace Digi.PaintGun.Features.Palette
             }
         }
 
-        static T DeserializeAs<T>(string xml, Dictionary<string, T> objForType) => MyAPIGateway.Utilities.SerializeFromXML<T>(xml);
-
         [Flags]
         enum TextureType
         {
@@ -686,15 +682,6 @@ namespace Digi.PaintGun.Features.Palette
             NormalGloss = 0x2,
             Extensions = 0x4,
             Alphamask = 0x8
-        }
-
-        [ProtoContract]
-        public struct DoTextureChange // must be public for serializer; named this way to replace faster with same amount of characters
-        {
-            [ProtoMember(1)] public string ColorMetalFileName;
-            [ProtoMember(2)] public string NormalGlossFileName;
-            [ProtoMember(3)] public string ExtensionsFileName;
-            [ProtoMember(4)] public string AlphamaskFileName;
         }
         #endregion
     }
