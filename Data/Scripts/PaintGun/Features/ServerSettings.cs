@@ -67,11 +67,28 @@ namespace Digi.PaintGun.Features
                 {
                     string text = file.ReadToEnd();
 
-                    MyIniParseResult result;
-                    if(!iniParser.TryParse(text, out result))
-                        throw new Exception($"Config error: {result.ToString()}");
+                    if(!string.IsNullOrWhiteSpace(text))
+                    {
+                        if(MyIni.HasSection(text, IniSection))
+                        {
+                            MyIniParseResult result;
+                            if(!iniParser.TryParse(text, out result))
+                            {
+                                string fullPath = Path.Combine(MyAPIGateway.Session.CurrentPath, "Storage", MyAPIGateway.Utilities.GamePaths.ModScopeName, FileName);
+                                throw new Exception($"Config error: {result.ToString()}\nDelete config file if you wish to reset to defaults: {fullPath}");
+                            }
 
-                    LoadSettings(iniParser);
+                            LoadSettings(iniParser);
+                        }
+                        else
+                        {
+                            Log.Error($"Config file didn't contain the {IniSection} section, ignoring.");
+                        }
+                    }
+                    else
+                    {
+                        Log.Error("Config file was empty, ignoring.");
+                    }
                 }
             }
 
@@ -87,9 +104,11 @@ namespace Digi.PaintGun.Features
             iniParser.Clear();
             SaveSettings(iniParser, comments: true);
 
+            string settingsWithComments = iniParser.ToString();
+
             using(TextWriter file = MyAPIGateway.Utilities.WriteFileInWorldStorage(FileName, typeof(ServerSettings)))
             {
-                file.Write(iniParser.ToString());
+                file.Write(settingsWithComments);
             }
         }
 
