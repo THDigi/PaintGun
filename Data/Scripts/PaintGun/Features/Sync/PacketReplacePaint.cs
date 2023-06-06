@@ -45,9 +45,9 @@ namespace Digi.PaintGun.Features.Sync
         public override void Received(ref RelayMode relay)
         {
             // no way to check if creative tools is enabled for sender but it's enough to check their access level.
-            if(Main.IsServer && MyAPIGateway.Session.GetUserPromoteLevel(OriginalSenderSteamId) < MyPromoteLevel.SpaceMaster)
+            if(Main.IsServer && !Main.AccessReplaceColor(OriginalSenderSteamId))
             {
-                MyLog.Default.WriteLineAndConsole($"{PaintGunMod.MOD_NAME} Warning: Player {Utils.PrintPlayerName(OriginalSenderSteamId)} tried to use replace paint while not being at least SpaceMaster promote level.");
+                MyLog.Default.WriteLineAndConsole($"{PaintGunMod.MOD_NAME} Warning: Player {Utils.PrintPlayerName(OriginalSenderSteamId)} tried to use replace paint without being at least spacemaster.");
                 Main.NetworkLibHandler.PacketWarningMessage.Send(OriginalSenderSteamId, "Failed to replace paint server side, access denied.");
                 return;
             }

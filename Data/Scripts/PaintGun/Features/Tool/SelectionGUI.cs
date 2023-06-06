@@ -119,7 +119,7 @@ namespace Digi.PaintGun.Features.Tool
 
             SymmetryStatusText = null;
 
-            if(!Main.Palette.ReplaceMode && Main.SymmetryAccess)
+            if(!Main.Palette.ReplaceMode && Main.AccessSymmetry(null))
             {
                 IMyCubeGrid grid = block.CubeGrid;
 
@@ -285,7 +285,7 @@ namespace Digi.PaintGun.Features.Tool
             IMyCubeGrid grid = Main.LocalToolHandler.AimedBlock.CubeGrid;
 
             // symmetry highlight
-            if(Main.SymmetryAccess && !Main.Palette.ReplaceMode && !Main.Palette.ColorPickMode && MyCubeBuilder.Static.UseSymmetry && (grid.XSymmetryPlane.HasValue || grid.YSymmetryPlane.HasValue || grid.ZSymmetryPlane.HasValue))
+            if(Main.AccessSymmetry(null) && !Main.Palette.ReplaceMode && !Main.Palette.ColorPickMode && MyCubeBuilder.Static.UseSymmetry && (grid.XSymmetryPlane.HasValue || grid.YSymmetryPlane.HasValue || grid.ZSymmetryPlane.HasValue))
             {
                 List<Vector3I> alreadyMirrored = Main.Caches.AlreadyMirrored;
                 alreadyMirrored.Clear();
@@ -707,10 +707,10 @@ namespace Digi.PaintGun.Features.Tool
                 {
                     text.Append("Paint: ");
 
-                    if(Main.IgnoreAmmoConsumption)
-                        text.Append("Inf.");
-                    else
+                    if(Main.AccessRequiresAmmo(null))
                         text.Append(ammo);
+                    else
+                        text.Append("Inf.");
                 }
                 text.Append('\n');
             }

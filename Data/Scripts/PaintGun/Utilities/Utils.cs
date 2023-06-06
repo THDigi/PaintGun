@@ -21,8 +21,21 @@ namespace Digi.PaintGun.Utilities
     {
         private static PaintGunMod Main => PaintGunMod.Instance;
 
-        // NOTE Session.EnableCopyPaste used as spacemaster check
-        public static bool CreativeToolsEnabled => MyAPIGateway.Session.CreativeMode || (MyAPIGateway.Session.HasCreativeRights && MyAPIGateway.Session.EnableCopyPaste);
+        /// <summary>
+        /// Always returns true if creative mode is on.
+        /// <para>Input steamId for server-side check of access (can not tell if player is in creative tools or not).</para>
+        /// <para>Otherwise input null to do local-player check for creative tools enabled or not.</para>
+        /// </summary>
+        public static bool IsCreativeToolOrMode(ulong? steamId)
+        {
+            if(MyAPIGateway.Session.CreativeMode)
+                return true;
+
+            if(steamId == null)
+                return MyAPIGateway.Session.EnableCopyPaste; // HACK: EnableCopyPaste used as CreativeTools check, works accurately only in survival.
+            else
+                return MyAPIGateway.Session.GetUserPromoteLevel(steamId.Value) >= MyPromoteLevel.SpaceMaster;
+        }
 
         public static bool SafeZoneCanPaint(IMySlimBlock block, ulong playerSteamId)
         {

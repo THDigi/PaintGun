@@ -223,7 +223,7 @@ namespace Digi.PaintGun.Features.Tool
 
             if(MagazineSubpart != null)
             {
-                bool VisibleMag = (Ammo > 0 || Main.IgnoreAmmoConsumption);
+                bool VisibleMag = (Ammo > 0 || !Main.AccessRequiresAmmo(null));
                 if(MagazineSubpart.Render.Visible != VisibleMag)
                 {
                     MagazineSubpart.Render.Visible = VisibleMag;
@@ -271,7 +271,7 @@ namespace Digi.PaintGun.Features.Tool
             if(OwnerSteamId == 0)
                 return;
 
-            bool spawn = (Spraying && SprayCooldown == 0 && !OwnerInfo.ColorPickMode && (Main.IgnoreAmmoConsumption || Ammo > 0));
+            bool spawn = Spraying && SprayCooldown == 0 && !OwnerInfo.ColorPickMode && (Ammo > 0 || !Main.AccessRequiresAmmo(null));
             bool valid = UpdateParticles(spawn);
 
             if(!OwnerInfo.ColorPickMode && !valid && Particles.Count > 0)

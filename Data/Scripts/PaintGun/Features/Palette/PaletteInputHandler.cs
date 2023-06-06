@@ -373,7 +373,7 @@ namespace Digi.PaintGun.Features.Palette
 
                     PreventIronSight();
 
-                    if(Main.ReplaceColorAccess)
+                    if(Main.AccessReplaceColor(null))
                     {
                         Main.Palette.ReplaceMode = !Main.Palette.ReplaceMode;
                         Main.Notifications.Show(0, "Replace color mode " + (Main.Palette.ReplaceMode ? "enabled." : "turned off."), MyFontEnum.Debug, 2000);

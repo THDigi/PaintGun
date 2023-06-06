@@ -131,7 +131,7 @@ namespace Digi.PaintGun.Features.Tool
         bool triggerInputPressed;
         void HandleInputs_Trigger(bool trigger)
         {
-            if(trigger && (Main.IgnoreAmmoConsumption || LocalTool.Ammo > 0))
+            if(trigger && (LocalTool.Ammo > 0 || !Main.AccessRequiresAmmo(null)))
             {
                 if(!triggerInputPressed)
                 {
@@ -157,7 +157,7 @@ namespace Digi.PaintGun.Features.Tool
             if(Main.Tick % PAINT_UPDATE_TICKS != 0)
                 return;
 
-            if(Main.Palette.ReplaceMode && !Main.ReplaceColorAccess) // if access no longer allows it, disable the replace mode
+            if(Main.Palette.ReplaceMode && !Main.AccessReplaceColor(null)) // if access no longer allows it, disable the replace mode
             {
                 Main.Palette.ReplaceMode = false;
                 Main.Notifications.Show(0, "Replace color mode turned off due to loss of access.", MyFontEnum.Red, 2000);
@@ -212,7 +212,7 @@ namespace Digi.PaintGun.Features.Tool
                 {
                     //Main.HUDSounds.PlayUnable();
 
-                    if(!Main.IgnoreAmmoConsumption && LocalTool.Ammo == 0)
+                    if(LocalTool.Ammo == 0 && Main.AccessRequiresAmmo(null))
                         Main.Notifications.Show(0, "No ammo and no target.", MyFontEnum.Red);
                     else
                         Main.Notifications.Show(0, "Aim at a block to paint it.", MyFontEnum.Red);
@@ -238,7 +238,7 @@ namespace Digi.PaintGun.Features.Tool
 
             string blockName = Utils.GetBlockName(targetBlock);
 
-            if(!Main.IgnoreAmmoConsumption && LocalTool.Ammo == 0)
+            if(LocalTool.Ammo == 0 && Main.AccessRequiresAmmo(null))
             {
                 if(trigger)
                 {
@@ -257,13 +257,13 @@ namespace Digi.PaintGun.Features.Tool
                 float paintSpeed = (1.0f / Utils.GetBlockSurface(targetBlock));
                 PaintMaterial finalMaterial = HandleTool_PaintProcess(paintMaterial, blockMaterial, paintSpeed, blockName);
 
-                if(Main.Palette.ReplaceMode && Main.ReplaceColorAccess)
+                if(Main.Palette.ReplaceMode && Main.AccessReplaceColor(null))
                 {
                     Main.Painting.ToolReplacePaint(targetGrid, blockMaterial, finalMaterial, Main.Palette.ReplaceShipWide);
                 }
                 else
                 {
-                    bool useMirroring = (Main.SymmetryAccess && MyAPIGateway.CubeBuilder.UseSymmetry);
+                    bool useMirroring = (Main.AccessSymmetry(null) && MyAPIGateway.CubeBuilder.UseSymmetry);
                     Main.Painting.ToolPaintBlock(targetGrid, targetBlock.Min, finalMaterial, useMirroring);
                 }
             }
@@ -502,7 +502,7 @@ namespace Digi.PaintGun.Features.Tool
             if(Main.Palette.ReplaceMode)
                 return !materialEquals;
 
-            if(!Main.InstantPaintAccess)
+            if(!Main.AccessInstantPaint(null))
             {
                 MyCubeBlockDefinition def = (MyCubeBlockDefinition)block.BlockDefinition;
                 bool built = (block.BuildLevelRatio >= def.CriticalIntegrityRatio);
@@ -574,7 +574,7 @@ namespace Digi.PaintGun.Features.Tool
                 return (AimedState == SelectionState.Valid);
             }
 
-            if(!Main.InstantPaintAccess)
+            if(!Main.AccessInstantPaint(null))
             {
                 MyCubeBlockDefinition def = (MyCubeBlockDefinition)block.BlockDefinition;
                 bool built = (block.BuildLevelRatio >= def.CriticalIntegrityRatio);
@@ -596,7 +596,7 @@ namespace Digi.PaintGun.Features.Tool
             }
 
             MyCubeGrid grid = (MyCubeGrid)block.CubeGrid;
-            bool symmetry = Main.SymmetryAccess && MyCubeBuilder.Static.UseSymmetry && (grid.XSymmetryPlane.HasValue || grid.YSymmetryPlane.HasValue || grid.ZSymmetryPlane.HasValue);
+            bool symmetry = Main.AccessSymmetry(null) && MyCubeBuilder.Static.UseSymmetry && (grid.XSymmetryPlane.HasValue || grid.YSymmetryPlane.HasValue || grid.ZSymmetryPlane.HasValue);
             bool symmetrySameColor = true;
 
             if(materialEquals)
@@ -666,7 +666,7 @@ namespace Digi.PaintGun.Features.Tool
             {
                 if(symmetry && !symmetrySameColor)
                     Main.SelectionGUI.SetGUIStatus(0, "Click to update symmetry paint.");
-                else if(Main.InstantPaintAccess)
+                else if(Main.AccessInstantPaint(null))
                     Main.SelectionGUI.SetGUIStatus(0, "Click to paint.");
                 else
                     Main.SelectionGUI.SetGUIStatus(0, "Hold click to paint.");
@@ -749,7 +749,7 @@ namespace Digi.PaintGun.Features.Tool
                 return paintMaterial;
             }
 
-            if(Main.InstantPaintAccess)
+            if(Main.AccessInstantPaint(null))
             {
                 Main.SelectionGUI.SetGUIStatus(0, "Painted!", "lime");
                 Main.SelectionGUI.SetGUIStatus(1, Main.SelectionGUI.SymmetryStatusText);

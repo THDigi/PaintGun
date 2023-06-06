@@ -17,7 +17,7 @@ namespace Digi.PaintGun.Features.Sync
 
         public override void Received(ref RelayMode relay)
         {
-            if(Main.IsServer && !Main.IgnoreAmmoConsumption) // ammo consumption, only needed server side
+            if(Main.IsServer && Main.AccessRequiresAmmo(OriginalSenderSteamId)) // ammo consumption, only needed server side
             {
                 IMyInventory inv = Utils.GetCharacterInventoryOrError(this, Utils.GetCharacterOrError(this, Utils.GetPlayerOrError(this, OriginalSenderSteamId)));
                 if(inv != null)

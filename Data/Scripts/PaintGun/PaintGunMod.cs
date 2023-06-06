@@ -54,13 +54,16 @@ namespace Digi.PaintGun
         public ConfigMenuHandler ConfigMenuHandler;
         public TestComp TestComp;
 
-        // Rights
-        public bool IgnoreAmmoConsumption => (!ServerSettings.RequireAmmo || MyAPIGateway.Session.CreativeMode || MyAPIGateway.Session.SessionSettings.InfiniteAmmo); // NOTE: checked both clientside (visually) and serverside (functionally)
-        public bool InstantPaintAccess => (ServerSettings.PaintSpeedMultiplier == 0 || MyAPIGateway.Session.CreativeMode || Utils.CreativeToolsEnabled);
-        public bool ReplaceColorAccess => (ServerSettings.ReplacePaintSurvival || MyAPIGateway.Session.CreativeMode || Utils.CreativeToolsEnabled);
-        public bool SymmetryAccess => (MyAPIGateway.Session.CreativeMode || Utils.CreativeToolsEnabled);
+        // Rights checkers, can be used both serverside and clientside
 
-        public string ReplaceColorAccessInfo => "Replace color mode is only available in creative game mode or with SM creative tools on.";
+        public bool AccessReplaceColor(ulong? steamId) => ServerSettings.ReplacePaintSurvival || Utils.IsCreativeToolOrMode(steamId);
+        public readonly string ReplaceColorAccessInfo = "Replace color mode is only available in creative game mode or with SM creative tools on.";
+
+        public bool AccessSymmetry(ulong? steamId) => Utils.IsCreativeToolOrMode(steamId);
+
+        public bool AccessInstantPaint(ulong? steamId) => ServerSettings.PaintSpeedMultiplier == 0 || Utils.IsCreativeToolOrMode(steamId);
+
+        public bool AccessRequiresAmmo(ulong? steamId) => ServerSettings.RequireAmmo && !MyAPIGateway.Session.CreativeMode && !MyAPIGateway.Session.SessionSettings.InfiniteAmmo;
 
         public PaintGunMod(PaintGun_GameSession session) : base(MOD_NAME, session)
         {
