@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using Sandbox.ModAPI;
+using VRage.Game.ModAPI;
 using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Utils;
 
@@ -26,7 +27,8 @@ namespace Digi.PaintGun.Features
             if(comments)
                 iniParser.SetSectionComment(IniSection, "Server only reads these settings when it starts.");
 
-            SetVal(iniParser, nameof(RequireAmmo), RequireAmmo);
+            SetVal(iniParser, nameof(RequireAmmo), RequireAmmo,
+                comments ? "Wether the Paintgun requires and consumes Paint Chemicals when coloring/skinning." : null);
 
             SetVal(iniParser, nameof(PaintSpeedMultiplier), PaintSpeedMultiplier,
                 comments ? "World welder&grinder multipliers still affect this on top of this multiplier.\nCan set to 0 to instantly paint." : null);
@@ -61,35 +63,44 @@ namespace Digi.PaintGun.Features
 
             // load file if exists then save it regardless so that it can be sanitized and updated
 
-            if(MyAPIGateway.Utilities.FileExistsInWorldStorage(FileName, typeof(ServerSettings)))
+            try
             {
-                using(TextReader file = MyAPIGateway.Utilities.ReadFileInWorldStorage(FileName, typeof(ServerSettings)))
+                if(MyAPIGateway.Utilities.FileExistsInWorldStorage(FileName, typeof(ServerSettings)))
                 {
-                    string text = file.ReadToEnd();
-
-                    if(!string.IsNullOrWhiteSpace(text))
+                    using(TextReader file = MyAPIGateway.Utilities.ReadFileInWorldStorage(FileName, typeof(ServerSettings)))
                     {
-                        if(MyIni.HasSection(text, IniSection))
-                        {
-                            MyIniParseResult result;
-                            if(!iniParser.TryParse(text, out result))
-                            {
-                                string fullPath = Path.Combine(MyAPIGateway.Session.CurrentPath, "Storage", MyAPIGateway.Utilities.GamePaths.ModScopeName, FileName);
-                                throw new Exception($"Config error: {result.ToString()}\nDelete config file if you wish to reset to defaults: {fullPath}");
-                            }
+                        string text = file.ReadToEnd();
 
-                            LoadSettings(iniParser);
+                        if(!string.IsNullOrWhiteSpace(text))
+                        {
+                            if(MyIni.HasSection(text, IniSection))
+                            {
+                                MyIniParseResult result;
+                                if(!iniParser.TryParse(text, out result))
+                                {
+                                    string fullPath = Path.Combine(MyAPIGateway.Session.CurrentPath, "Storage", MyAPIGateway.Utilities.GamePaths.ModScopeName, FileName);
+                                    throw new Exception($"Config error: {result.ToString()}\nDelete config file if you wish to reset to defaults: {fullPath}");
+                                }
+
+                                LoadSettings(iniParser);
+                            }
+                            else
+                            {
+                                Log.Error($"Config file didn't contain the {IniSection} section, ignoring.");
+                            }
                         }
                         else
                         {
-                            Log.Error($"Config file didn't contain the {IniSection} section, ignoring.");
+                            Log.Error("Config file was empty, ignoring.");
                         }
                     }
-                    else
-                    {
-                        Log.Error("Config file was empty, ignoring.");
-                    }
                 }
+            }
+            catch(Exception e)
+            {
+                Log.Error($"Failed to read config from world storage." +
+                    $"\nDebug: Session.CurrentPath='{MyAPIGateway.Session.CurrentPath}'; GamePaths.ModScopeName='{MyAPIGateway.Utilities.GamePaths.ModScopeName}'" +
+                    $"\n{e}");
             }
 
             iniParser.Clear();
@@ -106,9 +117,18 @@ namespace Digi.PaintGun.Features
 
             string settingsWithComments = iniParser.ToString();
 
-            using(TextWriter file = MyAPIGateway.Utilities.WriteFileInWorldStorage(FileName, typeof(ServerSettings)))
+            try
             {
-                file.Write(settingsWithComments);
+                using(TextWriter file = MyAPIGateway.Utilities.WriteFileInWorldStorage(FileName, typeof(ServerSettings)))
+                {
+                    file.Write(settingsWithComments);
+                }
+            }
+            catch(Exception e)
+            {
+                Log.Error($"Failed to write config to world storage." +
+                    $"\nDebug: Session.CurrentPath='{MyAPIGateway.Session.CurrentPath}'; GamePaths.ModScopeName='{MyAPIGateway.Utilities.GamePaths.ModScopeName}'" +
+                    $"\n{e}");
             }
         }
 
@@ -116,12 +136,12 @@ namespace Digi.PaintGun.Features
         {
             string settingsText;
             if(!MyAPIGateway.Utilities.GetVariable<string>(VariableId, out settingsText))
-                throw new Exception("No config found in sandbox.sbc!");
+                throw new ModCrashedException(new Exception("No config found in sandbox.sbc!"), Main.Session.ModContext);
 
             MyIni iniParser = new MyIni();
             MyIniParseResult result;
             if(!iniParser.TryParse(settingsText, out result))
-                throw new Exception($"Config error: {result.ToString()}");
+                throw new ModCrashedException(new Exception($"Config error: {result.ToString()}"), Main.Session.ModContext);
 
             LoadSettings(iniParser);
 
