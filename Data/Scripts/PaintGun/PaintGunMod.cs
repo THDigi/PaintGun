@@ -12,6 +12,7 @@ using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Components;
+using VRage.Game.ModAPI;
 
 // TODO: material painting mode (skin+color in one slot)
 // TODO: mode for slight randomization of final color
@@ -64,6 +65,31 @@ namespace Digi.PaintGun
         public bool AccessInstantPaint(ulong? steamId) => ServerSettings.PaintSpeedMultiplier == 0 || Utils.IsCreativeToolOrMode(steamId);
 
         public bool AccessRequiresAmmo(ulong? steamId) => ServerSettings.RequireAmmo && !MyAPIGateway.Session.CreativeMode && !MyAPIGateway.Session.SessionSettings.InfiniteAmmo;
+
+        /// <summary>
+        /// Returns null if it's allowed, otherwise returns a string with the reason.
+        /// </summary>
+        public string CanPaintBlock(IMySlimBlock block, ulong? steamId)
+        {
+            if(ServerSettings.PaintUnfinishedBlocks)
+                return null;
+
+            if(AccessInstantPaint(steamId))
+                return null;
+
+            MyCubeBlockDefinition def = (MyCubeBlockDefinition)block.BlockDefinition;
+
+            // used as $"Block is {reason}"
+
+            if(!block.ComponentStack.IsBuilt)
+                return "unfinished";
+
+            const float DamageRatioDisallowPaint = 0.1f;
+            if(block.CurrentDamage > (block.MaxIntegrity * DamageRatioDisallowPaint))
+                return "damaged";
+
+            return null;
+        }
 
         public PaintGunMod(PaintGun_GameSession session) : base(MOD_NAME, session)
         {

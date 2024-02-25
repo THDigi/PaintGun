@@ -502,16 +502,8 @@ namespace Digi.PaintGun.Features.Tool
             if(Main.Palette.ReplaceMode)
                 return !materialEquals;
 
-            if(!Main.AccessInstantPaint(null))
-            {
-                MyCubeBlockDefinition def = (MyCubeBlockDefinition)block.BlockDefinition;
-                bool built = (block.BuildLevelRatio >= def.CriticalIntegrityRatio);
-
-                if(!built || block.CurrentDamage > (block.MaxIntegrity / 10.0f))
-                {
-                    return false;
-                }
-            }
+            if(Main.CanPaintBlock(block, null) != null)
+                return false;
 
             return !materialEquals;
         }
@@ -574,25 +566,20 @@ namespace Digi.PaintGun.Features.Tool
                 return (AimedState == SelectionState.Valid);
             }
 
-            if(!Main.AccessInstantPaint(null))
+            string reason = Main.CanPaintBlock(block, null);
+            if(reason != null)
             {
-                MyCubeBlockDefinition def = (MyCubeBlockDefinition)block.BlockDefinition;
-                bool built = (block.BuildLevelRatio >= def.CriticalIntegrityRatio);
+                AimedState = SelectionState.Invalid;
 
-                if(!built || block.CurrentDamage > (block.MaxIntegrity / 10.0f))
+                if(trigger)
                 {
-                    AimedState = SelectionState.Invalid;
-
-                    if(trigger)
-                    {
-                        Main.HUDSounds.PlayUnable();
-                        Main.Notifications.Show(0, "Unfinished blocks can't be painted!", MyFontEnum.Red);
-                    }
-
-                    Main.SelectionGUI.SetGUIStatus(0, (!built ? "Block not built" : "Block damaged"), "red");
-                    Main.SelectionGUI.SetGUIStatus(1, null);
-                    return false;
+                    Main.HUDSounds.PlayUnable();
+                    Main.Notifications.Show(0, $"Can't paint! Block is {reason}", MyFontEnum.Red);
                 }
+
+                Main.SelectionGUI.SetGUIStatus(0, $"Block is {reason}", "red");
+                Main.SelectionGUI.SetGUIStatus(1, null);
+                return false;
             }
 
             MyCubeGrid grid = (MyCubeGrid)block.CubeGrid;

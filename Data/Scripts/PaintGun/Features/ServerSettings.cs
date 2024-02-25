@@ -13,12 +13,14 @@ namespace Digi.PaintGun.Features
         public bool RequireAmmo { get; private set; } = true;
         public float PaintSpeedMultiplier { get; private set; } = 1f;
         public bool ReplacePaintSurvival { get; private set; } = false;
+        public bool PaintUnfinishedBlocks { get; private set; } = false;
 
         void LoadSettings(MyIni iniParser)
         {
             RequireAmmo = iniParser.Get(IniSection, nameof(RequireAmmo)).ToBoolean(RequireAmmo);
             PaintSpeedMultiplier = iniParser.Get(IniSection, nameof(PaintSpeedMultiplier)).ToSingle(PaintSpeedMultiplier);
             ReplacePaintSurvival = iniParser.Get(IniSection, nameof(ReplacePaintSurvival)).ToBoolean(ReplacePaintSurvival);
+            PaintUnfinishedBlocks = iniParser.Get(IniSection, nameof(PaintUnfinishedBlocks)).ToBoolean(PaintUnfinishedBlocks);
         }
 
         void SaveSettings(MyIni iniParser, bool comments)
@@ -28,13 +30,16 @@ namespace Digi.PaintGun.Features
                 iniParser.SetSectionComment(IniSection, "Server only reads these settings when it starts.");
 
             SetVal(iniParser, nameof(RequireAmmo), RequireAmmo,
-                comments ? "Wether the Paintgun requires and consumes Paint Chemicals when coloring/skinning." : null);
+                comments ? " Wether the Paintgun requires and consumes Paint Chemicals when coloring/skinning." : null);
 
             SetVal(iniParser, nameof(PaintSpeedMultiplier), PaintSpeedMultiplier,
-                comments ? "World welder&grinder multipliers still affect this on top of this multiplier.\nCan set to 0 to instantly paint." : null);
+                comments ? " World welder&grinder multipliers still affect this on top of this multiplier.\nCan set to 0 to instantly paint." : null);
 
             SetVal(iniParser, nameof(ReplacePaintSurvival), ReplacePaintSurvival,
-                comments ? "Note: in replace mode blocks are instantly painted and tool does not use ammo." : null);
+                comments ? " Note: in replace mode blocks are instantly painted and tool does not use Paint Chemicals." : null);
+
+            SetVal(iniParser, nameof(PaintUnfinishedBlocks), PaintUnfinishedBlocks,
+                comments ? " Wether to allow construction stage and damaged blocks to be colored/skinned." : null);
         }
 
         const string VariableId = "PaintGunMod_ServerSettings"; // IMPORTANT: must be unique as it gets written in a shared space (sandbox.sbc)

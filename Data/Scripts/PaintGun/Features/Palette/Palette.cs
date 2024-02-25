@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text;
 using Digi.ComponentLib;
 using Digi.PaintGun.Utilities;
-using ProtoBuf;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using VRage.Game;
