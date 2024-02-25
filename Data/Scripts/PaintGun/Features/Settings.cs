@@ -5,6 +5,7 @@ using System.Text;
 using Digi.PaintGun.Features.Palette;
 using Sandbox.Game;
 using Sandbox.ModAPI;
+using VRage.Game.ModAPI;
 using VRage.Utils;
 using VRageMath;
 
@@ -445,8 +446,8 @@ namespace Digi.PaintGun.Features
                         continue;
 
                     uint dlcId = 0;
-                    MyDLCs.MyDLC dlc;
-                    if(skin.Definition?.DLCs != null && skin.Definition.DLCs.Length > 0 && MyDLCs.TryGetDLC(skin.Definition.DLCs[0], out dlc))
+                    IMyDLC dlc;
+                    if(skin.Definition?.DLCs != null && skin.Definition.DLCs.Length > 0 && MyAPIGateway.DLC.TryGetDLC(skin.Definition.DLCs[0], out dlc))
                     {
                         dlcId = dlc.AppId;
                         widestName = Math.Max(widestName, dlc.Name.Length);
@@ -464,8 +465,8 @@ namespace Digi.PaintGun.Features
                 {
                     uint dlcId = kv.Key;
                     string dlcName = "(No DLC)";
-                    MyDLCs.MyDLC dlc;
-                    if(dlcId > 0 && MyDLCs.TryGetDLC(dlcId, out dlc))
+                    IMyDLC dlc;
+                    if(dlcId > 0 && MyAPIGateway.DLC.TryGetDLC(dlcId, out dlc))
                     {
                         dlcName = dlc.Name;
                     }

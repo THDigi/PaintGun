@@ -124,7 +124,7 @@ namespace Digi.PaintGun.Features.Palette
         }
 
         /// <summary>
-        /// <param name="sync"></param> arg determines if it sends the paint request using the API, and automatically checks skin ownership. Must be false for mod-added skins.
+        /// <paramref name="sync"/> arg determines if it sends the paint request using the API, and automatically checks skin ownership. Must be false for mod-added skins.
         /// </summary>
         public void PaintBlock(bool sync, IMyCubeGrid grid, Vector3I gridPosition, PaintMaterial paint, ulong originalSenderSteamId)
         {
@@ -156,7 +156,7 @@ namespace Digi.PaintGun.Features.Palette
         }
 
         /// <summary>
-        /// <param name="sync"></param> arg determines if it sends the paint request using the API, and automatically checks skin ownership. Must be false for mod-added skins.
+        /// <paramref name="sync"/> arg determines if it sends the paint request using the API, and automatically checks skin ownership. Must be false for mod-added skins.
         /// </summary>
         public void PaintBlockSymmetry(bool sync, IMyCubeGrid grid, Vector3I gridPosition, PaintMaterial paint, MirrorData mirrorData, ulong originalSenderSteamId)
         {
@@ -213,7 +213,7 @@ namespace Digi.PaintGun.Features.Palette
         }
 
         /// <summary>
-        /// <param name="sync"></param> arg determines if it sends the paint request using the API, and automatically checks skin ownership. Must be false for mod-added skins.
+        /// <paramref name="sync"/> arg determines if it sends the paint request using the API, and automatically checks skin ownership. Must be false for mod-added skins.
         /// </summary>
         public void ReplaceColorInGrid(bool sync, IMyCubeGrid selectedGrid, BlockMaterial oldPaint, PaintMaterial paint, bool includeSubgrids, ulong originalSenderSteamId)
         {

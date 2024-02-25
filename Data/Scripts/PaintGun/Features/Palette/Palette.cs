@@ -285,8 +285,8 @@ namespace Digi.PaintGun.Features.Palette
 
                         foreach(string dlcId in skin.Definition.DLCs)
                         {
-                            MyDLCs.MyDLC dlc;
-                            if(!MyDLCs.TryGetDLC(dlcId, out dlc))
+                            IMyDLC dlc;
+                            if(!MyAPIGateway.DLC.TryGetDLC(dlcId, out dlc))
                             {
                                 Log.Error($"Skin '{skin.SubtypeId.String}' uses unknown DLC={dlcId}");
                                 continue;
