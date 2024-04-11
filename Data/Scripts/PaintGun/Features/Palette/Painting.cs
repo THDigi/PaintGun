@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Digi.ComponentLib;
 using Digi.PaintGun.Utilities;
 using Sandbox.Game.Entities;
@@ -24,10 +25,36 @@ namespace Digi.PaintGun.Features.Palette
             }
         }
 
-        readonly Dictionary<IMySlimBlock, CheckData> CheckSkinned = new Dictionary<IMySlimBlock, CheckData>();
-        readonly List<IMySlimBlock> RemoveCheckKeys = new List<IMySlimBlock>();
+        class QueueReplaceData
+        {
+            public const int ChunkSize = 10000;
+            public const int TickDelay = 30;
 
-        readonly HashSet<IMyCubeGrid> ConnectedGrids = new HashSet<IMyCubeGrid>();
+            public readonly HashSet<IMyCubeGrid> Grids = new HashSet<IMyCubeGrid>();
+            public readonly List<IMySlimBlock> Blocks = new List<IMySlimBlock>(1024);
+            public int BlockIndex = 0;
+
+            public readonly PaintMaterial Paint;
+            public readonly bool ByLocalPlayer;
+            public readonly bool Sync;
+
+            public int NextTick;
+
+            public QueueReplaceData(PaintMaterial paint, bool byLocalPlayer, bool sync)
+            {
+                Paint = paint;
+                ByLocalPlayer = byLocalPlayer;
+                Sync = sync;
+                NextTick = PaintGunMod.Instance.Tick + TickDelay;
+            }
+        }
+
+        readonly List<QueueReplaceData> QueueReplaceRequests = new List<QueueReplaceData>(0);
+
+        readonly Dictionary<IMySlimBlock, CheckData> CheckSkinned = new Dictionary<IMySlimBlock, CheckData>(0);
+        readonly List<IMySlimBlock> RemoveCheckKeys = new List<IMySlimBlock>(0);
+
+        readonly HashSet<IMyCubeGrid> TempConnectedGrids = new HashSet<IMyCubeGrid>(0);
 
         public Painting(PaintGunMod main) : base(main)
         {
@@ -43,8 +70,23 @@ namespace Digi.PaintGun.Features.Palette
 
         protected override void UpdateAfterSim(int tick)
         {
+            bool a = CheckSkinsApplied();
+            bool b = ProcessQueueReplace();
+
+            if(!a && !b)
+            {
+                SetUpdateMethods(UpdateFlags.UPDATE_AFTER_SIM, false);
+            }
+        }
+
+        bool CheckSkinsApplied()
+        {
+            if(CheckSkinned.Count == 0)
+                return false;
+
+            int tick = Main.Tick;
             if(tick % 30 != 0)
-                return;
+                return true;
 
             // see if skin was applied and warn accordingly.
             foreach(KeyValuePair<IMySlimBlock, CheckData> kv in CheckSkinned)
@@ -72,9 +114,82 @@ namespace Digi.PaintGun.Features.Palette
 
             RemoveCheckKeys.Clear();
 
-            if(CheckSkinned.Count <= 0)
+            return CheckSkinned.Count > 0;
+        }
+
+        bool ProcessQueueReplace()
+        {
+            if(QueueReplaceRequests.Count == 0)
+                return false;
+
+            QueueReplaceData request = QueueReplaceRequests[0];
+
+            if(request.ByLocalPlayer)
             {
-                SetUpdateMethods(UpdateFlags.UPDATE_AFTER_SIM, false);
+                string text = $"Replacing... {request.Blocks.Count - request.BlockIndex} remaining";
+                Main.SelectionGUI.SetGUIStatus(0, text);
+                Main.Notifications.Show(0, text, MyFontEnum.Debug, 16 * 30 + 100);
+            }
+            //else
+            //{
+            //    Main.SelectionGUI.SetGUIStatus(0, "Other replace request in progress...", "red");
+            //}
+
+            int tick = Main.Tick;
+            if(request.NextTick > tick)
+                return true;
+
+            request.NextTick = tick + QueueReplaceData.TickDelay;
+
+            PaintMaterial paint = request.Paint;
+            bool sync = request.Sync;
+            bool queueCheck = paint.Skin.HasValue; // only care if new paint affects skin
+
+            int maxLen = Math.Min(request.BlockIndex + QueueReplaceData.ChunkSize, request.Blocks.Count);
+
+            for(int i = request.BlockIndex; i < maxLen; i++)
+            {
+                IMySlimBlock block = request.Blocks[i];
+
+                if(sync)
+                {
+                    block.CubeGrid.SkinBlocks(block.Min, block.Min, paint.ColorMask, paint.Skin?.String);
+
+                    if(queueCheck)
+                    {
+                        queueCheck = false; // only check first block
+                        CheckSkinned[block] = new CheckData(paint.Skin.Value); // replace, in case they swap out skins quickly
+                    }
+                }
+                else
+                {
+                    var internalGrid = (MyCubeGrid)block.CubeGrid;
+                    internalGrid.ChangeColorAndSkin(internalGrid.GetCubeBlock(block.Min), paint.ColorMask, paint.Skin);
+
+                    if(queueCheck)
+                    {
+                        queueCheck = false; // only check first block
+                        CheckSkinned.Remove(block);
+                    }
+                }
+            }
+
+            request.BlockIndex += QueueReplaceData.ChunkSize;
+
+            if(request.BlockIndex < request.Blocks.Count)
+            {
+                return true;
+            }
+            else
+            {
+                if(request.ByLocalPlayer)
+                {
+                    Main.SelectionGUI.SetGUIStatus(0, "Finished replacing", "lime");
+                    Main.Notifications.Show(2, "Finished replacing!", MyFontEnum.Green, 3000);
+                }
+
+                QueueReplaceRequests.RemoveAtFast(0);
+                return QueueReplaceRequests.Count > 0;
             }
         }
 
@@ -108,6 +223,17 @@ namespace Digi.PaintGun.Features.Palette
 
         public void ToolReplacePaint(IMyCubeGrid grid, BlockMaterial oldPaint, PaintMaterial paint, bool includeSubgrids)
         {
+            // TODO: a way to do this for clients receiving game-synced color requests...
+            foreach(QueueReplaceData request in QueueReplaceRequests)
+            {
+                if(request.Grids.Contains(grid))
+                {
+                    Main.SelectionGUI.SetGUIStatus(0, "Previous replace still in progress...", "red");
+                    Main.Notifications.Show(2, "Grid has replace color in progress!", MyFontEnum.Red, 3000);
+                    return;
+                }
+            }
+
             if(paint.Skin.HasValue)
             {
                 // vanilla DLC-locked skins should use API, mod-added should use the packet to force skin change.
@@ -219,19 +345,22 @@ namespace Digi.PaintGun.Features.Palette
         {
             //long timeStart = Stopwatch.GetTimestamp();
 
-            ConnectedGrids.Clear();
+            TempConnectedGrids.Clear();
 
             if(includeSubgrids)
-                MyAPIGateway.GridGroups.GetGroup(selectedGrid, GridLinkTypeEnum.Mechanical, ConnectedGrids);
+                MyAPIGateway.GridGroups.GetGroup(selectedGrid, GridLinkTypeEnum.Mechanical, TempConnectedGrids);
             else
-                ConnectedGrids.Add(selectedGrid);
+                TempConnectedGrids.Add(selectedGrid);
 
             bool queueCheck = paint.Skin.HasValue; // only care if new paint affects skin
+            bool byLocalPlayer = originalSenderSteamId == MyAPIGateway.Multiplayer.MyId;
 
             //int total = 0;
             int affected = 0;
 
-            foreach(IMyCubeGrid grid in ConnectedGrids)
+            QueueReplaceData queue = null;
+
+            foreach(IMyCubeGrid grid in TempConnectedGrids)
             {
                 MyCubeGrid internalGrid = (MyCubeGrid)grid;
 
@@ -250,6 +379,21 @@ namespace Digi.PaintGun.Features.Palette
 
                         if(paint.ColorMask.HasValue && !Utils.ColorMaskEquals(blockMaterial.ColorMask, oldPaint.ColorMask))
                             continue;
+
+                        affected++;
+
+                        if(affected > QueueReplaceData.ChunkSize) // can crash with too many blocks, painting them in chunks after a certain amount
+                        {
+                            if(queue == null)
+                            {
+                                queue = new QueueReplaceData(paint, byLocalPlayer, sync);
+                                QueueReplaceRequests.Add(queue);
+                            }
+
+                            queue.Blocks.Add(block);
+                            queue.Grids.Add(grid);
+                            continue;
+                        }
 
                         if(sync)
                         {
@@ -271,8 +415,6 @@ namespace Digi.PaintGun.Features.Palette
                                 CheckSkinned.Remove(block);
                             }
                         }
-
-                        affected++;
                     }
                 }
                 finally
@@ -283,16 +425,19 @@ namespace Digi.PaintGun.Features.Palette
                 //total += grid.CubeBlocks.Count;
             }
 
-            if(CheckSkinned.Count > 0)
+            if(queue != null || CheckSkinned.Count > 0)
             {
                 SetUpdateMethods(UpdateFlags.UPDATE_AFTER_SIM, true);
             }
 
             //long timeEnd = Stopwatch.GetTimestamp();
 
-            if(originalSenderSteamId == MyAPIGateway.Multiplayer.MyId)
+            if(byLocalPlayer)
             {
-                Main.Notifications.Show(2, $"Replaced color for {affected.ToString()} blocks.", MyFontEnum.Debug, 5000);
+                if(queue != null)
+                    Main.Notifications.Show(2, $"Queued replaced color for {affected.ToString()} blocks.", MyFontEnum.Debug, 5000);
+                else
+                    Main.Notifications.Show(2, $"Replaced color for {affected.ToString()} blocks.", MyFontEnum.Debug, 5000);
 
                 //double seconds = (timeEnd - timeStart) / (double)Stopwatch.Frequency;
 
@@ -302,7 +447,7 @@ namespace Digi.PaintGun.Features.Palette
                 //    Main.Notifications.Show(2, $"Replaced color for {affected.ToString()} of {total.ToString()} blocks in {(seconds * 1000).ToString("0.######")}ms", MyFontEnum.White, 5000);
             }
 
-            ConnectedGrids.Clear();
+            TempConnectedGrids.Clear();
         }
     }
 }
