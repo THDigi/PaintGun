@@ -234,16 +234,17 @@ namespace Digi.PaintGun.Features.Palette
                 }
             }
 
-            if(paint.Skin.HasValue)
-            {
-                // vanilla DLC-locked skins should use API, mod-added should use the packet to force skin change.
-                SkinInfo skin = Main.Palette.GetSkinInfo(paint.Skin.Value);
-                if(!skin.AlwaysOwned)
-                {
-                    ReplaceColorInGrid(true, grid, oldPaint, paint, includeSubgrids, MyAPIGateway.Multiplayer.MyId);
-                    return;
-                }
-            }
+            // no longer using this because game crashes from too many messages with emissive blocks...
+            //if(paint.Skin.HasValue)
+            //{
+            //    // vanilla DLC-locked skins should use API, mod-added should use the packet to force skin change.
+            //    SkinInfo skin = Main.Palette.GetSkinInfo(paint.Skin.Value);
+            //    if(!skin.AlwaysOwned)
+            //    {
+            //        ReplaceColorInGrid(true, grid, oldPaint, paint, includeSubgrids, MyAPIGateway.Multiplayer.MyId);
+            //        return;
+            //    }
+            //}
 
             // for mod-added skins:
             Main.NetworkLibHandler.PacketReplacePaint.Send(grid, oldPaint, paint, includeSubgrids);
@@ -352,7 +353,7 @@ namespace Digi.PaintGun.Features.Palette
             else
                 TempConnectedGrids.Add(selectedGrid);
 
-            bool queueCheck = paint.Skin.HasValue; // only care if new paint affects skin
+            bool checkFirstSkinned = paint.Skin.HasValue; // only care if new paint affects skin
             bool byLocalPlayer = originalSenderSteamId == MyAPIGateway.Multiplayer.MyId;
 
             //int total = 0;
@@ -399,9 +400,9 @@ namespace Digi.PaintGun.Features.Palette
                         {
                             grid.SkinBlocks(block.Min, block.Min, paint.ColorMask, paint.Skin?.String);
 
-                            if(queueCheck)
+                            if(checkFirstSkinned)
                             {
-                                queueCheck = false; // only check first block
+                                checkFirstSkinned = false; // only check first block
                                 CheckSkinned[block] = new CheckData(paint.Skin.Value); // replace, in case they swap out skins quickly
                             }
                         }
@@ -409,9 +410,9 @@ namespace Digi.PaintGun.Features.Palette
                         {
                             internalGrid.ChangeColorAndSkin(enumerator.Current, paint.ColorMask, paint.Skin);
 
-                            if(queueCheck)
+                            if(checkFirstSkinned)
                             {
-                                queueCheck = false; // only check first block
+                                checkFirstSkinned = false; // only check first block
                                 CheckSkinned.Remove(block);
                             }
                         }
