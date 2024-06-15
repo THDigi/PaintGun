@@ -107,6 +107,15 @@ namespace Digi.PaintGun.Features.ConfigMenu
                     Main.Settings.ChangedByModConfig();
                 },
                 defaultValue: true));
+
+            groupAll.Add(new ItemToggle(Category_Tool, "Skin Magazine",
+                getter: () => Main.Settings.skinMagazine,
+                setter: (v) =>
+                {
+                    Main.Settings.skinMagazine = v;
+                    Main.Settings.ChangedByModConfig();
+                },
+                defaultValue: true));
             #endregion Tool
 
             #region Palette

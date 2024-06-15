@@ -22,6 +22,7 @@ namespace Digi.PaintGun.Features
         private const int CFG_VERSION_HUDBKOPACITYDEFAULTS = 2;
 
         public bool extraSounds = true;
+        public bool skinMagazine;
         public bool sprayParticles = true;
         public float spraySoundVolume = 0.8f;
         public bool selectColorZigZag = false;
@@ -55,6 +56,7 @@ namespace Digi.PaintGun.Features
         private void ResetToDefaults()
         {
             extraSounds = true;
+            skinMagazine = true;
             sprayParticles = true;
             spraySoundVolume = 0.8f;
             selectColorZigZag = false;
@@ -196,6 +198,12 @@ namespace Digi.PaintGun.Features
                         case "configversion":
                             if(int.TryParse(value, out i))
                                 prevConfigVersion = i;
+                            else
+                                Log.Error("Invalid " + key + " value: " + value);
+                            continue;
+                        case "skinmagazine":
+                            if(bool.TryParse(value, out b))
+                                skinMagazine = b;
                             else
                                 Log.Error("Invalid " + key + " value: " + value);
                             continue;
@@ -413,6 +421,7 @@ namespace Digi.PaintGun.Features
             }
 
             sb.Append("ExtraSounds=").Append(extraSounds).AppendLine(comments ? " // toggle all HUD-sounds for this mod's actions, like cycling colors/skins, alerts when can't do something, etc. Default: true" : "");
+            sb.Append("SkinMagazine=").Append(skinMagazine).AppendLine(comments ? " // PaintGun's magazine when held can get the selected skin. Disable if cycling skins impacts performance. Default: true" : "");
             sb.Append("SprayParticles=").Append(sprayParticles).AppendLine(comments ? " // toggles the spray particles. Default: true" : "");
             sb.Append("SpraySoundVolume=").Append(spraySoundVolume).AppendLine(comments ? " // paint gun spraying sound volume. Default: 0.8" : "");
             sb.Append("SelectColorZigZag=").Append(selectColorZigZag).AppendLine(comments ? " // type of scrolling through colors in the palette, false is each row at a time, true is in zig-zag. Default: false" : "");

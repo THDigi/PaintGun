@@ -405,12 +405,15 @@ namespace Digi.PaintGun.Features.Tool
 
             IMyEntity paintEntity = (MagazineSubpart as IMyEntity) ?? Rifle;
 
-            paintEntity.Render.MetalnessColorable = skinRender.MetalnessColorable;
-            paintEntity.Render.TextureChanges = skinRender.SkinTextureChanges;
+            if(Main.Settings.skinMagazine)
+            {
+                paintEntity.Render.MetalnessColorable = skinRender.MetalnessColorable;
+                paintEntity.Render.TextureChanges = skinRender.SkinTextureChanges;
 
-            // required to properly update skin (like glamour not being recolorable
-            paintEntity.Render.RemoveRenderObjects();
-            paintEntity.Render.AddRenderObjects();
+                // required to properly update skin (like glamour not being recolorable
+                paintEntity.Render.RemoveRenderObjects();
+                paintEntity.Render.AddRenderObjects();
+            }
 
             if(!paintEntity.Render.EnableColorMaskHsv)
                 paintEntity.Render.EnableColorMaskHsv = true;
