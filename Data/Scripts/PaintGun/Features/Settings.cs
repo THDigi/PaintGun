@@ -56,7 +56,7 @@ namespace Digi.PaintGun.Features
         private void ResetToDefaults()
         {
             extraSounds = true;
-            skinMagazine = true;
+            skinMagazine = false;
             sprayParticles = true;
             spraySoundVolume = 0.8f;
             selectColorZigZag = false;
