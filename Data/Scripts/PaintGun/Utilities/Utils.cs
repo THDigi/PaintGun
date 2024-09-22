@@ -37,6 +37,14 @@ namespace Digi.PaintGun.Utilities
                 return MyAPIGateway.Session.GetUserPromoteLevel(steamId.Value) >= MyPromoteLevel.SpaceMaster;
         }
 
+        public static string GetModName(this IMyModContext context)
+        {
+            if(context == null || context.IsBaseGame)
+                return "(BaseGame)";
+
+            return $"'{context.ModItem.FriendlyName}'({context.ModItem.PublishedServiceName}:{context.ModItem.PublishedFileId})";
+        }
+
         public static bool SafeZoneCanPaint(IMySlimBlock block, ulong playerSteamId)
         {
             float gridSize = block.CubeGrid.GridSize;

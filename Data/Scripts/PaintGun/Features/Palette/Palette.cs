@@ -9,6 +9,7 @@ using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.ModAPI;
+using VRage.ObjectBuilders;
 using VRage.Utils;
 using VRageMath;
 using VRageRender.Messages;
@@ -175,6 +176,32 @@ namespace Digi.PaintGun.Features.Palette
                     foundSkins++;
             }
 
+            Dictionary<string, MyObjectBuilder_AssetModifierDefinition> vanillaSkins = new Dictionary<string, MyObjectBuilder_AssetModifierDefinition>();
+
+            {
+                string path = Path.Combine(MyAPIGateway.Utilities.GamePaths.ContentPath, @"Data\AssetModifiers\ArmorModifiers.sbc");
+
+                MyObjectBuilder_Definitions definitions;
+                if(MyObjectBuilderSerializer.DeserializeXML(path, out definitions))
+                {
+                    if(definitions?.AssetModifiers != null)
+                    {
+                        foreach(MyObjectBuilder_AssetModifierDefinition def in definitions.AssetModifiers)
+                        {
+                            vanillaSkins[def.Id.SubtypeId] = def;
+                        }
+
+                        Log.Info($"Confirmed {vanillaSkins.Count} vanilla skins.");
+                    }
+                    else
+                    {
+                        Log.Error("Game's ArmorModifiers.sbc does not declare any skins!");
+                    }
+                }
+                else
+                    Log.Error("Game's ArmorModifiers.sbc does not exist!");
+            }
+
             int capacity = foundSkins + 1; // include "No Skin" too.
             Skins = new SortedDictionary<MyStringHash, SkinInfo>(new SkinSorter());
             SkinsForHUD = new List<SkinInfo>(capacity);
@@ -185,9 +212,27 @@ namespace Digi.PaintGun.Features.Palette
             {
                 if(IsBlockSkin(assetDef))
                 {
-                    bool isCustomSkin = (!assetDef.Context.IsBaseGame && (assetDef.DLCs == null || assetDef.DLCs.Length == 0));
+                    MyObjectBuilder_AssetModifierDefinition vanillaDef;
+                    vanillaSkins.TryGetValue(assetDef.Id.SubtypeId.String, out vanillaDef);
 
-                    #region Generate user friendly name
+                    //bool isCustomSkin = (!assetDef.Context.IsBaseGame && (assetDef.DLCs == null || assetDef.DLCs.Length == 0));
+                    bool isCustomSkin = !assetDef.Context.IsBaseGame && vanillaDef == null;
+                    bool requiresDLC = assetDef.DLCs != null && assetDef.DLCs.Length > 0;
+
+                    if(isCustomSkin && requiresDLC)
+                    {
+                        Log.Error($"Warning: '{assetDef.Id.SubtypeName}' from {assetDef.Context.GetModName()} requires DLCs. Mod-added skins don't support requiring DLCs... yet. Let me know if you need this and I'll try and get it implemented.");
+                        continue;
+                    }
+
+                    if(!assetDef.Context.IsBaseGame && vanillaDef != null && vanillaDef.DLCs != null && vanillaDef.DLCs.Length > 0
+                    && (assetDef.DLCs == null || assetDef.DLCs[0] != vanillaDef.DLCs[0]))
+                    {
+                        Log.Error($"Warning: '{assetDef.Id.SubtypeName}' is a vanilla skin that had its DLCs modded out by {assetDef.Context.GetModName()}, refusing to use.");
+                        continue;
+                    }
+
+                    #region Generate user friendly name 
                     string name = assetDef.Id.SubtypeName;
                     sb.Clear();
                     sb.Append(name);
@@ -218,13 +263,15 @@ namespace Digi.PaintGun.Features.Palette
                     if(!definedIcons.Contains(icon))
                     {
                         if(isCustomSkin || Utils.IsLocalMod())
-                            Log.Error($"'{icon}' not found in transparent materials definitions.", Log.PRINT_MESSAGE);
+                            Log.Error($"'{icon}' not found in transparent materials definitions (skin from {assetDef.Context.GetModName()}).", Log.PRINT_MESSAGE);
 
                         icon = SKIN_ICON_UNKNOWN;
                     }
 
-                    if(isCustomSkin)
-                        FixModTexturePaths(assetDef);
+                    if(isCustomSkin && !FixModTexturePaths(assetDef))
+                    {
+                        continue;
+                    }
 
                     SkinInfo skinInfo = new SkinInfo(assetDef, name, icon);
                     Skins[skinInfo.SubtypeId] = skinInfo;
@@ -317,11 +364,13 @@ namespace Digi.PaintGun.Features.Palette
         /// </summary>
         static bool IsBlockSkin(MyAssetModifierDefinition assetDef)
         {
+            if(assetDef == null)
+                return false;
+
+            string modName = assetDef.Context.GetModName();
+
             try
             {
-                if(assetDef == null)
-                    return false;
-
                 string subtype = assetDef.Id.SubtypeName;
 
                 if(subtype == TEST_ARMOR_SUBTYPE)
@@ -364,7 +413,7 @@ namespace Digi.PaintGun.Features.Palette
             }
             catch(Exception e)
             {
-                Log.Error($"Error in IsSkinAsset() for asset={assetDef.Id.ToString()}\n{e}");
+                Log.Error($"Error in {nameof(FixModTexturePaths)} for asset {assetDef.Id.ToString()} from {modName}\n{e}");
             }
 
             return false;
@@ -614,20 +663,28 @@ namespace Digi.PaintGun.Features.Palette
             TextureChanges = null;
         }
 
-        void FixModTexturePaths(MyAssetModifierDefinition assetDef)
+        bool FixModTexturePaths(MyAssetModifierDefinition assetDef)
         {
+            if(assetDef == null)
+                throw new ArgumentNullException(nameof(assetDef));
+
+            string modName = assetDef.Context.GetModName();
+
             try
             {
                 if(assetDef.Textures == null || assetDef.Textures.Count <= 0)
                 {
                     Log.Error($"Skin '{assetDef.Id.SubtypeName}' has no textures!");
-                    return;
+                    return false;
                 }
 
                 if(TextureChanges == null)
                     TextureChanges = new Dictionary<string, MyTextureChange>();
                 else
                     TextureChanges.Clear();
+
+                // NOTE: this is not actually a useful path! it's only to get a normalized path with same slashes and stuff.
+                string testGamePath = Path.GetFullPath(@"Textures\Models\Cubes\armor\Skins");
 
                 for(int i = 0; i < assetDef.Textures.Count; i++)
                 {
@@ -636,16 +693,22 @@ namespace Digi.PaintGun.Features.Palette
                     if(string.IsNullOrEmpty(texture.Filepath))
                         continue;
 
+                    bool textureExistsInMod = MyAPIGateway.Utilities.FileExistsInModLocation(texture.Filepath, assetDef.Context.ModItem);
+                    string testPath = Path.GetFullPath(texture.Filepath);
+
+                    if(!textureExistsInMod && testPath.StartsWith(testGamePath, StringComparison.OrdinalIgnoreCase))
+                    {
+                        Log.Error($"Skin '{assetDef.Id.SubtypeName}' from {modName} uses game's skin textures, that is not allowed.");
+                        return false;
+                    }
+
                     if(texture.Filepath.StartsWith(".."))
                         continue; // some fix already applied
 
-                    string fixedPath = Path.Combine(assetDef.Context.ModPath, texture.Filepath);
-                    //fixedPath = Path.GetFullPath(fixedPath);
-
-                    if(!MyAPIGateway.Utilities.FileExistsInModLocation(fixedPath, assetDef.Context.ModItem))
+                    if(!textureExistsInMod)
                         continue;
 
-                    //Log.Info($"Fixed paths for mod '{assetDef.Context.ModName}' --- {texture.Location}: '{texture.Filepath}' to '{fixedPath}'");
+                    string fixedPath = Path.Combine(assetDef.Context.ModPath, texture.Filepath);
 
                     // has no direct effect on the skin, the render thing after does, but this is for consistency
                     texture.Filepath = fixedPath;
@@ -662,9 +725,6 @@ namespace Digi.PaintGun.Features.Palette
                     TextureChanges[texture.Location] = texChange;
                 }
 
-                if(TextureChanges.Count == 0)
-                    return;
-
                 MyDefinitionManager.MyAssetModifiers assetModifierForRender = MyDefinitionManager.Static.GetAssetModifierDefinitionForRender(assetDef.Id.SubtypeId);
 
                 foreach(var kv in TextureChanges)
@@ -672,11 +732,13 @@ namespace Digi.PaintGun.Features.Palette
                     assetModifierForRender.SkinTextureChanges[MyStringId.GetOrCompute(kv.Key)] = kv.Value;
                 }
 
-                Log.Info($"Fixed mod-relative paths for skin '{assetDef.Id.SubtypeName}' from mod '{assetDef.Context.ModName}'");
+                Log.Info($"Fixed mod-relative paths for skin '{assetDef.Id.SubtypeName}' from {modName}.");
+                return true;
             }
             catch(Exception e)
             {
-                Log.Error($"Error in IsSkinAsset() for asset={assetDef.Id.ToString()}\n{e}");
+                Log.Error($"Error in {nameof(FixModTexturePaths)} for asset {assetDef.Id.ToString()} from {modName}\n{e}");
+                return false;
             }
         }
 
