@@ -171,7 +171,7 @@ namespace Digi.PaintGun.Features.Palette
             int foundSkins = 0;
             foreach(MyAssetModifierDefinition assetDef in MyDefinitionManager.Static.GetAssetModifierDefinitions())
             {
-                if(IsSkinAsset(assetDef))
+                if(IsBlockSkin(assetDef))
                     foundSkins++;
             }
 
@@ -183,10 +183,7 @@ namespace Digi.PaintGun.Features.Palette
 
             foreach(MyAssetModifierDefinition assetDef in MyDefinitionManager.Static.GetAssetModifierDefinitions())
             {
-                if(assetDef.Id.SubtypeId.String == "RustNonColorable_Armor")
-                    continue; // HACK: DLC-less skin that has no steam item, not sure what to do about this so I'm just gonna make it not exist for now
-
-                if(IsSkinAsset(assetDef))
+                if(IsBlockSkin(assetDef))
                 {
                     bool isCustomSkin = (!assetDef.Context.IsBaseGame && (assetDef.DLCs == null || assetDef.DLCs.Length == 0));
 
@@ -315,18 +312,28 @@ namespace Digi.PaintGun.Features.Palette
             }
         }
 
-        static bool IsSkinAsset(MyAssetModifierDefinition assetDef)
+        /// <summary>
+        /// Attempt to identify if the given asset definition is for blocks (as opposed to skins for characters or tools)
+        /// </summary>
+        static bool IsBlockSkin(MyAssetModifierDefinition assetDef)
         {
-            if(assetDef == null)
-                return false;
-
             try
             {
-                if(assetDef.Id.SubtypeName == TEST_ARMOR_SUBTYPE)
+                if(assetDef == null)
+                    return false;
+
+                string subtype = assetDef.Id.SubtypeName;
+
+                if(subtype == TEST_ARMOR_SUBTYPE)
                     return false; // skip unusable vanilla test armor
 
-                if(assetDef.Id.SubtypeName.EndsWith(ARMOR_SUFFIX))
+                if(subtype == "RustNonColorable_Armor")
+                    return false; // HACK: DLC-less skin that has no steam item, not sure what to do about this so I'm just gonna make it not exist for now
+
+                if(subtype.EndsWith(ARMOR_SUFFIX))
                     return true;
+
+                // now to guess the ones that don't have _Armor suffix...
 
                 if(assetDef.Icons != null)
                 {
