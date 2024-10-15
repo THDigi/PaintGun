@@ -1,17 +1,30 @@
 <?xml version="1.0"  encoding="utf-8"?>
 <Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <CategoryClasses>
-    <Category xsi:type="MyObjectBuilder_GuiBlockCategoryDefinition">
-      <Id>
-        <TypeId>GuiBlockCategoryDefinition</TypeId>
-        <SubtypeId/>
-      </Id>
-      <DisplayName>DisplayName_Category_CharacterTools</DisplayName>
-      <Name>CharacterTools</Name>
-      <SearchBlocks>false</SearchBlocks>
-      <ItemIds>
-        <string>PhysicalPaintGun</string>
-      </ItemIds>
-    </Category>
-  </CategoryClasses>
+    <CategoryClasses>
+        <Category xsi:type="MyObjectBuilder_GuiBlockCategoryDefinition">
+            <Id>
+                <TypeId>GuiBlockCategoryDefinition</TypeId>
+                <SubtypeId/>
+            </Id>
+            <DisplayName>DisplayName_Category_CharacterTools</DisplayName>
+            <Name>Section0_Position2_CharacterTools</Name>
+            <SearchBlocks>false</SearchBlocks>
+            <ItemIds>
+                <string>PhysicalGunObject/PhysicalPaintGun</string>
+            </ItemIds>
+        </Category>
+        <Category xsi:type="MyObjectBuilder_GuiBlockCategoryDefinition">
+            <Id>
+                <TypeId>GuiBlockCategoryDefinition</TypeId>
+                <SubtypeId/>
+            </Id>
+            <DisplayName>DisplayName_Category_CharacterItems</DisplayName>
+            <Name>Section0_Position1_CharacterItems</Name>
+            <SearchBlocks>false</SearchBlocks>
+            <IsToolCategory>true</IsToolCategory>
+            <ItemIds>
+                <string>PhysicalGunObject/PhysicalPaintGun</string>
+            </ItemIds>
+        </Category>
+    </CategoryClasses>
 </Definitions>
