@@ -36,6 +36,9 @@ namespace Digi.PaintGun.Features.Palette
 
         protected override void UpdateInput(bool anyKeyOrMouse, bool inMenu, bool paused)
         {
+            if(!Main.CheckPlayerField.Ready)
+                return;
+
             IMyPlayer player = MyAPIGateway.Session.Player;
 
             // monitor selected color slot while in color picker GUI

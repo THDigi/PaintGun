@@ -5,17 +5,18 @@ using Sandbox.ModAPI;
 namespace Digi.PaintGun.Features
 {
     // HACK MyAPIGateway.Session.Player is null for first few update frames, this component is the checker.
-    // Bugreport: <https://support.keenswh.com/spaceengineers/general/topic/01-190-101modapi-myapigateway-session-player-is-null-for-first-3-ticks-for-mp-clients>
+    // Bugreport: https://support.keenswh.com/spaceengineers/pc/topic/01-190-101modapi-myapigateway-session-player-is-null-for-first-3-ticks-for-mp-clients
     // This affects GetPlayers() aswell.
     public class CheckPlayerField : ModComponent
     {
         public bool Ready { get; private set; }
 
+        bool TriggerEvent = true;
         public event Action PlayerReady;
 
         public CheckPlayerField(PaintGunMod main) : base(main)
         {
-            UpdateMethods = UpdateFlags.UPDATE_AFTER_SIM;
+            UpdateMethods = UpdateFlags.UPDATE_INPUT;
         }
 
         protected override void RegisterComponent()
@@ -26,13 +27,18 @@ namespace Digi.PaintGun.Features
         {
         }
 
-        protected override void UpdateAfterSim(int tick)
+        protected override void UpdateInput(bool anyKeyOrMouse, bool inMenu, bool paused)
         {
-            if(!Ready && MyAPIGateway.Session.Player != null)
+            bool hasPlayer = MyAPIGateway.Session.Player != null;
+            if(Ready != hasPlayer)
             {
-                Ready = true;
-                SetUpdateMethods(UpdateFlags.UPDATE_AFTER_SIM, false);
-                PlayerReady?.Invoke();
+                Ready = hasPlayer;
+
+                if(Ready && TriggerEvent)
+                {
+                    TriggerEvent = false;
+                    PlayerReady?.Invoke();
+                }
             }
         }
     }
