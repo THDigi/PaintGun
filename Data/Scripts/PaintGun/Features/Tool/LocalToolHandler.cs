@@ -112,7 +112,7 @@ namespace Digi.PaintGun.Features.Tool
                     if(Main.GameConfig.UsingGamepad)
                         trigger = Math.Abs(MyAPIGateway.Input.GetJoystickAxisStateForGameplay(Constants.GamepadBind_Paint)) > 0;
                     else
-                        trigger = MyAPIGateway.Input.IsGameControlPressed(MyControlsSpace.PRIMARY_TOOL_ACTION);
+                        trigger = InputWrapper.IsControlPressed(MyControlsSpace.PRIMARY_TOOL_ACTION);
                 }
 
                 if(!Main.CheckPlayerField.Ready)

@@ -91,7 +91,7 @@ namespace Digi.PaintGun.Features.Palette
         {
             if(MyAPIGateway.CubeBuilder.IsActivated)
             {
-                if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.SWITCH_LEFT) || MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.SWITCH_RIGHT))
+                if(InputWrapper.IsControlJustPressed(MyControlsSpace.SWITCH_LEFT) || InputWrapper.IsControlJustPressed(MyControlsSpace.SWITCH_RIGHT))
                 {
                     LocalInfo.SelectedColorSlot = MyAPIGateway.Session.Player.SelectedBuildColorSlot;
                 }
@@ -148,9 +148,9 @@ namespace Digi.PaintGun.Features.Palette
                 cycleDir = MyAPIGateway.Input.DeltaMouseScrollWheelValue();
                 if(cycleDir == 0)
                 {
-                    if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.SWITCH_RIGHT))
+                    if(InputWrapper.IsControlJustPressed(MyControlsSpace.SWITCH_RIGHT))
                         cycleDir = -1;
-                    else if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.SWITCH_LEFT))
+                    else if(InputWrapper.IsControlJustPressed(MyControlsSpace.SWITCH_LEFT))
                         cycleDir = 1;
                 }
 
@@ -289,12 +289,12 @@ namespace Digi.PaintGun.Features.Palette
 
         void HandleInputs_Symmetry()
         {
-            if(Main.LocalToolHandler.SymmetryInputAvailable && MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.USE_SYMMETRY))
+            if(Main.LocalToolHandler.SymmetryInputAvailable && InputWrapper.IsControlJustPressed(MyControlsSpace.USE_SYMMETRY))
             {
                 MyAPIGateway.CubeBuilder.UseSymmetry = !MyAPIGateway.CubeBuilder.UseSymmetry;
             }
 
-            if(Main.Palette.ReplaceMode && MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.USE_SYMMETRY))
+            if(Main.Palette.ReplaceMode && InputWrapper.IsControlJustPressed(MyControlsSpace.USE_SYMMETRY))
             {
                 Main.Palette.ReplaceShipWide = !Main.Palette.ReplaceShipWide;
             }
@@ -406,7 +406,7 @@ namespace Digi.PaintGun.Features.Palette
                 return;
 
             // if the bind involves pressing rifle aim then revert action by doing it again.
-            if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.SECONDARY_TOOL_ACTION))
+            if(InputWrapper.IsControlJustPressed(MyControlsSpace.SECONDARY_TOOL_ACTION))
             {
                 holdingTool.EndShoot(MyShootActionEnum.SecondaryAction);
 

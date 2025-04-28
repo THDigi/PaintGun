@@ -596,6 +596,8 @@ namespace Digi
 
             if(newPress)
             {
+                // TODO: needs 206's key modifiers...
+
                 MyMouseButtonsEnum button = control.GetMouseControl();
                 if(button != MyMouseButtonsEnum.None && MyAPIGateway.Input.IsNewMousePressed(button))
                     return true;
@@ -664,8 +666,24 @@ namespace Digi
 
                     bool pressed = false; // workaround for any == pressed not working here for some reason
 
-                    if(justPressed ? MyAPIGateway.Input.IsNewGameControlPressed((MyStringId)o) : MyAPIGateway.Input.IsGameControlPressed((MyStringId)o))
+                    IMyControl control = MyAPIGateway.Input.GetGameControl((MyStringId)o);
+
+#if VERSION_200 || VERSION_201 || VERSION_202 || VERSION_203 || VERSION_204 || VERSION_205 // some backwards compatibility
+                    if(justPressed ? control.IsNewPressed() : control.IsPressed())
                         pressed = true;
+#else
+                    bool origEnabled = control.IsEnabled;
+                    try
+                    {
+                        control.IsEnabled = true;
+                        if(justPressed ? control.IsNewPressed() : control.IsPressed())
+                            pressed = true;
+                    }
+                    finally
+                    {
+                        control.IsEnabled = origEnabled;
+                    }
+#endif
 
                     if(any == pressed)
                         return any;
