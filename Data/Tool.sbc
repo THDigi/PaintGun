@@ -36,6 +36,7 @@
       <Model>Models\PaintGun.mwm</Model>
       <WeaponDefinitionId Subtype="WeaponPaintGun" />
       <ShowAmmoCount>true</ShowAmmoCount>
+      <DepositAllEnabled>false</DepositAllEnabled>
     </PhysicalItem>
   </PhysicalItems>
   <HandItems>

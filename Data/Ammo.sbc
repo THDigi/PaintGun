@@ -18,6 +18,7 @@
       <Model>Models\PaintGunMag.mwm</Model>
       <Capacity>1</Capacity>
       <AmmoDefinitionId Subtype="PaintGunBullet" />
+      <DepositAllEnabled>false</DepositAllEnabled>
     </AmmoMagazine>
   </AmmoMagazines>
   <Ammos>
