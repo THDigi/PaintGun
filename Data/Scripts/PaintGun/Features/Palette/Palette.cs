@@ -437,6 +437,9 @@ namespace Digi.PaintGun.Features.Palette
             if(!Main.CheckPlayerField.Ready)
                 return;
 
+            if (MyAPIGateway.Session.Player == null)
+                return;
+
             List<Vector3> newColors = MyAPIGateway.Session.Player.BuildColorSlots;
             IReadOnlyList<Vector3> storedColors = LocalInfo.ColorsMasks;
 
